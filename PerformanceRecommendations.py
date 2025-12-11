@@ -1,7 +1,7 @@
 from manim import *
 from manim_slides import Slide # pip install manim-slides
 
-class PerformanceRecommendations(Slide):
+class PR(Slide):
     def construct(self):
         # ---------------------------------------------------------
         # 1. Data Setup (Same as before)

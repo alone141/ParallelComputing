@@ -1,0 +1,5 @@
+media
+slides
+.vscode
+.pyc
+__pycache__/
