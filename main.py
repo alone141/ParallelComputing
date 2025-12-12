@@ -740,12 +740,12 @@ class ParallelComputingPresentation(Slide):
         screen_border = Rectangle(width=4, height=3, color=WHITE)
         triangle = Triangle(color=RED, fill_opacity=0.8).scale(0.8)
         
-        gpu_chip = Square(side_length=1.5, color=GREEN, fill_opacity=0.5).shift(DOWN*2)
-        gpu_label = Text("GPU", font_size=20).move_to(gpu_chip)
+        gpu_chip = Square(side_length=1.05, color=GREEN, fill_opacity=0.5).shift(DOWN*2)
+        gpu_label = Text("GPU", font_size=20).move_to(screen_border.get_top()+UP*0.2)
         
         wire = Line(gpu_chip.get_top(), screen_border.get_bottom(), color=GREEN)
         
-        self.play(FadeIn(header_gfx), Create(screen_border), FadeIn(triangle), DrawBorderThenFill(gpu_chip), Write(gpu_label), Create(wire))
+        self.play(FadeIn(header_gfx), Create(screen_border), FadeIn(triangle), Write(gpu_label), Create(wire))
         
         self.play(Rotate(triangle, angle=TAU, run_time=2))
         
@@ -771,7 +771,7 @@ class ParallelComputingPresentation(Slide):
         self.play(Indicate(matrix_nums, color=WHITE))
         
         self.next_slide()
-        self.play(FadeOut(screen_border), FadeOut(matrix_nums), FadeOut(wire), FadeOut(header_gpgpu))
+        self.play(FadeOut(screen_border), FadeOut(matrix_nums), FadeOut(wire), FadeOut(header_gpgpu),FadeOut(gpu_label))
 
         # -----------------------------------------
         # FAZ 3: CUDA (Köprü)
@@ -807,7 +807,7 @@ class ParallelComputingPresentation(Slide):
         # -----------------------------------------
         header_eco = Text("Ekosistem Büyümesi", font_size=32, color=BLUE).next_to(title, DOWN)
         
-        gpu_chip.move_to(DOWN*2.5) 
+        #gpu_chip.move_to(DOWN*2.5) 
         
         layer_cuda = Rectangle(width=4, height=0.8, color=GREEN, fill_opacity=0.8).next_to(gpu_chip, UP, buff=0.1)
         txt_cuda = Text("CUDA Çekirdeği", font_size=24, color=BLACK).move_to(layer_cuda)
@@ -828,13 +828,13 @@ class ParallelComputingPresentation(Slide):
         
         self.play(FadeIn(header_eco))
         # FadeIn gpu_chip in case it was lost in transitions
-        self.play(FadeIn(gpu_chip), Write(gpu_label))
+        #self.play(Write(gpu_label))
         self.play(DrawBorderThenFill(layer_cuda), Write(txt_cuda))
         self.play(LaggedStart(*[FadeIn(b, shift=DOWN) for b in lib_blocks], lag_ratio=0.2))
         self.play(GrowFromCenter(app_layer), Write(app_txt))
         
         self.next_slide()
-        self.play(FadeOut(gpu_chip), FadeOut(gpu_label), FadeOut(layer_cuda), FadeOut(txt_cuda), FadeOut(lib_blocks), FadeOut(app_layer), FadeOut(app_txt), FadeOut(header_eco))
+        self.play(FadeOut(layer_cuda), FadeOut(txt_cuda), FadeOut(lib_blocks), FadeOut(app_layer), FadeOut(app_txt), FadeOut(header_eco))
 
         # -----------------------------------------
         # SON MESAJ
