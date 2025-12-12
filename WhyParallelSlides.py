@@ -19,78 +19,121 @@ class WhyParallelSlides(Slide):
         # -----------------------------------------
         # Concept: A graph showing Frequency increasing then flattening
         
-        # Draw Axes
+# Create Axes
+        # X: Clock Speed (Frequency)
+        # Y: Power (Watts/Heat)
         axes = Axes(
-            x_range=[0, 6, 1],
-            y_range=[0, 5, 1],
-            axis_config={"include_numbers": False},
+            x_range=[0, 5, 1],
+            y_range=[0, 100, 20],
+            axis_config={"include_numbers": False, "tip_shape": StealthTip},
             x_length=6,
-            y_length=4
-        ).shift(DOWN * 0.5)
+            y_length=5
+        ).shift(DOWN * 0.5 + LEFT * 0.5)
+
+        # Labels
+        x_label = axes.get_x_axis_label("Clock Speed (GHz)")
+        y_label = axes.get_y_axis_label("Power / Heat (Watts)")
+
+        self.play(Create(axes), Write(x_label), Write(y_label))
         
-        labels = axes.get_axis_labels(Tex("Time").scale(0.7), Text("Clock Speed").scale(0.45).shift(LEFT * 2))
+        # Pause: "Let's look at the relationship between speed and heat."
+        self.next_slide()
+
+        # -----------------------------------------
+        # STEP 1: The Exponential Curve
+        # -----------------------------------------
         
-        # The Curve: Linear rise then plateau
-        graph = axes.plot(lambda x: 4 * (1 - np.exp(-x)), color=YELLOW)
+        # Power is roughly proportional to Frequency^3 (P ~ V^2 * f)
+        # We scale it to fit the graph nicely
+        graph = axes.plot(lambda x: 1.5 * x**3, color=WHITE, x_range=[0, 4.1])
         
-        # The "Heat" Limit Line
+        # Color the curve with a gradient: Green (Safe) -> Yellow -> Red (Danger)
+        graph.set_color_by_gradient(GREEN, YELLOW, RED)
+        
+        label_curve = Text("P ∝ f³", font_size=36, color=YELLOW).move_to(axes.c2p(2, 60))
+        
+        self.play(Create(graph, run_time=2), FadeIn(label_curve))
+
+        # Pause: "As you can see, power doesn't rise linearly."
+        self.next_slide()
+
+        # -----------------------------------------
+        # STEP 2: The "Safe Zone" vs "Danger Zone"
+        # -----------------------------------------
+        
+        # Add a "Cooling Limit" Line (e.g., at Y=80)
         limit_line = DashedLine(
-            start=axes.c2p(0, 4), 
-            end=axes.c2p(6, 4), 
+            start=axes.c2p(0, 80), 
+            end=axes.c2p(5, 80), 
             color=RED
         )
-        limit_text = Text("Power & Heat Wall", font_size=24, color=RED).next_to(limit_line, UP)
-
-        point_text = Text("1. Single-core limits", font_size=32).next_to(title, DOWN, buff=0.5)
-
-        self.play(Write(point_text))
-        self.play(Create(axes), Write(labels))
-        self.play(Create(graph), run_time=2)
-        self.play(Create(limit_line), FadeIn(limit_text))
+        limit_text = Text("Cooling Limit", font_size=20, color=RED).next_to(limit_line, UP, aligned_edge=RIGHT)
         
-        # Pause to explain Dennard Scaling/Moore's Law limits (Click 2)
-        self.next_slide()
-
-        self.play(FadeOut(axes), FadeOut(labels), FadeOut(graph), FadeOut(limit_line), FadeOut(limit_text), FadeOut(point_text))
-
-        # -----------------------------------------
-        # SLIDE 3: Workload Explosion
-        # -----------------------------------------
-        point2_text = Text("2. Workloads Exploded", font_size=32).next_to(title, DOWN, buff=0.5)
-        self.play(Write(point2_text))
-
-        # Visual: A small data circle growing huge and spawning children
-        center_blob = Circle(radius=0.5, color=BLUE, fill_opacity=0.5)
-        center_label = Text("Data", font_size=24).move_to(center_blob)
-        blob_group = VGroup(center_blob, center_label).move_to(ORIGIN)
-
-        #self.play(FadeIn(blob_group))
+        self.play(Create(limit_line), Write(limit_text))
         
-        # Animate explosion
-        new_blob = Circle(radius=25, color=BLUE, fill_opacity=0.2)
+        # Animate a Dot moving up the curve
+        dot = Dot(color=WHITE)
+        dot.move_to(axes.c2p(0, 0))
+        self.add(dot)
         
-        # Satellite bubbles
-        ai_bubble = Circle(radius=10, color=PURPLE, fill_opacity=0.2).move_to(new_blob.get_center()+ LEFT*5)
-        ai_text = Text("AI", font_size=24).move_to(ai_bubble)
+        # Trace path
+        path = MoveAlongPath(dot, graph, run_time=3, rate_func=linear)
         
-        rt_bubble = Circle(radius=10, color=TEAL, fill_opacity=0.2).move_to(new_blob.get_center() +RIGHT*5)
-        rt_text = Text("Real-time", font_size=20).move_to(rt_bubble)
+        # Dynamic Text showing values
+        val_tracker = ValueTracker(0)
         
-        sim_bubble = Circle(radius=10, color=ORANGE, fill_opacity=0.2).move_to(rt_bubble.get_center() +RIGHT*5)
-        sim_text = Text("Simulations", font_size=20).move_to(sim_bubble)
-
+        # Move dot
         self.play(
-            GrowFromCenter(new_blob), Write(center_label),
-            GrowFromCenter(ai_bubble), Write(ai_text),
-            GrowFromCenter(rt_bubble), Write(rt_text),
-            GrowFromCenter(sim_bubble), Write(sim_text),
+            path, 
+            val_tracker.animate.set_value(4), 
+            run_time=3
         )
+        
+        # Pause: "We hit the ceiling."
+        self.next_slide()
 
-        # Pause to discuss the needs of modern computing (Click 3)
+        # -----------------------------------------
+        # STEP 3: The Cost of Speed
+        # -----------------------------------------
+        
+        # Show comparison:
+        # Point A: 3 GHz (Moderate Power)
+        # Point B: 4 GHz (Massive Power)
+        
+        pt_a = Dot(color=GREEN).move_to(axes.c2p(3, 1.5 * 3**3)) # 3GHz, ~40W
+        pt_b = Dot(color=RED).move_to(axes.c2p(4, 1.5 * 4**3))   # 4GHz, ~96W
+        
+        line_a = axes.get_lines_to_point(pt_a.get_center(), color=GREEN)
+        line_b = axes.get_lines_to_point(pt_b.get_center(), color=RED)
+        
+        self.play(FadeIn(pt_a), Create(line_a))
+        label_a = Text("3 GHz", font_size=20, color=GREEN).next_to(pt_a, LEFT)
+        self.play(Write(label_a))
+        
         self.next_slide()
         
-        self.play(FadeOut(new_blob), FadeOut(center_label), FadeOut(ai_bubble), FadeOut(ai_text), FadeOut(rt_bubble), FadeOut(rt_text), FadeOut(sim_bubble), FadeOut(sim_text), FadeOut(point2_text))
+        self.play(FadeIn(pt_b), Create(line_b))
+        label_b = Text("4 GHz", font_size=20, color=RED).next_to(pt_b, LEFT)
+        self.play(Write(label_b))
 
+        # Annotate the gap
+        brace = BraceBetweenPoints(axes.c2p(4.2, 40), axes.c2p(4.2, 96), direction=RIGHT)
+        text_gain = Text("+33% Speed", font_size=20, color=GREEN).next_to(pt_b, UP)
+        text_cost = Text("+140% Heat!", font_size=24, color=RED).next_to(brace, RIGHT)
+        
+        self.play(Create(brace), Write(text_cost))
+
+        # Pause: "Small speed gain = Huge heat cost."
+        self.next_slide()
+
+        # Cleanup
+        self.play(
+            FadeOut(graph), FadeOut(axes), FadeOut(dot), FadeOut(limit_line), 
+            FadeOut(limit_text), FadeOut(pt_a), FadeOut(pt_b), 
+            FadeOut(line_a), FadeOut(line_b), FadeOut(brace), 
+            FadeOut(text_cost), FadeOut(title), 
+            FadeOut(x_label), FadeOut(y_label), FadeOut(label_curve), FadeOut(label_a), FadeOut(label_b)
+        )
         # -----------------------------------------
         # SLIDE 4: Efficiency
         # -----------------------------------------
