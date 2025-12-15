@@ -9,7 +9,7 @@ class ParallelComputingPresentation(Slide):
         self.chapter_2_why()        
         self.chapter_3_apps()       
         self.chapter_4_how()        
-        self.chapter_5_hardware()   
+        #self.chapter_5_hardware()   
         self.chapter_6_cuda()       
         self.chapter_7_perf()       
 
