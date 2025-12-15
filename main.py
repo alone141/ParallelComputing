@@ -991,7 +991,7 @@ class ParallelComputingPresentation(Slide):
                     dot = Dot(point=crossover_pt, color=WHITE, radius=0.08)
                     glow = Dot(point=crossover_pt, color=COL_GPU_E2E, radius=0.15).set_opacity(0.5)
                     # DÜZELTME: Tex yerine Text kullanıldı (Türkçe: Kazanır)
-                    text = Text("GPU Kazanır", color=WHITE, font_size=20)
+                    text = Text("GPU Wins", color=WHITE, font_size=20)
                     text.next_to(dot, UP + LEFT, buff=0.1)
                     arrow = Arrow(start=text.get_bottom(), end=dot.get_top(), color=WHITE, buff=0.05, stroke_width=2, tip_length=0.15)
                     crossover_group.add(glow, dot, text, arrow)
