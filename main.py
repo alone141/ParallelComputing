@@ -4,7 +4,7 @@ import numpy as np
 
 class ParallelComputingPresentation(Slide):
     def construct(self):
-        # Hikaye Akışı
+        # Hikaye Akışı  
         self.chapter_1_intro()      
         self.chapter_2_why()        
         self.chapter_3_apps()       
@@ -84,7 +84,7 @@ class ParallelComputingPresentation(Slide):
         
         self.next_slide()
 
-        self.play(FadeOut(cpu_group), FadeOut(s2_text))
+        self.play(FadeOut(s2_text))
 
         # -----------------------------------------
         # SLIDE 5: Ölçek 3 - GPU
@@ -102,11 +102,11 @@ class ParallelComputingPresentation(Slide):
         gpu_group = VGroup(gpu_bg, small_cores).next_to(s3_text, DOWN)
 
         self.play(Write(s3_text))
-        self.play(Create(gpu_bg), ShowIncreasingSubsets(small_cores))
+        self.play(Transform(cpu_group, gpu_group), Create(gpu_bg), ShowIncreasingSubsets(small_cores))
         
         self.next_slide()
 
-        self.play(FadeOut(gpu_group), FadeOut(s3_text))
+        self.play(FadeOut(cpu_group), FadeOut(s3_text))
 
         # -----------------------------------------
         # SLIDE 6: Ölçek 4 - Dağıtık (Distributed)
@@ -124,12 +124,12 @@ class ParallelComputingPresentation(Slide):
         dist_group = VGroup(server1, server2, server3, lines).next_to(s4_text, DOWN)
 
         self.play(Write(s4_text))
-        self.play(DrawBorderThenFill(server1), DrawBorderThenFill(server2), DrawBorderThenFill(server3))
+        self.play(Transform(gpu_group, server1), DrawBorderThenFill(server2), DrawBorderThenFill(server3))
         self.play(Create(lines))
         
         self.next_slide()
 
-        self.play(FadeOut(dist_group), FadeOut(s4_text), FadeOut(scale_header))
+        self.play(FadeOut(gpu_group), FadeOut(dist_group), FadeOut(s4_text), FadeOut(scale_header))
 
         # -----------------------------------------
         # SLIDE 7: Çapa Cümlesi (Anchor)
