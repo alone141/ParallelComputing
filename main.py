@@ -5,21 +5,22 @@ import numpy as np
 class ParallelComputingPresentation(Slide):
     def construct(self):
         # Hikaye Akışı  
-        self.chapter_1_intro()      
-        self.chapter_2_why()        
-        self.chapter_3_apps()       
-        self.chapter_4_how()        
-        #self.chapter_5_hardware()   
-        self.chapter_6_cuda()
-        
-        self.chapter_6_5_memory_model()    # Host vs Device Visuals
-        self.chapter_6_6_hierarchy_viz()   # Grid/Block Zoom Visuals
+        #self.chapter_1_intro()      
+        #self.chapter_2_why()        
+        #self.chapter_3_apps()       
+        #self.chapter_4_how()        
+        ##self.chapter_5_hardware()   
+        #self.chapter_6_cuda()
+        #
+        #self.chapter_6_5_memory_model()    # Host vs Device Visuals
+        #self.chapter_6_6_hierarchy_viz()   # Grid/Block Zoom Visuals
+        #self.chapter_kernel_configs()      # <<<Blocks, Threads>>> Visualizer
+        self.chapter_8_cudathread()        # Deep dive into threadIdx/blockIdx
         
         # --- NEW ADDITION ---
-        self.chapter_kernel_configs()      # <<<Blocks, Threads>>> Visualizer
+        self.chapter_9_code_walkthrough()  # Code Examples (CPU vs GPU)
         # --------------------
 
-        self.chapter_8_cudathread()        # Deep dive into threadIdx/blockIdx
         self.chapter_7_perf()       
 
     def chapter_1_intro(self):
@@ -789,11 +790,11 @@ class ParallelComputingPresentation(Slide):
         self.play(FadeIn(header_cuda))
         
         code_bg_left = Rectangle(width=3, height=3.5, color=GREY, fill_opacity=0.2).shift(LEFT*3)
-        code_gfx = Text("glBegin();\nglVertex3f();\nTexture();\n// Hacky!", font_size=18, color=RED).move_to(code_bg_left)
+        code_gfx = Text("glBegin();\nglVertex3f();\nTexture();\n// Hacky!", font_size=18,  color=RED).move_to(code_bg_left)
         label_left = Text("2007 Öncesi (Grafik API)", font_size=20, color=RED).next_to(code_bg_left, DOWN)
         
         code_bg_right = Rectangle(width=4, height=3.5, color=GREEN, fill_opacity=0.2).shift(RIGHT*3)
-        code_cuda = Text("__global__ void\nkernel(float* x) {\n  int i = threadIdx.x;\n  x[i] = ...;\n}", font_size=18, color=WHITE).move_to(code_bg_right)
+        code_cuda = Text("__global__ void\nkernel(float* x) {\n  int i = threadIdx.x;\n  x[i] = ...;\n}", font_size=18,  color=WHITE).move_to(code_bg_right)
         label_right = Text("CUDA (C++ tarzı)", font_size=20, color=GREEN).next_to(code_bg_right, DOWN)
         
         arrow = Arrow(code_bg_left.get_right(), code_bg_right.get_left(), color=WHITE)
@@ -1023,6 +1024,7 @@ class ParallelComputingPresentation(Slide):
                 tab_width=4,
                 background="window",
                 language="cpp",
+                
             ).next_to(title, DOWN, buff=0.5)
 
             # 2. Create the Visual Representation (Blocks and Threads)
@@ -1110,6 +1112,260 @@ class ParallelComputingPresentation(Slide):
         # Clear screen at end
         self.play(FadeOut(prev_group), FadeOut(prev_stats), FadeOut(prev_code), FadeOut(title))
 
+    def chapter_8_cudathread(self):
+        # ---------------------------------------------------------
+        # SECTION 1: The Basic Unit (The Thread)
+        # ---------------------------------------------------------
+        title = Text("CUDA Thread Hierarchy", font_size=48).to_edge(UP)
+        self.play(Write(title))
+        
+        # Create a single thread representation
+        thread_box = Square(side_length=0.8, color=BLUE, fill_opacity=0.5)
+        thread_label = Text("Thread", font_size=20).next_to(thread_box, DOWN)
+        
+        self.play(DrawBorderThenFill(thread_box), Write(thread_label))
+        
+        # Pause: Explain that a thread is the smallest unit of execution
+        self.next_slide() 
+        
+        # ---------------------------------------------------------
+        # SECTION 2: Thread Block (Grouping Threads)
+        # ---------------------------------------------------------
+        # Move original thread to a position to start the block formation
+        self.play(FadeOut(thread_label), thread_box.animate.move_to(LEFT * 4))
+        
+        # Create a Block of 4 threads (1D Block for simplicity)
+        # We duplicate the original thread 3 times
+        block_threads = VGroup(thread_box)
+        for i in range(3):
+            new_thread = thread_box.copy().next_to(block_threads[-1], RIGHT, buff=0.1)
+            block_threads.add(new_thread)
+            
+        self.play(Create(block_threads[1:]))
+        
+        # Group them visually with a rectangle
+        block_rect = SurroundingRectangle(block_threads, color=GREEN, buff=0.2)
+        block_label = Text("Thread Block", color=GREEN, font_size=24).next_to(block_rect, UP)
+        
+        self.play(Create(block_rect), Write(block_label))
+        
+        # Add indices to threads (threadIdx.x)
+        indices = VGroup()
+        for i, t in enumerate(block_threads):
+            idx = Integer(i, font_size=20).move_to(t.get_center())
+            indices.add(idx)
+        
+        self.play(Write(indices))
+        
+        code_tidx = Text("threadIdx.x", font_size=24).next_to(block_rect, DOWN)
+        self.play(FadeIn(code_tidx))
+        
+        # Pause: Explain blockDim and threadIdx
+        self.next_slide()
+
+        # ---------------------------------------------------------
+        # SECTION 3: The Grid (Grouping Blocks)
+        # ---------------------------------------------------------
+        # Group the entire block conceptual object
+        full_block_group = VGroup(block_threads, block_rect, indices, block_label, code_tidx)
+        
+        # Zoom out / Scale down to fit the Grid
+        self.play(
+            full_block_group.animate.scale(0.6).to_edge(LEFT, buff=1)
+        )
+        
+        # Create 2 more blocks to form a Grid
+        grid_group = VGroup(full_block_group)
+        for i in range(2):
+            new_block = full_block_group.copy().next_to(grid_group[-1], RIGHT, buff=0.5)
+            # Update the block label for visual clarity (optional, but good for details)
+            grid_group.add(new_block)
+            
+        self.play(FadeIn(grid_group[1:]))
+        
+        grid_rect = SurroundingRectangle(grid_group, color=RED, buff=0.2)
+        grid_label = Text("Grid (Kernel Launch)", color=RED, font_size=30).next_to(grid_rect, UP)
+        
+        self.play(Create(grid_rect), Write(grid_label))
+        
+        # Pause: Explain gridDim and blockIdx
+        self.next_slide()
+        
+        # ---------------------------------------------------------
+        # SECTION 4: Global Index Calculation
+        # ---------------------------------------------------------
+        # Clear noise to focus on the formula
+        self.play(
+            FadeOut(title), FadeOut(grid_label), FadeOut(grid_rect),
+            grid_group.animate.move_to(UP * 0.5)
+        )
+        
+        # The CUDA formula
+        formula = MathTex(
+            r"i = \text{blockIdx.x} \times \text{blockDim.x} + \text{threadIdx.x}",
+            font_size=36
+        ).move_to(DOWN * 2)
+        
+        self.play(Write(formula))
+        
+        # Demonstrate calculation for a specific thread
+        # Let's pick: Block 2 (index 1), Thread 3 (index 2) -> Global Index 6
+        target_block = grid_group[1] # 2nd block
+        # Access the VGroup structure we built: [threads, rect, indices, label, code]
+        # threads is at index 0 inside the block group
+        target_thread = target_block[0][2] # 3rd thread
+        
+        self.play(
+            target_thread.animate.set_fill(YELLOW, opacity=0.8),
+            Indicate(target_block[1], color=YELLOW) # Highlight block rect
+        )
+        
+        # Show calculation text
+        calc_text = MathTex(
+            r"i = 1 \times 4 + 2 = 6",
+            color=YELLOW, font_size=36
+        ).next_to(formula, DOWN)
+        
+        self.play(TransformFromCopy(formula, calc_text))
+        
+        self.next_slide()
+        
+        # Clean up
+        self.play(FadeOut(Group(*self.mobjects)))
+
+    def chapter_9_code_walkthrough(self):
+            # -----------------------------------------
+            # NEW SECTION: CODE WALKTHROUGH
+            # -----------------------------------------
+            # Title
+            title = Text("Writing the Code: Vector Addition", font_size=40, color=BLUE).to_edge(UP)
+            self.play(Write(title))
+            self.next_slide()
+
+            # --- PART 1: The CPU Way ---
+            cpu_code_str = """void vectorAdd(int *a, int *b, int *c, int n) {
+        for (int i = 0; i < n; i++) {
+            c[i] = a[i] + b[i];
+        }
+    }"""
+            cpu_code = Code(
+                code_string=cpu_code_str,
+                tab_width=4,
+                background="window",
+                language="cpp",
+                
+            ).move_to(ORIGIN)
+            
+            lbl_cpu = Text("Standard C++ (CPU)", font_size=24, color=GREY).next_to(cpu_code, UP)
+
+            self.play(FadeIn(cpu_code), Write(lbl_cpu))
+            self.next_slide()
+
+            # --- PART 2: Transforming to GPU ---
+            gpu_code_str = """__global__ void vectorAdd(int *a, int *b, int *c, int n) {
+        int i = blockIdx.x * blockDim.x + threadIdx.x;
+        if (i < n) {
+            c[i] = a[i] + b[i];
+        }
+    }"""
+            gpu_code = Code(
+                code_string=gpu_code_str,
+                tab_width=4,
+                background="window",
+                language="cpp",
+                
+            ).move_to(ORIGIN)
+            
+            lbl_gpu = Text("CUDA Kernel (GPU)", font_size=24, color=GREEN).next_to(gpu_code, UP)
+
+            # Transform CPU code to GPU code
+            self.play(
+                ReplacementTransform(cpu_code, gpu_code),
+                ReplacementTransform(lbl_cpu, lbl_gpu)
+            )
+            self.next_slide()
+            
+            # --- HIGHLIGHTING SECTIONS (FIXED INDICES) ---
+            # Note: We use gpu_code[2] to access the code lines VGroup
+            
+            # 1. Highlight __global__ (Line 0)
+            rect_global = SurroundingRectangle(gpu_code[2][0], color=YELLOW, buff=0.05)
+            txt_global = Text("Runs on Device, Called from Host", font_size=20, color=YELLOW).next_to(rect_global, UP, buff=0.2)
+            
+            self.play(Create(rect_global), Write(txt_global))
+            self.next_slide()
+            self.play(FadeOut(rect_global), FadeOut(txt_global))
+            
+            # 2. Highlight Index Calculation (Line 1)
+            rect_idx = SurroundingRectangle(gpu_code[2][1], color=YELLOW, buff=0.05)
+            txt_idx = Text("Calculate Unique Global Index", font_size=20, color=YELLOW).next_to(rect_idx, RIGHT, buff=0.2)
+            
+            self.play(Create(rect_idx), Write(txt_idx))
+            self.next_slide()
+            self.play(FadeOut(rect_idx), FadeOut(txt_idx))
+            
+            # 3. Highlight Guard Check (Line 2)
+            rect_guard = SurroundingRectangle(gpu_code[2][2], color=YELLOW, buff=0.05)
+            txt_guard = Text("Boundary Check (Safety)", font_size=20, color=YELLOW).next_to(rect_guard, RIGHT, buff=0.2)
+            
+            self.play(Create(rect_guard), Write(txt_guard))
+            self.next_slide()
+            self.play(FadeOut(rect_guard), FadeOut(txt_guard), FadeOut(gpu_code), FadeOut(lbl_gpu))
+
+            # --- PART 3: The Host API ---
+            host_title = Text("The Host Side (Main)", font_size=32, color=BLUE).next_to(title, DOWN)
+            self.play(Write(host_title))
+            
+            host_code_str = """int main() {
+        // 1. Allocate Device Memory
+        cudaMalloc(&d_a, bytes);
+
+        // 2. Copy Data to Device
+        cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
+
+        // 3. Launch Kernel
+        vectorAdd<<<blocks, threads>>>(d_a, d_b, d_c, n);
+
+        // 4. Copy Back
+        cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
+        
+        // 5. Free
+        cudaFree(d_a);
+    }"""
+            host_code = Code(
+                code_string=host_code_str,
+                tab_width=4,
+                background="window",
+                language="cpp",
+                
+                
+            ).scale(0.8).next_to(host_title, DOWN)
+            
+            self.play(FadeIn(host_code))
+            self.next_slide()
+            
+            # Step through important lines
+            # Indices manually checked against the string above (0-indexed)
+            steps = [
+                (2, "Reserve VRAM"),     # cudaMalloc
+                (5, "Send Data"),        # cudaMemcpy H2D
+                (8, "Execute!"),         # Kernel Launch
+                (11, "Get Results"),     # cudaMemcpy D2H
+                (14, "Cleanup")          # cudaFree
+            ]
+            
+            for line_idx, note in steps:
+                # Safely access the line using [2] for the code block
+                target_line = host_code[2][line_idx]
+                
+                arrow = Arrow(LEFT, RIGHT, color=YELLOW).next_to(target_line, LEFT)
+                txt = Text(note, font_size=20, color=YELLOW).next_to(arrow, LEFT)
+                
+                self.play(Create(arrow), Write(txt), run_time=0.5)
+                self.next_slide()
+                self.play(FadeOut(arrow), FadeOut(txt), run_time=0.3)
+                
+            self.play(FadeOut(host_code), FadeOut(host_title), FadeOut(title))
     def chapter_7_perf(self):
             # ---------------------------------------------------------
             # 1. Veri Kurulumu
@@ -1301,124 +1557,3 @@ class ParallelComputingPresentation(Slide):
                     self.next_slide()
             
             self.wait(1)
-
-    def chapter_8_cudathread(self):
-        # ---------------------------------------------------------
-        # SECTION 1: The Basic Unit (The Thread)
-        # ---------------------------------------------------------
-        title = Text("CUDA Thread Hierarchy", font_size=48).to_edge(UP)
-        self.play(Write(title))
-        
-        # Create a single thread representation
-        thread_box = Square(side_length=0.8, color=BLUE, fill_opacity=0.5)
-        thread_label = Text("Thread", font_size=20).next_to(thread_box, DOWN)
-        
-        self.play(DrawBorderThenFill(thread_box), Write(thread_label))
-        
-        # Pause: Explain that a thread is the smallest unit of execution
-        self.next_slide() 
-        
-        # ---------------------------------------------------------
-        # SECTION 2: Thread Block (Grouping Threads)
-        # ---------------------------------------------------------
-        # Move original thread to a position to start the block formation
-        self.play(FadeOut(thread_label), thread_box.animate.move_to(LEFT * 4))
-        
-        # Create a Block of 4 threads (1D Block for simplicity)
-        # We duplicate the original thread 3 times
-        block_threads = VGroup(thread_box)
-        for i in range(3):
-            new_thread = thread_box.copy().next_to(block_threads[-1], RIGHT, buff=0.1)
-            block_threads.add(new_thread)
-            
-        self.play(Create(block_threads[1:]))
-        
-        # Group them visually with a rectangle
-        block_rect = SurroundingRectangle(block_threads, color=GREEN, buff=0.2)
-        block_label = Text("Thread Block", color=GREEN, font_size=24).next_to(block_rect, UP)
-        
-        self.play(Create(block_rect), Write(block_label))
-        
-        # Add indices to threads (threadIdx.x)
-        indices = VGroup()
-        for i, t in enumerate(block_threads):
-            idx = Integer(i, font_size=20).move_to(t.get_center())
-            indices.add(idx)
-        
-        self.play(Write(indices))
-        
-        code_tidx = Text("threadIdx.x", font_size=24).next_to(block_rect, DOWN)
-        self.play(FadeIn(code_tidx))
-        
-        # Pause: Explain blockDim and threadIdx
-        self.next_slide()
-
-        # ---------------------------------------------------------
-        # SECTION 3: The Grid (Grouping Blocks)
-        # ---------------------------------------------------------
-        # Group the entire block conceptual object
-        full_block_group = VGroup(block_threads, block_rect, indices, block_label, code_tidx)
-        
-        # Zoom out / Scale down to fit the Grid
-        self.play(
-            full_block_group.animate.scale(0.6).to_edge(LEFT, buff=1)
-        )
-        
-        # Create 2 more blocks to form a Grid
-        grid_group = VGroup(full_block_group)
-        for i in range(2):
-            new_block = full_block_group.copy().next_to(grid_group[-1], RIGHT, buff=0.5)
-            # Update the block label for visual clarity (optional, but good for details)
-            grid_group.add(new_block)
-            
-        self.play(FadeIn(grid_group[1:]))
-        
-        grid_rect = SurroundingRectangle(grid_group, color=RED, buff=0.2)
-        grid_label = Text("Grid (Kernel Launch)", color=RED, font_size=30).next_to(grid_rect, UP)
-        
-        self.play(Create(grid_rect), Write(grid_label))
-        
-        # Pause: Explain gridDim and blockIdx
-        self.next_slide()
-        
-        # ---------------------------------------------------------
-        # SECTION 4: Global Index Calculation
-        # ---------------------------------------------------------
-        # Clear noise to focus on the formula
-        self.play(
-            FadeOut(title), FadeOut(grid_label), FadeOut(grid_rect),
-            grid_group.animate.move_to(UP * 0.5)
-        )
-        
-        # The CUDA formula
-        formula = MathTex(
-            r"i = \text{blockIdx.x} \times \text{blockDim.x} + \text{threadIdx.x}",
-            font_size=36
-        ).move_to(DOWN * 2)
-        
-        self.play(Write(formula))
-        
-        # Demonstrate calculation for a specific thread
-        # Let's pick: Block 2 (index 1), Thread 3 (index 2) -> Global Index 6
-        target_block = grid_group[1] # 2nd block
-        # Access the VGroup structure we built: [threads, rect, indices, label, code]
-        # threads is at index 0 inside the block group
-        target_thread = target_block[0][2] # 3rd thread
-        
-        self.play(
-            target_thread.animate.set_fill(YELLOW, opacity=0.8),
-            Indicate(target_block[1], color=YELLOW) # Highlight block rect
-        )
-        
-        # Show calculation text
-        calc_text = MathTex(
-            r"i = 1 \times 4 + 2 = 6",
-            color=YELLOW, font_size=36
-        ).next_to(formula, DOWN)
-        
-        self.play(TransformFromCopy(formula, calc_text))
-        
-        self.next_slide()
-        
-        # Clean up
-        self.play(FadeOut(Group(*self.mobjects)))
