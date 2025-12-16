@@ -15,13 +15,13 @@ class ParallelComputingPresentation(Slide):
         #self.chapter_6_5_memory_model()    # Host vs Device Visuals
         #self.chapter_6_6_hierarchy_viz()   # Grid/Block Zoom Visuals
         #self.chapter_kernel_configs()      # <<<Blocks, Threads>>> Visualizer
-        self.chapter_8_cudathread()        # Deep dive into threadIdx/blockIdx
+        #self.chapter_8_cudathread()        # Deep dive into threadIdx/blockIdx
         
         # --- NEW ADDITION ---
         self.chapter_9_code_walkthrough()  # Code Examples (CPU vs GPU)
         # --------------------
 
-        self.chapter_7_perf()       
+        #self.chapter_7_perf()       
 
     def chapter_1_intro(self):
         # -----------------------------------------
@@ -1298,7 +1298,7 @@ class ParallelComputingPresentation(Slide):
             
             # 2. Highlight Index Calculation (Line 1)
             rect_idx = SurroundingRectangle(gpu_code[2][1], color=YELLOW, buff=0.05)
-            txt_idx = Text("Calculate Unique Global Index", font_size=20, color=YELLOW).next_to(rect_idx, RIGHT, buff=0.2)
+            txt_idx = Text("Calculate Unique Global Index", font_size=20, color=YELLOW).next_to(rect_idx.get_center(), RIGHT + DOWN, buff=0.2)
             
             self.play(Create(rect_idx), Write(txt_idx))
             self.next_slide()
@@ -1317,19 +1317,14 @@ class ParallelComputingPresentation(Slide):
             self.play(Write(host_title))
             
             host_code_str = """int main() {
-        // 1. Allocate Device Memory
         cudaMalloc(&d_a, bytes);
 
-        // 2. Copy Data to Device
         cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
 
-        // 3. Launch Kernel
         vectorAdd<<<blocks, threads>>>(d_a, d_b, d_c, n);
 
-        // 4. Copy Back
         cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
         
-        // 5. Free
         cudaFree(d_a);
     }"""
             host_code = Code(
@@ -1347,11 +1342,11 @@ class ParallelComputingPresentation(Slide):
             # Step through important lines
             # Indices manually checked against the string above (0-indexed)
             steps = [
-                (2, "Reserve VRAM"),     # cudaMalloc
-                (5, "Send Data"),        # cudaMemcpy H2D
-                (8, "Execute!"),         # Kernel Launch
-                (11, "Get Results"),     # cudaMemcpy D2H
-                (14, "Cleanup")          # cudaFree
+                (1, "Reserve VRAM"),     # cudaMalloc
+                (3, "Send Data"),        # cudaMemcpy H2D
+                (5, "Execute!"),         # Kernel Launch
+                (7, "Get Results"),     # cudaMemcpy D2H
+                (9, "Cleanup")          # cudaFree
             ]
             
             for line_idx, note in steps:
@@ -1359,7 +1354,7 @@ class ParallelComputingPresentation(Slide):
                 target_line = host_code[2][line_idx]
                 
                 arrow = Arrow(LEFT, RIGHT, color=YELLOW).next_to(target_line, LEFT)
-                txt = Text(note, font_size=20, color=YELLOW).next_to(arrow, LEFT)
+                txt = Text(note, font_size=15, color=YELLOW).next_to(arrow, LEFT)
                 
                 self.play(Create(arrow), Write(txt), run_time=0.5)
                 self.next_slide()
