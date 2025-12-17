@@ -1343,6 +1343,7 @@ class ParallelComputingPresentation(Slide):
                     self.next_slide()
             
             self.wait(1)
+            self.play(*[FadeOut(mob)for mob in self.mobjects])
 
     def chapter_10_future(self):
             # -----------------------------------------
