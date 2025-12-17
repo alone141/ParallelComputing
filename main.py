@@ -9,18 +9,11 @@ class ParallelComputingPresentation(Slide):
         self.chapter_2_why()        
         self.chapter_3_apps()       
         self.chapter_4_how()        
-        #self.chapter_5_hardware()   
         self.chapter_6_cuda()
-        #
         self.chapter_6_5_memory_model()    # Host vs Device Visuals
-        #self.chapter_6_6_hierarchy_viz()   # Grid/Block Zoom Visuals
         self.chapter_8_cudathread()        # Deep dive into threadIdx/blockIdx
         self.chapter_kernel_configs()      # <<<Blocks, Threads>>> Visualizer
-        
-        # --- NEW ADDITION ---
         self.chapter_9_code_walkthrough()  # Code Examples (CPU vs GPU)
-        # --------------------
-
         self.chapter_7_perf()       
 
     def chapter_1_intro(self):
@@ -599,141 +592,6 @@ class ParallelComputingPresentation(Slide):
         self.play(FadeOut(final_text), FadeOut(title))
         self.wait(0.5)
 
-    def chapter_5_hardware(self):
-        # -----------------------------------------
-        # KURULUM: Başlık
-        # -----------------------------------------
-        title = Text("5. Hangi Donanıma İhtiyacımız Var?", font_size=40, color=BLUE).to_edge(UP)
-        self.play(Write(title))
-        self.next_slide()
-
-        # -----------------------------------------
-        # KAVRAM 1: CPU
-        # -----------------------------------------
-        header_cpu = Text("CPU: Düşük Gecikme / Karmaşık Mantık", font_size=32, color=BLUE).next_to(title, DOWN)
-        
-        cpu_group = VGroup()
-        for i in range(4):
-            core = Square(side_length=1.5, color=BLUE, fill_opacity=0.2)
-            if i % 2 == 0:
-                inner = Circle(radius=0.4, color=WHITE).move_to(core)
-            else:
-                inner = Triangle(color=WHITE).scale(0.4).move_to(core)
-            
-            group = VGroup(core, inner)
-            x = (i % 2) * 1.8 - 0.9
-            y = (i // 2) * 1.8 - 0.9
-            group.move_to([x, y - 0.5, 0])
-            cpu_group.add(group)
-
-        self.play(FadeIn(header_cpu), Create(cpu_group))
-        
-        self.play(
-            Rotate(cpu_group[0][1], angle=PI),
-            Wiggle(cpu_group[1][1]),
-            ScaleInPlace(cpu_group[2][1], 1.2),
-            Flash(cpu_group[3], color=WHITE, run_time=1),
-        )
-        
-        desc_cpu = Text("Şunlar için harika: Karmaşık iş yükleri, Kontrol akışı", font_size=24, color=GREY).next_to(cpu_group, DOWN, buff=0.5)
-        self.play(Write(desc_cpu))
-        
-        self.next_slide()
-        self.play(FadeOut(cpu_group), FadeOut(header_cpu), FadeOut(desc_cpu))
-
-        # -----------------------------------------
-        # KAVRAM 2: GPU
-        # -----------------------------------------
-        header_gpu = Text("GPU: Yüksek İş Hacmi / Veri Paralelliği", font_size=32, color=GREEN).next_to(title, DOWN)
-        
-        gpu_group = VGroup()
-        for x in range(8):
-            for y in range(6):
-                core = Square(side_length=0.3, color=GREEN, fill_opacity=0.5)
-                core.move_to(np.array([(x-3.5)*0.5, (y-2.5)*0.5 - 0.5, 0]))
-                gpu_group.add(core)
-                
-        self.play(FadeIn(header_gpu), ShowIncreasingSubsets(gpu_group, run_time=1))
-        
-        self.play(
-            gpu_group.animate.set_color(YELLOW),
-            run_time=0.5,
-            rate_func=there_and_back
-        )
-        
-        desc_gpu = Text("Şunlar için harika: Devasa benzer görevler (Pikseller, Matrisler)", font_size=24, color=GREY).next_to(gpu_group, DOWN, buff=0.5)
-        self.play(Write(desc_gpu))
-        
-        self.next_slide()
-        self.play(FadeOut(gpu_group), FadeOut(header_gpu), FadeOut(desc_gpu))
-
-        # -----------------------------------------
-        # KAVRAM 3: Heterojen
-        # -----------------------------------------
-        header_het = Text("Heterojen (CPU + GPU)", font_size=32, color=PURPLE).next_to(title, DOWN)
-        
-        cpu_icon = Square(side_length=1.5, color=BLUE, fill_opacity=0.5).move_to(LEFT*3 + DOWN*0.5)
-        cpu_lbl = Text("Ana Bilgisayar (CPU)", font_size=20).next_to(cpu_icon, UP)
-        
-        gpu_icon = Rectangle(width=3, height=2, color=GREEN, fill_opacity=0.5).move_to(RIGHT*2 + DOWN*0.5)
-        gpu_grid = VGroup(*[Square(side_length=0.2, color=WHITE, fill_opacity=0.2).move_to(gpu_icon.get_corner(UL) + RIGHT*(0.25+i*0.3) + DOWN*(0.25+j*0.3)) for i in range(8) for j in range(5)])
-        gpu_lbl = Text("Cihaz (GPU)", font_size=20).next_to(gpu_icon, UP)
-        
-        bus = DoubleArrow(cpu_icon.get_right(), gpu_icon.get_left(), color=WHITE)
-        
-        self.play(FadeIn(header_het), DrawBorderThenFill(cpu_icon), Write(cpu_lbl))
-        self.play(DrawBorderThenFill(gpu_icon), FadeIn(gpu_grid), Write(gpu_lbl))
-        self.play(GrowFromCenter(bus))
-        
-        data_packet = Dot(color=YELLOW).move_to(cpu_icon.get_center())
-        self.play(data_packet.animate.move_to(gpu_icon.get_center()), run_time=1)
-        self.play(Wiggle(gpu_icon))
-        
-        self.next_slide()
-        self.play(FadeOut(cpu_icon), FadeOut(cpu_lbl), FadeOut(gpu_icon), FadeOut(gpu_grid), FadeOut(gpu_lbl), FadeOut(bus), FadeOut(data_packet), FadeOut(header_het))
-
-        # -----------------------------------------
-        # KAVRAM 4: Kümeler
-        # -----------------------------------------
-        header_cluster = Text("Kümeler (Dağıtık)", font_size=32, color=ORANGE).next_to(title, DOWN)
-        
-        servers = VGroup()
-        for i in range(3):
-            rack = RoundedRectangle(corner_radius=0.1, height=1.5, width=1.0, color=WHITE)
-            lights = VGroup(*[Dot(radius=0.05, color=GREEN).move_to(rack.get_top() + DOWN*(0.2 + k*0.3) + LEFT*0.2) for k in range(3)])
-            server = VGroup(rack, lights)
-            server.move_to(LEFT*3 + RIGHT*(i*3) + DOWN*0.5)
-            servers.add(server)
-            
-        lines = VGroup(
-            Line(servers[0].get_right(), servers[1].get_left(), color=YELLOW),
-            Line(servers[1].get_right(), servers[2].get_left(), color=YELLOW)
-        )
-        
-        self.play(FadeIn(header_cluster), Create(servers))
-        self.play(ShowPassingFlash(lines.copy().set_color(YELLOW), time_width=0.5), run_time=1.5)
-        
-        desc_cluster = Text("Tek bir makine yetmediğinde kritiktir.", font_size=24, color=GREY).next_to(servers, DOWN, buff=0.5)
-        self.play(Write(desc_cluster))
-
-        self.next_slide()
-        self.play(FadeOut(servers), FadeOut(lines), FadeOut(header_cluster), FadeOut(desc_cluster))
-
-        # -----------------------------------------
-        # SON MESAJ
-        # -----------------------------------------
-        final_text = Paragraph(
-            "“Donanım sadece daha hızlı silikon değildir;",
-            "farklı yürütme modelleridir.”",
-            alignment="center",
-            font_size=36, color=YELLOW
-        )
-        self.play(Write(final_text))
-        
-        self.next_slide()
-        self.play(FadeOut(final_text), FadeOut(title))
-        self.wait(0.5)
-
     def chapter_6_cuda(self):
         # -----------------------------------------
         # KURULUM: Başlık
@@ -925,73 +783,6 @@ class ParallelComputingPresentation(Slide):
 
         # Cleanup
         self.play(FadeOut(Group(title, cpu_box, cpu_label, ram_label, gpu_box, gpu_label, vram_label, arrow_to_gpu, memcpy_label, data_packet, kernel_text, arrow_to_cpu, memcpy_back_label)))
-
-    def chapter_6_6_hierarchy_viz(self):
-        # -----------------------------------------
-        # NEW SECTION: THREAD HIERARCHY ZOOM
-        # -----------------------------------------
-        title = Text("2. Grid, Blocks, and Threads", font_size=40).to_edge(UP)
-        self.play(Write(title))
-
-        # --- Create a Grid ---
-        # 4 Blocks
-        blocks = VGroup()
-        for i in range(4):
-            block = Square(side_length=2, color=GREEN)
-            label = Text(f"Block {i}", font_size=20).move_to(block.get_top() + DOWN*0.3)
-            block.add(label)
-            blocks.add(block)
-        
-        blocks.arrange(RIGHT, buff=0.5)
-        self.play(Create(blocks))
-        self.next_slide() # Wait for user
-
-        # --- Zoom into Block 1 ---
-        # Fade out others
-        self.play(
-            blocks[0].animate.set_opacity(0.2),
-            blocks[2].animate.set_opacity(0.2),
-            blocks[3].animate.set_opacity(0.2),
-            blocks[1].animate.scale(2).move_to(ORIGIN)
-        )
-        
-        # --- Show Threads inside Block 1 ---
-        # 4 Threads inside the scaled block
-        threads = VGroup()
-        for i in range(4):
-            t = Circle(radius=0.3, color=RED, fill_opacity=0.5)
-            t_label = Text(f"t{i}", font_size=16).move_to(t)
-            t_group = VGroup(t, t_label)
-            threads.add(t_group)
-            
-        threads.arrange(RIGHT, buff=0.3).move_to(blocks[1].get_center() + DOWN*0.5)
-        
-        self.play(Create(threads))
-        self.next_slide() # Wait for user
-
-        # --- The Formula ---
-        formula = MathTex(
-            r"i = \text{blockIdx.x} \times \text{blockDim.x} + \text{threadIdx.x}"
-        ).to_edge(DOWN)
-        
-        self.play(Write(formula))
-        
-        # Highlight Block 1, Thread 2 calculation
-        # blockIdx = 1, blockDim = 4, threadIdx = 2 -> i = 1*4 + 2 = 6
-        
-        calc_text = MathTex(
-            r"i = 1 \times 4 + 2 = 6"
-        ).next_to(formula, UP)
-        
-        self.play(
-            Indicate(blocks[1]), # Block 1
-            Indicate(threads[2]), # Thread 2 (t2)
-            Write(calc_text)
-        )
-        self.next_slide() # Wait for user
-        
-        # Cleanup
-        self.play(FadeOut(Group(title, blocks, threads, formula, calc_text)))
 
     def chapter_kernel_configs(self):
         # -----------------------------------------
