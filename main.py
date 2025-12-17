@@ -5,17 +5,17 @@ import numpy as np
 class ParallelComputingPresentation(Slide):
     def construct(self):
         # Hikaye Akışı  
-        self.chapter_1_intro()      
-        self.chapter_2_why()        
-        self.chapter_3_apps()       
-        self.chapter_4_how()        
-        self.chapter_6_cuda()
-        self.chapter_6_5_memory_model()    # Host vs Device Visuals
-        self.chapter_8_cudathread()        # Deep dive into threadIdx/blockIdx
-        self.chapter_kernel_configs()      # <<<Blocks, Threads>>> Visualizer
-        self.chapter_9_code_walkthrough()  # Code Examples (CPU vs GPU)
-        self.chapter_7_perf()       
-
+        #self.chapter_1_intro()      
+        #self.chapter_2_why()        
+        #self.chapter_3_apps()       
+        #self.chapter_4_how()        
+        #self.chapter_6_cuda()
+        #self.chapter_6_5_memory_model()    # Host vs Device Visuals
+        #self.chapter_8_cudathread()        # Deep dive into threadIdx/blockIdx
+        #self.chapter_kernel_configs()      # <<<Blocks, Threads>>> Visualizer
+        #self.chapter_9_code_walkthrough()  # Code Examples (CPU vs GPU)
+        #self.chapter_7_perf()       
+        self.chapter_10_future()
     def chapter_1_intro(self):
         # -----------------------------------------
         # SLIDE 1: Başlık & Tanım
@@ -1343,3 +1343,93 @@ class ParallelComputingPresentation(Slide):
                     self.next_slide()
             
             self.wait(1)
+
+    def chapter_10_future(self):
+            # -----------------------------------------
+            # SLIDE 1: Buzdağının Görünen Kısmı
+            # -----------------------------------------
+            title = Text("Daha Gidecek Çok Yol Var...", font_size=40, color=BLUE).to_edge(UP)
+            self.play(Write(title))
+            self.next_slide()
+
+            # --- Topic 1: Memory (Bellek) ---
+            # Visual: A grid representing memory banks or coalescing
+            mem_icon = VGroup(*[Square(side_length=0.2, fill_opacity=0.8, color=GREEN) for _ in range(9)])
+            mem_icon.arrange_in_grid(3, 3, buff=0.05)
+            
+            mem_title = Text("Gelişmiş Bellek", font_size=24, color=GREEN).next_to(mem_icon, DOWN)
+            mem_details = Text(
+                "• Shared Memory\n• Memory Coalescing\n• Bank Conflicts",
+                font_size=16, color=GREY_A
+            ).next_to(mem_title, DOWN)
+            
+            mem_group = VGroup(mem_icon, mem_title, mem_details)
+
+            # --- Topic 2: Streams (Akışlar) ---
+            # Visual: Parallel arrows showing async execution
+            stream_icon = VGroup(
+                Arrow(start=LEFT, end=RIGHT, color=YELLOW, buff=0, stroke_width=4).scale(0.4),
+                Arrow(start=LEFT, end=RIGHT, color=YELLOW, buff=0, stroke_width=4).scale(0.4),
+                Arrow(start=LEFT, end=RIGHT, color=YELLOW, buff=0, stroke_width=4).scale(0.4)
+            ).arrange(DOWN, buff=0.15)
+            
+            stream_title = Text("Eşzamanlılık (Streams)", font_size=24, color=YELLOW).next_to(stream_icon, DOWN)
+            stream_details = Text(
+                "• Async Data Transfer\n• Kernel Overlapping\n• Multi-GPU",
+                font_size=16, color=GREY_A
+            ).next_to(stream_title, DOWN)
+            
+            stream_group = VGroup(stream_icon, stream_title, stream_details)
+
+            # --- Topic 3: Optimization (Optimizasyon) ---
+            # Visual: A gauge or gear representing tuning
+            opt_icon = VGroup(
+                Circle(radius=0.4, color=RED, stroke_width=4),
+                Line(ORIGIN, UP*0.3, color=RED, stroke_width=4).rotate(-45*DEGREES)
+            )
+            # Animate the needle later
+            
+            opt_title = Text("Mikro Optimizasyon", font_size=24, color=RED).next_to(opt_icon, DOWN)
+            opt_details = Text(
+                "• Warp Divergence\n• Occupancy Calculator\n• Instruction Level Opt.",
+                font_size=16, color=GREY_A
+            ).next_to(opt_title, DOWN)
+            
+            opt_group = VGroup(opt_icon, opt_title, opt_details)
+
+            # --- Arrange and Animate ---
+            # Position the three groups horizontally
+            all_topics = VGroup(mem_group, stream_group, opt_group).arrange(RIGHT, buff=1.5)
+            
+            # 1. Memory
+            self.play(FadeIn(mem_group, shift=UP))
+            self.play(mem_icon.animate.set_color(WHITE), run_time=0.5)
+            
+            # 2. Streams
+            self.play(FadeIn(stream_group, shift=UP))
+            self.play(LaggedStart(
+                *[s.animate.shift(RIGHT*0.2) for s in stream_icon], 
+                lag_ratio=0.2, run_time=1
+            ))
+            
+            # 3. Optimization
+            self.play(FadeIn(opt_group, shift=UP))
+            self.play(Rotate(opt_icon[1], angle=90*DEGREES, about_point=opt_icon[0].get_center()))
+
+            self.next_slide()
+
+            # -----------------------------------------
+            # SLIDE 2: Kapanış
+            # -----------------------------------------
+            self.play(
+                FadeOut(all_topics),
+                FadeOut(title)
+            )
+
+            final_text = Text("Dinlediğiniz İçin Teşekkürler", font_size=48, color=BLUE)
+            contact_info = Text("@meliksahsagun", font_size=24, color=GREY).next_to(final_text, DOWN, buff=0.5)
+
+            self.play(Write(final_text))
+            self.play(FadeIn(contact_info))
+            
+            self.wait(2)
