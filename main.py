@@ -603,7 +603,7 @@ class ParallelComputingPresentation(Slide):
         # -----------------------------------------
         # FAZ 1: Grafik Çağı (Tarih Öncesi)
         # -----------------------------------------
-        header_gfx = Text("Köken: Grafikler için Üretildi", font_size=32, color=BLUE).next_to(title, DOWN)
+        header_gfx = Text("Aslında grafikler için Üretildi", font_size=32, color=BLUE).next_to(title, DOWN)
         
         screen_border = Rectangle(width=4, height=3, color=WHITE)
         triangle = Triangle(color=RED, fill_opacity=0.8).scale(0.8)
@@ -622,7 +622,7 @@ class ParallelComputingPresentation(Slide):
         # -----------------------------------------
         # FAZ 2: Farkındalık (GPGPU)
         # -----------------------------------------
-        header_gpgpu = Text("Kavrayış: Bu sadece matematik!", font_size=32, color=YELLOW).next_to(title, DOWN)
+        header_gpgpu = Text("İşin Sonunda Matematik Değil Mi?", font_size=32, color=YELLOW).next_to(title, DOWN)
         
         matrix_nums = VGroup()
         for i in range(3):
