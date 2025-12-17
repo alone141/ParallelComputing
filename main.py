@@ -5,23 +5,23 @@ import numpy as np
 class ParallelComputingPresentation(Slide):
     def construct(self):
         # Hikaye Akışı  
-        #self.chapter_1_intro()      
-        #self.chapter_2_why()        
-        #self.chapter_3_apps()       
-        #self.chapter_4_how()        
-        ##self.chapter_5_hardware()   
-        #self.chapter_6_cuda()
+        self.chapter_1_intro()      
+        self.chapter_2_why()        
+        self.chapter_3_apps()       
+        self.chapter_4_how()        
+        #self.chapter_5_hardware()   
+        self.chapter_6_cuda()
         #
-        #self.chapter_6_5_memory_model()    # Host vs Device Visuals
+        self.chapter_6_5_memory_model()    # Host vs Device Visuals
         #self.chapter_6_6_hierarchy_viz()   # Grid/Block Zoom Visuals
-        #self.chapter_kernel_configs()      # <<<Blocks, Threads>>> Visualizer
-        #self.chapter_8_cudathread()        # Deep dive into threadIdx/blockIdx
+        self.chapter_8_cudathread()        # Deep dive into threadIdx/blockIdx
+        self.chapter_kernel_configs()      # <<<Blocks, Threads>>> Visualizer
         
         # --- NEW ADDITION ---
         self.chapter_9_code_walkthrough()  # Code Examples (CPU vs GPU)
         # --------------------
 
-        #self.chapter_7_perf()       
+        self.chapter_7_perf()       
 
     def chapter_1_intro(self):
         # -----------------------------------------
@@ -1344,7 +1344,7 @@ class ParallelComputingPresentation(Slide):
             steps = [
                 (1, "Reserve VRAM"),     # cudaMalloc
                 (3, "Send Data"),        # cudaMemcpy H2D
-                (5, "Execute!"),         # Kernel Launch
+                (5, "Execute"),         # Kernel Launch
                 (7, "Get Results"),     # cudaMemcpy D2H
                 (9, "Cleanup")          # cudaFree
             ]
