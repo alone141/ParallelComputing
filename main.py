@@ -181,7 +181,7 @@ class ParallelComputingPresentation(Slide):
 
         self.play(Create(axes), Write(x_label), Write(y_label))
         
-        self.next_slide()
+        #self.next_slide()
 
         # -----------------------------------------
         # ADIM 1: Üstel Eğri
@@ -218,7 +218,7 @@ class ParallelComputingPresentation(Slide):
             run_time=3
         )
         
-        self.next_slide()
+        #self.next_slide()
 
         # -----------------------------------------
         # ADIM 3: Hızın Maliyeti
@@ -245,7 +245,7 @@ class ParallelComputingPresentation(Slide):
         
         self.play(Create(brace), Write(text_cost))
 
-        self.next_slide()
+        #self.next_slide()
 
         self.play(
             FadeOut(graph), FadeOut(axes), FadeOut(dot), FadeOut(limit_line), 
