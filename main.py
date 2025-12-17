@@ -5,16 +5,16 @@ import numpy as np
 class ParallelComputingPresentation(Slide):
     def construct(self):
         # Hikaye Akışı  
-        #self.chapter_1_intro()      
-        #self.chapter_2_why()        
-        #self.chapter_3_apps()       
-        #self.chapter_4_how()        
-        #self.chapter_6_cuda()
-        #self.chapter_6_5_memory_model()    # Host vs Device Visuals
-        #self.chapter_8_cudathread()        # Deep dive into threadIdx/blockIdx
-        #self.chapter_kernel_configs()      # <<<Blocks, Threads>>> Visualizer
-        #self.chapter_9_code_walkthrough()  # Code Examples (CPU vs GPU)
-        #self.chapter_7_perf()       
+        self.chapter_1_intro()      
+        self.chapter_2_why()        
+        self.chapter_3_apps()       
+        self.chapter_4_how()        
+        self.chapter_6_cuda()
+        self.chapter_6_5_memory_model()    # Host vs Device Visuals
+        self.chapter_8_cudathread()        # Deep dive into threadIdx/blockIdx
+        self.chapter_kernel_configs()      # <<<Blocks, Threads>>> Visualizer
+        self.chapter_9_code_walkthrough()  # Code Examples (CPU vs GPU)
+        self.chapter_7_perf()       
         self.chapter_10_future()
     def chapter_1_intro(self):
         # -----------------------------------------
