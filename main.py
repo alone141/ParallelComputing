@@ -648,7 +648,7 @@ class ParallelComputingPresentation(Slide):
         self.play(FadeIn(header_cuda))
         
         code_bg_left = Rectangle(width=3, height=3.5, color=GREY, fill_opacity=0.2).shift(LEFT*3)
-        code_gfx = Text("glBegin();\nglVertex3f();\nTexture();\n// Hacky!", font_size=18,  color=RED).move_to(code_bg_left)
+        code_gfx = Text("glBegin();\nglVertex3f();\nTexture();\n// ???!", font_size=18,  color=RED).move_to(code_bg_left)
         label_left = Text("2007 Öncesi (Grafik API)", font_size=20, color=RED).next_to(code_bg_left, DOWN)
         
         code_bg_right = Rectangle(width=4, height=3.5, color=GREEN, fill_opacity=0.2).shift(RIGHT*3)
@@ -790,17 +790,17 @@ class ParallelComputingPresentation(Slide):
         # -----------------------------------------
         
         # Title that stays at the top
-        title = Text("CUDA Kernel Configurations", font_size=48).to_edge(UP)
+        title = Text("CUDA Thread Manipülasyonu", font_size=48).to_edge(UP)
         self.play(Write(title))
         self.next_slide()
 
         # We will cycle through these configurations
         # Format: (blocks, threads, code_string)
         configs = [
-            (1, 1, "printHelloGPU<<<1, 1>>>();"),
-            (1, 5, "printHelloGPU<<<1, 5>>>();"),
-            (5, 1, "printHelloGPU<<<5, 1>>>();"),
-            (5, 5, "printHelloGPU<<<5, 5>>>();"),
+            (1, 1, "VectorAdd<<<1, 1>>>();"),
+            (1, 5, "VectorAdd<<<1, 5>>>();"),
+            (5, 1, "VectorAdd<<<5, 1>>>();"),
+            (5, 5, "VectorAdd<<<5, 5>>>();"),
         ]
 
         # Keep track of previous objects to transform/fade out
@@ -861,9 +861,9 @@ class ParallelComputingPresentation(Slide):
             # 3. Create Explanatory Text (The Math)
             total_threads = blocks * threads
             explanation = VGroup(
-                Text(f"Grid Configuration: {blocks} Block(s)", font_size=24, color=BLUE),
-                Text(f"Block Configuration: {threads} Thread(s) per Block", font_size=24, color=GREEN),
-                Text(f"Total Execution: {blocks} x {threads} = {total_threads} Run(s)", font_size=30, color=WHITE)
+                Text(f"Grid Yapısı: Her gridde {blocks} Block", font_size=24, color=BLUE),
+                Text(f"Block Yapısı:  Her Blokda {threads} Thread", font_size=24, color=GREEN),
+                Text(f"Her geçişte {blocks} x {threads} = {total_threads} İşlem", font_size=30, color=WHITE)
             ).arrange(DOWN, buff=0.2).next_to(gpu_grid, DOWN, buff=1.0)
 
             # 4. Animation Sequence
@@ -907,7 +907,7 @@ class ParallelComputingPresentation(Slide):
         # ---------------------------------------------------------
         # SECTION 1: The Basic Unit (The Thread)
         # ---------------------------------------------------------
-        title = Text("CUDA Thread Hierarchy", font_size=48).to_edge(UP)
+        title = Text("CUDA Thread Yapısı", font_size=48).to_edge(UP)
         self.play(Write(title))
         
         # Create a single thread representation
@@ -975,7 +975,7 @@ class ParallelComputingPresentation(Slide):
         self.play(FadeIn(grid_group[1:]))
         
         grid_rect = SurroundingRectangle(grid_group, color=RED, buff=0.2)
-        grid_label = Text("Grid (Kernel Launch)", color=RED, font_size=30).next_to(grid_rect, UP)
+        grid_label = Text("Grid", color=RED, font_size=30).next_to(grid_rect, UP)
         
         self.play(Create(grid_rect), Write(grid_label))
         
@@ -1029,7 +1029,7 @@ class ParallelComputingPresentation(Slide):
             # NEW SECTION: CODE WALKTHROUGH
             # -----------------------------------------
             # Title
-            title = Text("Writing the Code: Vector Addition", font_size=40, color=BLUE).to_edge(UP)
+            title = Text("Kısa Örnek: Vector Add", font_size=40, color=BLUE).to_edge(UP)
             self.play(Write(title))
             self.next_slide()
 
@@ -1081,7 +1081,7 @@ class ParallelComputingPresentation(Slide):
             
             # 1. Highlight __global__ (Line 0)
             rect_global = SurroundingRectangle(gpu_code[2][0], color=YELLOW, buff=0.05)
-            txt_global = Text("Runs on Device, Called from Host", font_size=20, color=YELLOW).next_to(rect_global, UP, buff=0.2)
+            txt_global = Text("Device üstünde çalışır, Host tarafından çağırılır", font_size=20, color=YELLOW).next_to(rect_global, UP, buff=0.2)
             
             self.play(Create(rect_global), Write(txt_global))
             self.next_slide()
@@ -1089,7 +1089,7 @@ class ParallelComputingPresentation(Slide):
             
             # 2. Highlight Index Calculation (Line 1)
             rect_idx = SurroundingRectangle(gpu_code[2][1], color=YELLOW, buff=0.05)
-            txt_idx = Text("Calculate Unique Global Index", font_size=20, color=YELLOW).next_to(rect_idx.get_center(), RIGHT + DOWN, buff=0.2)
+            txt_idx = Text("Threadin index hesaplaması", font_size=20, color=YELLOW).next_to(rect_idx.get_center(), RIGHT + DOWN, buff=0.2)
             
             self.play(Create(rect_idx), Write(txt_idx))
             self.next_slide()
@@ -1104,7 +1104,7 @@ class ParallelComputingPresentation(Slide):
             self.play(FadeOut(rect_guard), FadeOut(txt_guard), FadeOut(gpu_code), FadeOut(lbl_gpu))
 
             # --- PART 3: The Host API ---
-            host_title = Text("The Host Side (Main)", font_size=32, color=BLUE).next_to(title, DOWN)
+            host_title = Text("Host(CPU) tarafında olanlar (Main)", font_size=32, color=BLUE).next_to(title, DOWN)
             self.play(Write(host_title))
             
             host_code_str = """int main() {
