@@ -16,6 +16,7 @@ class ParallelComputingPresentation(Slide):
         self.chapter_9_code_walkthrough()  # Code Examples (CPU vs GPU)
         self.chapter_7_perf()       
         self.chapter_10_future()
+
     def chapter_1_intro(self):
         # -----------------------------------------
         # SLIDE 1: Başlık & Tanım
@@ -23,7 +24,7 @@ class ParallelComputingPresentation(Slide):
         title = Text("Paralel Hesaplama Nedir?", font_size=48, color=BLUE)
         self.play(Write(title))
         
-        self.next_slide() 
+        self.next_slide(notes="Hoş geldiniz. Bugün paralel hesaplamanın ne olduğunu ve neden modern bilgisayar biliminin temeli haline geldiğini konuşacağız.") 
         
         self.play(title.animate.to_edge(UP))
 
@@ -36,7 +37,7 @@ class ParallelComputingPresentation(Slide):
         
         self.play(Write(def_text))
         
-        self.next_slide()
+        self.next_slide(notes="En basit tanımıyla: Bir problemi çözmek için işin birden fazla parçasını aynı anda yapma sanatıdır.")
         
         self.play(FadeOut(def_text))
 
@@ -46,7 +47,7 @@ class ParallelComputingPresentation(Slide):
         scale_header = Text("Farklı Ölçeklerde Mevcuttur", font_size=40, color=TEAL).next_to(title, DOWN)
         self.play(FadeIn(scale_header))
         
-        self.next_slide()
+        self.next_slide(notes="Paralellik tek bir boyutta gerçekleşmez. Donanımın en küçüğünden en büyüğüne kadar her seviyede mevcuttur.")
 
         # -----------------------------------------
         # SLIDE 3: Ölçek 1 - SIMD
@@ -62,7 +63,7 @@ class ParallelComputingPresentation(Slide):
         self.play(Write(s1_text))
         self.play(Create(vec_box), FadeIn(vec_data), Write(vec_label))
         
-        self.next_slide()
+        self.next_slide(notes="En küçük ölçekte, SIMD (Single Instruction Multiple Data) vardır. Tek bir CPU çekirdeğinin içinde, tek bir komutla 4 veya 8 sayı üzerinde aynı anda işlem yapabiliriz.")
         
         self.play(FadeOut(simd_group), FadeOut(s1_text))
 
@@ -85,7 +86,7 @@ class ParallelComputingPresentation(Slide):
         self.play(Write(s2_text))
         self.play(Create(chip_bg), GrowFromCenter(cores), Write(core_labels))
         
-        self.next_slide()
+        self.next_slide(notes="Bir üst seviyeye çıktığımızda Multicore işlemcileri görürüz. Burada farklı çekirdekler farklı iş parçacıklarını bağımsız olarak yürütebilir.")
 
         self.play(FadeOut(s2_text))
 
@@ -107,7 +108,7 @@ class ParallelComputingPresentation(Slide):
         self.play(Write(s3_text))
         self.play(Transform(cpu_group, gpu_group), Create(gpu_bg), ShowIncreasingSubsets(small_cores))
         
-        self.next_slide()
+        self.next_slide(notes="Bunu daha da ölçeklersek GPU dünyasına gireriz. CPU'daki az sayıda güçlü çekirdek yerine, GPU'da binlerce daha küçük ama verimli çekirdek bulunur. Bugünkü odağımız burası olacak.")
 
         self.play(FadeOut(cpu_group), FadeOut(s3_text))
 
@@ -130,7 +131,7 @@ class ParallelComputingPresentation(Slide):
         self.play(Transform(gpu_group, server1), DrawBorderThenFill(server2), DrawBorderThenFill(server3))
         self.play(Create(lines))
         
-        self.next_slide()
+        self.next_slide(notes="Ve son olarak, sınırlarımızı aştığımızda Dağıtık Sistemler devreye girer. Birden fazla makinenin ağ üzerinden haberleşerek devasa problemleri çözmesidir.")
 
         self.play(FadeOut(gpu_group), FadeOut(dist_group), FadeOut(s4_text), FadeOut(scale_header))
 
@@ -149,7 +150,7 @@ class ParallelComputingPresentation(Slide):
 
         self.play(Write(anchor_text), run_time=3)
         
-        self.next_slide()
+        self.next_slide(notes="Özetle: Çipten veri merkezine kadar stratejimiz aynıdır: Eşzamanlı çalışmayı artır, bekleme süresini azalt.")
         
         self.play(FadeOut(anchor_text), FadeOut(title))
         self.wait(0.5)
@@ -161,7 +162,7 @@ class ParallelComputingPresentation(Slide):
         title = Text("Neden İhtiyacımız Var?", font_size=48, color=BLUE)
         self.play(Write(title))
         
-        self.next_slide()
+        self.next_slide(notes="Peki, neden buna muhtacız? Neden sadece CPU hızını artırıp geçemiyoruz?")
         
         self.play(title.animate.to_edge(UP))
 
@@ -181,7 +182,8 @@ class ParallelComputingPresentation(Slide):
 
         self.play(Create(axes), Write(x_label), Write(y_label))
         
-        #self.next_slide()
+        # Uncommented to align with speaker notes
+        self.next_slide(notes="Cevap fizikte gizli. Güç tüketimi ve ısı, frekansın küpüyle orantılı artar. İşlemcilerimizi hızlandırdıkça, bir duvara tosladık: Isı Duvarı.")
 
         # -----------------------------------------
         # ADIM 1: Üstel Eğri
@@ -218,7 +220,8 @@ class ParallelComputingPresentation(Slide):
             run_time=3
         )
         
-        #self.next_slide()
+        # Uncommented to align with speaker notes
+        self.next_slide(notes="Bu grafik, hız arttıkça ısının nasıl kontrolden çıktığını gösteriyor. Soğutma limitine (kırmızı çizgi) çok hızlı ulaşıyoruz.")
 
         # -----------------------------------------
         # ADIM 3: Hızın Maliyeti
@@ -233,7 +236,7 @@ class ParallelComputingPresentation(Slide):
         label_a = Text("3 GHz", font_size=20, color=GREEN).next_to(pt_a, LEFT)
         self.play(Write(label_a))
         
-        self.next_slide()
+        self.next_slide(notes="Bakın, saat hızını sadece %33 artırmak (3GHz'den 4GHz'e), ısıyı ve güç tüketimini %140 artırıyor. Bu sürdürülebilir bir mühendislik değil.")
         
         self.play(FadeIn(pt_b), Create(line_b))
         label_b = Text("4 GHz", font_size=20, color=RED).next_to(pt_b, LEFT)
@@ -245,7 +248,8 @@ class ParallelComputingPresentation(Slide):
         
         self.play(Create(brace), Write(text_cost))
 
-        #self.next_slide()
+        # Uncommented to align with speaker notes
+        self.next_slide(notes="Bu yüzden endüstri yön değiştirdi.")
 
         self.play(
             FadeOut(graph), FadeOut(axes), FadeOut(dot), FadeOut(limit_line), 
@@ -270,7 +274,7 @@ class ParallelComputingPresentation(Slide):
         sub_text = Text("Paralellik, daha iyi verimliliğe giden yoldur.", color=YELLOW, font_size=24).next_to(eff_eq, DOWN, buff=1)
         self.play(FadeIn(sub_text))
 
-        self.next_slide()
+        self.next_slide(notes="Daha hızlı gitmek yerine, yolu genişletmeye karar verdik. Paralellik, verimliliğe giden tek yoldur.")
         
         self.play(FadeOut(eff_eq), FadeOut(sub_text), FadeOut(point3_text))
 
@@ -288,7 +292,7 @@ class ParallelComputingPresentation(Slide):
         
         self.play(Write(bridge_text), run_time=2)
         
-        self.next_slide()
+        self.next_slide(notes="Özetle: Performans artışı, daha hızlı çekirdeklerden daha fazla çekirdeğe ve özelleşmiş donanımlara kaydı.")
         
         self.play(FadeOut(bridge_text), FadeOut(title))
         self.wait(0.5)
@@ -307,7 +311,7 @@ class ParallelComputingPresentation(Slide):
         
         self.play(DrawBorderThenFill(hub_circle), Write(hub_text))
         
-        self.next_slide()
+        self.next_slide(notes="Peki bu devasa hesaplama gücüyle neler inşa ediyoruz? Merkezde paralel hesaplama var.")
 
         # -----------------------------------------
         # 6 KATEGORİYİ TANIMLAMA
@@ -400,7 +404,7 @@ class ParallelComputingPresentation(Slide):
         # 6. Finans
         self.play(Create(line_6), Create(fin_line), Write(fin_label))
         self.play(Wiggle(fin_line), run_time=0.5) 
-        self.next_slide()
+        self.next_slide(notes="Bilimsel simülasyonlardan Yapay Zekaya, Medya işlemeden Finansal modellemeye kadar hepsinin ortak noktası: Veri paralel doğaları.")
 
         # -----------------------------------------
         # KAPANIŞ MESAJI
@@ -413,7 +417,7 @@ class ParallelComputingPresentation(Slide):
 
         self.play(FadeIn(final_box), Write(final_text))
         
-        self.next_slide()
+        self.next_slide(notes="Çoğu modern iş yükü doğası gereği veri paraleldir.")
         
         # Temizlik
         all_objs = VGroup(
@@ -434,7 +438,7 @@ class ParallelComputingPresentation(Slide):
         # -----------------------------------------
         title = Text("4. Bunu Nasıl Yapabiliriz?", font_size=40, color=BLUE).to_edge(UP)
         self.play(Write(title))
-        self.next_slide()
+        self.next_slide(notes="Bunu nasıl yapıyoruz? Temel yöntemlerimiz neler?")
 
         # -----------------------------------------
         # KAVRAM 1: Veri Paralelliği
@@ -470,7 +474,7 @@ class ParallelComputingPresentation(Slide):
         text_data = Text("Aynı fonksiyon, farklı veri", font_size=24).next_to(array_group, DOWN, buff=1.5)
         self.play(Write(text_data))
         
-        self.next_slide()
+        self.next_slide(notes="Veri Paralelliği: En yaygın yöntemdir. Aynı işlemi, verinin farklı parçalarına aynı anda uygularız.")
         self.play(FadeOut(array_group), FadeOut(header_data), FadeOut(text_data), FadeOut(chunk1), FadeOut(chunk2), FadeOut(chunk3), FadeOut(chunk4))
 
         # -----------------------------------------
@@ -503,7 +507,7 @@ class ParallelComputingPresentation(Slide):
         text_task = Text("Farklı fonksiyonlar eşzamanlı", font_size=24).next_to(labels, DOWN, buff=0.5)
         self.play(Write(text_task))
 
-        self.next_slide()
+        self.next_slide(notes="Görev Paralelliği: Farklı işleri (Arayüz, Ağ, Hesaplama) aynı anda yapmaktır.")
         self.play(FadeOut(tasks), FadeOut(labels), FadeOut(header_task), FadeOut(text_task))
 
         # -----------------------------------------
@@ -542,7 +546,7 @@ class ParallelComputingPresentation(Slide):
         text_pipe = Text("Akış işleme (Montaj Hattı)", font_size=24).next_to(stages, DOWN)
         self.play(Write(text_pipe))
 
-        self.next_slide()
+        self.next_slide(notes="Pipeline: Bir fabrikanın montaj hattı gibi. Veri bir aşamadan diğerine akar, her istasyon sürekli doludur.")
         self.play(FadeOut(stages), FadeOut(arrow1), FadeOut(arrow2), FadeOut(item1), FadeOut(item2), FadeOut(header_pipe), FadeOut(text_pipe))
 
         # -----------------------------------------
@@ -573,7 +577,7 @@ class ParallelComputingPresentation(Slide):
         text_red = Text("Sonuçları birleştirme (Map -> Reduce)", font_size=24).next_to(l3_node, RIGHT)
         self.play(Write(text_red))
         
-        self.next_slide()
+        self.next_slide(notes="İndirgeme (Reduction): Milyarlarca veriyi tek bir sonuca (örneğin toplama veya ortalama) indirgemek için kullandığımız ağaç yapısıdır.")
         self.play(FadeOut(l1_nodes), FadeOut(l2_nodes), FadeOut(l3_node), FadeOut(lines), FadeOut(header_red), FadeOut(text_red))
 
         # -----------------------------------------
@@ -588,7 +592,7 @@ class ParallelComputingPresentation(Slide):
         )
         self.play(Write(final_text))
         
-        self.next_slide()
+        self.next_slide(notes="Önemli olan: Seçtiğiniz mimari, probleminizin sunduğu paralellik türüyle eşleşmelidir.")
         self.play(FadeOut(final_text), FadeOut(title))
         self.wait(0.5)
 
@@ -598,7 +602,7 @@ class ParallelComputingPresentation(Slide):
         # -----------------------------------------
         title = Text("CUDA'nın Ortaya Çıkışı ve Tarihi", font_size=40, color=BLUE).to_edge(UP)
         self.play(Write(title))
-        self.next_slide()
+        self.next_slide(notes="GPU'ların hikayesi oyunlarla başladı.")
 
         # -----------------------------------------
         # FAZ 1: Grafik Çağı (Tarih Öncesi)
@@ -617,7 +621,7 @@ class ParallelComputingPresentation(Slide):
         
         self.play(Rotate(triangle, angle=TAU, run_time=2))
         
-        self.next_slide()
+        self.next_slide(notes="Ekrana üçgenler çizmek için tasarlanmışlardı.")
 
         # -----------------------------------------
         # FAZ 2: Farkındalık (GPGPU)
@@ -638,7 +642,7 @@ class ParallelComputingPresentation(Slide):
         
         self.play(Indicate(matrix_nums, color=WHITE))
         
-        self.next_slide()
+        self.next_slide(notes="Ama sonra fark ettik ki; ekrandaki her piksel aslında bir matematik, her üçgen bir matris işlemidir. Grafik kartı aslında süper hızlı bir hesap makinesiydi.")
         self.play(FadeOut(screen_border), FadeOut(matrix_nums), FadeOut(wire), FadeOut(header_gpgpu),FadeOut(gpu_label))
 
         # -----------------------------------------
@@ -660,14 +664,14 @@ class ParallelComputingPresentation(Slide):
         self.play(
             FadeIn(code_bg_left), Write(code_gfx), Write(label_left)
         )
-        self.next_slide()
+        self.next_slide(notes="Eskiden bu gücü kullanmak için grafik API'lerini 'kandırmamız' gerekiyordu.")
         
         self.play(
             GrowArrow(arrow),
             FadeIn(code_bg_right), Write(code_cuda), Write(label_right)
         )
         
-        self.next_slide()
+        self.next_slide(notes="2007'de NVIDIA, CUDA'yı çıkardı. Artık C++ yazar gibi GPU programlayabiliyoruz.")
         self.play(FadeOut(code_bg_left), FadeOut(code_gfx), FadeOut(label_left), FadeOut(arrow), FadeOut(code_bg_right), FadeOut(code_cuda), FadeOut(label_right), FadeOut(header_cuda))
 
         # -----------------------------------------
@@ -701,7 +705,7 @@ class ParallelComputingPresentation(Slide):
         self.play(LaggedStart(*[FadeIn(b, shift=DOWN) for b in lib_blocks], lag_ratio=0.2))
         self.play(GrowFromCenter(app_layer), Write(app_txt))
         
-        self.next_slide()
+        self.next_slide(notes="Bugün bu temel üzerine devasa bir kütüphane ekosistemi kuruldu. cuBLAS, cuDNN gibi araçlar modern yapay zekayı mümkün kıldı.")
         self.play(FadeOut(layer_cuda), FadeOut(txt_cuda), FadeOut(lib_blocks), FadeOut(app_layer), FadeOut(app_txt), FadeOut(header_eco))
 
         # -----------------------------------------
@@ -716,7 +720,7 @@ class ParallelComputingPresentation(Slide):
         )
         self.play(Write(final_text))
         
-        self.next_slide()
+        self.next_slide(notes="CUDA pratik ve geliştirici dostu GPU hesaplama için büyük bir dönüm noktasıdır.")
         self.play(FadeOut(final_text), FadeOut(title))
         self.wait(0.5)
 
@@ -741,7 +745,7 @@ class ParallelComputingPresentation(Slide):
             Create(cpu_box), Write(cpu_label), Write(ram_label),
             Create(gpu_box), Write(gpu_label), Write(vram_label)
         )
-        self.next_slide()  # Wait for user
+        self.next_slide(notes="Bir CUDA programcısının anlaması gereken ilk şey: İki farklı beynimiz var. Host (CPU) ve Device (GPU). Kendi bellekleri, kendi alanları var.")
 
         # --- Data Transfer (PCIe Bus) ---
         arrow_to_gpu = Arrow(cpu_box.get_right(), gpu_box.get_left(), buff=0.1, color=YELLOW)
@@ -755,7 +759,7 @@ class ParallelComputingPresentation(Slide):
             Write(memcpy_label),
             data_packet.animate.move_to(gpu_box.get_center())
         )
-        self.next_slide() # Wait for user
+        self.next_slide(notes="Veriyi işlemden önce CPU'dan GPU'ya göndermeliyiz (cudaMemcpy). Bu hat (PCIe), sistemin en yavaş kısmıdır. Darboğaz burasıdır.")
 
         # --- Kernel Launch ---
         kernel_text = Text("Kernel Launch\n(Compute)", font_size=20, color=RED).next_to(arrow_to_gpu, DOWN)
@@ -764,7 +768,7 @@ class ParallelComputingPresentation(Slide):
         self.play(Write(kernel_text))
         self.play(processing_flash)
         self.play(data_packet.animate.set_color(RED)) # Data processed
-        self.next_slide() # Wait for user
+        self.next_slide(notes="Veri karşıya geçtiğinde, 'Kernel'ı başlatırız. GPU'daki binlerce çekirdek veriyi paralel olarak işler.")
 
         # --- Copy Back ---
         arrow_to_cpu = Arrow(gpu_box.get_left(), cpu_box.get_right(), buff=0.1, color=YELLOW).shift(DOWN * 0.5)
@@ -779,7 +783,7 @@ class ParallelComputingPresentation(Slide):
         self.play(Write(memcpy_back_label))
         
         self.play(data_packet.animate.move_to(cpu_box.get_center()))
-        self.next_slide() # Wait for user
+        self.next_slide(notes="İş bitince sonucu tekrar CPU'ya geri alırız. Tüm bu dansı yönetmek sizin sorumluluğunuzdadır.")
 
         # Cleanup
         self.play(FadeOut(Group(title, cpu_box, cpu_label, ram_label, gpu_box, gpu_label, vram_label, arrow_to_gpu, memcpy_label, data_packet, kernel_text, arrow_to_cpu, memcpy_back_label)))
@@ -792,7 +796,7 @@ class ParallelComputingPresentation(Slide):
         # Title that stays at the top
         title = Text("CUDA Thread Manipülasyonu", font_size=48).to_edge(UP)
         self.play(Write(title))
-        self.next_slide()
+        self.next_slide(notes="Kernel konfigürasyonu (<<<Blok Sayısı, Thread Sayısı>>>) ile donanımı veriye göre şekillendiririz.")
 
         # We will cycle through these configurations
         # Format: (blocks, threads, code_string)
@@ -898,7 +902,7 @@ class ParallelComputingPresentation(Slide):
             prev_stats = explanation
 
             # Pause for slide
-            self.next_slide()
+            self.next_slide(notes=f"Konfigürasyon: {blocks} Blok, {threads} Thread. Toplam {blocks*threads} eşzamanlı işlem. Donanımı veriye göre şekillendiriyoruz.")
 
         # Clear screen at end
         self.play(FadeOut(prev_group), FadeOut(prev_stats), FadeOut(prev_code), FadeOut(title))
@@ -917,7 +921,7 @@ class ParallelComputingPresentation(Slide):
         self.play(DrawBorderThenFill(thread_box), Write(thread_label))
         
         # Pause: Explain that a thread is the smallest unit of execution
-        self.next_slide() 
+        self.next_slide(notes="CUDA'nın hiyerarşisi şöyledir: En altta Thread (İş parçacığı) var.")
         
         # ---------------------------------------------------------
         # SECTION 2: Thread Block (Grouping Threads)
@@ -952,7 +956,7 @@ class ParallelComputingPresentation(Slide):
         self.play(FadeIn(code_tidx))
         
         # Pause: Explain blockDim and threadIdx
-        self.next_slide()
+        self.next_slide(notes="Thread'ler birleşip Block'ları oluşturur.")
 
         # ---------------------------------------------------------
         # SECTION 3: The Grid (Grouping Blocks)
@@ -980,7 +984,7 @@ class ParallelComputingPresentation(Slide):
         self.play(Create(grid_rect), Write(grid_label))
         
         # Pause: Explain gridDim and blockIdx
-        self.next_slide()
+        self.next_slide(notes="Bloklar da birleşip Grid'i oluşturur. Bir kernel başlattığınızda aslında bir Grid başlatırsınız.")
         
         # ---------------------------------------------------------
         # SECTION 4: Global Index Calculation
@@ -1019,7 +1023,7 @@ class ParallelComputingPresentation(Slide):
         
         self.play(TransformFromCopy(formula, calc_text))
         
-        self.next_slide()
+        self.next_slide(notes="Peki her thread, hangi veriyi işleyeceğini nasıl bilir? İşte bu formülle. Her thread, blok numarası ve kendi ID'sini kullanarak global, benzersiz bir kimlik hesaplar.")
         
         # Clean up
         self.play(FadeOut(Group(*self.mobjects)))
@@ -1031,7 +1035,7 @@ class ParallelComputingPresentation(Slide):
             # Title
             title = Text("Kısa Örnek: Vector Add", font_size=40, color=BLUE).to_edge(UP)
             self.play(Write(title))
-            self.next_slide()
+            self.next_slide(notes="Koda bakalım.")
 
             # --- PART 1: The CPU Way ---
             cpu_code_str = """void vectorAdd(int *a, int *b, int *c, int n) {
@@ -1050,7 +1054,7 @@ class ParallelComputingPresentation(Slide):
             lbl_cpu = Text("Standard C++ (CPU)", font_size=24, color=GREY).next_to(cpu_code, UP)
 
             self.play(FadeIn(cpu_code), Write(lbl_cpu))
-            self.next_slide()
+            self.next_slide(notes="Standart C++'da bir vektör toplama işlemi for döngüsü ile yapılır. Sırayla: 0, 1, 2...")
 
             # --- PART 2: Transforming to GPU ---
             gpu_code_str = """__global__ void vectorAdd(int *a, int *b, int *c, int n) {
@@ -1074,7 +1078,7 @@ class ParallelComputingPresentation(Slide):
                 ReplacementTransform(cpu_code, gpu_code),
                 ReplacementTransform(lbl_cpu, lbl_gpu)
             )
-            self.next_slide()
+            self.next_slide(notes="CUDA'da ise döngü yoktur. Döngünün yerini Grid alır.")
             
             # --- HIGHLIGHTING SECTIONS (FIXED INDICES) ---
             # Note: We use gpu_code[2] to access the code lines VGroup
@@ -1084,7 +1088,7 @@ class ParallelComputingPresentation(Slide):
             txt_global = Text("Device üstünde çalışır, Host tarafından çağırılır", font_size=20, color=YELLOW).next_to(rect_global, UP, buff=0.2)
             
             self.play(Create(rect_global), Write(txt_global))
-            self.next_slide()
+            self.next_slide(notes="__global__ etiketi, bu fonksiyonun GPU'da çalışacağını söyler.")
             self.play(FadeOut(rect_global), FadeOut(txt_global))
             
             # 2. Highlight Index Calculation (Line 1)
@@ -1092,7 +1096,7 @@ class ParallelComputingPresentation(Slide):
             txt_idx = Text("Threadin index hesaplaması", font_size=20, color=YELLOW).next_to(rect_idx.get_center(), RIGHT + DOWN, buff=0.2)
             
             self.play(Create(rect_idx), Write(txt_idx))
-            self.next_slide()
+            self.next_slide(notes="Her thread kendi indeksini hesaplar.")
             self.play(FadeOut(rect_idx), FadeOut(txt_idx))
             
             # 3. Highlight Guard Check (Line 2)
@@ -1100,7 +1104,7 @@ class ParallelComputingPresentation(Slide):
             txt_guard = Text("Boundary Check (Safety)", font_size=20, color=YELLOW).next_to(rect_guard, RIGHT, buff=0.2)
             
             self.play(Create(rect_guard), Write(txt_guard))
-            self.next_slide()
+            self.next_slide(notes="Sınır kontrolü yaparız.")
             self.play(FadeOut(rect_guard), FadeOut(txt_guard), FadeOut(gpu_code), FadeOut(lbl_gpu))
 
             # --- PART 3: The Host API ---
@@ -1128,19 +1132,19 @@ class ParallelComputingPresentation(Slide):
             ).scale(0.8).next_to(host_title, DOWN)
             
             self.play(FadeIn(host_code))
-            self.next_slide()
+            self.next_slide(notes="Host tarafında ise 3 adımlı bir ritüelimiz var.")
             
             # Step through important lines
             # Indices manually checked against the string above (0-indexed)
             steps = [
-                (1, "Reserve VRAM"),     # cudaMalloc
-                (3, "Send Data"),        # cudaMemcpy H2D
-                (5, "Execute"),         # Kernel Launch
-                (7, "Get Results"),     # cudaMemcpy D2H
-                (9, "Cleanup")          # cudaFree
+                (1, "Reserve VRAM", "Yer Ayır (cudaMalloc)"),     # cudaMalloc
+                (3, "Send Data", "Kopyala (cudaMemcpy)"),        # cudaMemcpy H2D
+                (5, "Execute", "Başlat (Kernels)"),         # Kernel Launch
+                (7, "Get Results", "Sonucu Al"),     # cudaMemcpy D2H
+                (9, "Cleanup", "Temizle")          # cudaFree
             ]
             
-            for line_idx, note in steps:
+            for line_idx, note, tr_note in steps:
                 # Safely access the line using [2] for the code block
                 target_line = host_code[2][line_idx]
                 
@@ -1148,7 +1152,7 @@ class ParallelComputingPresentation(Slide):
                 txt = Text(note, font_size=15, color=YELLOW).next_to(arrow, LEFT)
                 
                 self.play(Create(arrow), Write(txt), run_time=0.5)
-                self.next_slide()
+                self.next_slide(notes=tr_note)
                 self.play(FadeOut(arrow), FadeOut(txt), run_time=0.3)
                 
             self.play(FadeOut(host_code), FadeOut(host_title), FadeOut(title))
@@ -1322,7 +1326,7 @@ class ParallelComputingPresentation(Slide):
                     if len(current_crossover) > 0:
                         self.play(FadeIn(current_crossover))
                     
-                    self.next_slide()
+                    self.next_slide(notes="Teori güzel, peki ya gerçekler? Burada farklı algoritmaların performansını logaritmik ölçekte görüyoruz.")
 
                 else:
                     # DÜZELTME: Tex yerine Text kullanıldı
@@ -1340,7 +1344,7 @@ class ParallelComputingPresentation(Slide):
                     if len(current_crossover) > 0:
                         self.play(FadeIn(current_crossover))
                     
-                    self.next_slide()
+                    self.next_slide(notes=f"Küçük veri boyutlarında GPU yavaş kalabilir, ancak veri büyüdükçe CPU'yu ezip geçer.")
             
             self.wait(1)
             self.play(*[FadeOut(mob)for mob in self.mobjects])
@@ -1351,7 +1355,7 @@ class ParallelComputingPresentation(Slide):
             # -----------------------------------------
             title = Text("Daha Gidecek Çok Yol Var...", font_size=40, color=BLUE).to_edge(UP)
             self.play(Write(title))
-            self.next_slide()
+            self.next_slide(notes="Bugün sadece yüzeyi kazıdık.")
 
             # --- Topic 1: Memory (Bellek) ---
             # Visual: A grid representing memory banks or coalescing
@@ -1417,7 +1421,7 @@ class ParallelComputingPresentation(Slide):
             self.play(FadeIn(opt_group, shift=UP))
             self.play(Rotate(opt_icon[1], angle=90*DEGREES, about_point=opt_icon[0].get_center()))
 
-            self.next_slide()
+            self.next_slide(notes="İleri seviye CUDA programlama; bellek erişimlerini hizalamayı, asenkron akışları ve Warp mimarisini anlamayı gerektirir.")
 
             # -----------------------------------------
             # SLIDE 2: Kapanış
