@@ -14,6 +14,8 @@ class ParallelComputingPresentation(Slide):
         self.chapter_8_cudathread()        # Deep dive into threadIdx/blockIdx
         self.chapter_kernel_configs()      # <<<Blocks, Threads>>> Visualizer
         self.chapter_9_code_walkthrough()  # Code Examples (CPU vs GPU)
+        self.chapter_6_6_shared_memory() # <--- NEW ADDITION
+        self.chapter_8_warps()       
         self.chapter_7_perf()       
         self.chapter_10_future()
 
@@ -1438,3 +1440,256 @@ class ParallelComputingPresentation(Slide):
             self.play(FadeIn(contact_info))
             
             self.wait(2)
+
+    def chapter_8_warps(self):
+        # 1. Başlık ve Açıklama
+        title = Text("Warp Divergence (Sapma)", font_size=40, color=RED).to_edge(UP)
+        
+        self.play(Write(title))
+        self.next_slide()
+
+        # 2. Warp Yapısını Oluştur (Basitleştirmek için 8 Thread)
+        # Warp'ı temsil eden kutular
+        threads = VGroup(*[
+            Square(side_length=0.8, fill_opacity=0.5, color=BLUE, stroke_color=WHITE) 
+            for _ in range(8)
+        ])
+        threads.arrange(RIGHT, buff=0.2)
+        
+        # Thread ID'lerini yaz
+        thread_labels = VGroup(*[
+            Text(str(i), font_size=24).move_to(t.get_center()) 
+            for i, t in enumerate(threads)
+        ])
+        
+        warp_group = VGroup(threads, thread_labels).move_to(UP * 1.5)
+
+        self.play(Create(threads), Write(thread_labels))
+        self.next_slide(notes="Bir Warp, aynı anda hareket eden thread grubudur.")
+
+        # 3. Kodu Göster (If-Else Yapısı)
+        code_str = """if (threadIdx.x % 2 == 0) {
+    // Çift Sayılar: Mavi İşlem
+    process_A(); 
+} else {
+    // Tek Sayılar: Kırmızı İşlem
+    process_B();
+}"""
+        code = Code(
+            code_string=code_str,
+            tab_width=4,
+            background="window",
+            language="cpp",
+            formatter_style="emacs"
+        ).next_to(warp_group, DOWN)
+        
+        self.play(FadeIn(code))
+        self.next_slide(notes="Kodda bir dallanma (branch) olduğunda ne olur?")
+
+        # 4. Durum 1: IF Bloğunun Çalışması (Execution Mask)
+        # Sadece çift sayılı threadler (0, 2, 4, 6) aktif olacak
+        
+        mask_text = Text("Adım 1: IF Bloğu Çalışıyor (Tekler Beklemede)", font_size=24, color=YELLOW).next_to(code, DOWN, buff=0.5)
+        self.play(Write(mask_text))
+
+        self.play(
+            # Çiftleri Vurgula (Aktif)
+            threads[0::2].animate.set_fill(color=GREEN, opacity=0.8).set_stroke(color=GREEN_A, width=4),
+            # Tekleri Karart (Maskelenmiş/Inactive)
+            threads[1::2].animate.set_fill(color=GREY, opacity=0.2).set_stroke(color=GREY, width=1),
+            # Koddaki ilgili satırı göster
+        )
+        
+        # İşlem Animasyonu (Wiggle)
+        self.play(Wiggle(threads[0::2]), run_time=1.5)
+        self.next_slide(notes="Önce IF koşulunu sağlayanlar çalışır. Diğerleri donanım tarafından maskelenir (uyutulur).")
+
+        # 5. Durum 2: ELSE Bloğunun Çalışması
+        # Sadece tek sayılı threadler (1, 3, 5, 7) aktif olacak
+        
+        new_mask_text = Text("Adım 2: ELSE Bloğu Çalışıyor (Çiftler Beklemede)", font_size=24, color=RED).next_to(code, DOWN, buff=0.5)
+        
+        self.play(
+            ReplacementTransform(mask_text, new_mask_text),
+            # Çiftleri Karart (Artık bekliyorlar)
+            threads[0::2].animate.set_fill(color=GREY, opacity=0.2).set_stroke(color=GREY, width=1),
+            # Tekleri Vurgula (Aktif)
+            threads[1::2].animate.set_fill(color=RED, opacity=0.8).set_stroke(color=RED_A, width=4),
+            # Koddaki ilgili satırı göster
+        )
+        
+        # İşlem Animasyonu
+        self.play(Wiggle(threads[1::2]), run_time=1.5)
+        self.next_slide(notes="Sonra tam tersi olur. Bekleyenler çalışır, çalışanlar beklemeye geçer.")
+
+        # 6. Reconvergence (Yeniden Birleşme)
+        self.play(
+            FadeOut(new_mask_text),
+            threads.animate.set_fill(color=BLUE, opacity=0.5).set_stroke(color=WHITE, width=2),
+        )
+        
+        # 7. Sonuç Grafiği (Zaman Kaybı)
+        # Basit bir zaman çubuğu gösterimi
+        bar_a = Rectangle(width=3, height=0.5, color=GREEN, fill_opacity=0.8).move_to(DOWN * 2 + LEFT * 1.5)
+        label_a = Text("Süre(A)", font_size=20).move_to(bar_a)
+        
+        bar_b = Rectangle(width=3, height=0.5, color=RED, fill_opacity=0.8).next_to(bar_a, RIGHT, buff=0)
+        label_b = Text("Süre(B)", font_size=20).move_to(bar_b)
+        
+        total_bar_brace = Brace(VGroup(bar_a, bar_b), DOWN)
+        total_text = total_bar_brace.get_text("Toplam Süre = A + B")
+
+        self.play(
+            FadeOut(code),
+            FadeIn(bar_a), Write(label_a)
+        )
+        self.play(
+            FadeIn(bar_b), Write(label_b)
+        )
+        self.play(
+            GrowFromCenter(total_bar_brace),
+            Write(total_text)
+        )
+        
+        final_msg = Text("Paralellik Kaybı!", font_size=36, color=ORANGE).next_to(warp_group, DOWN, buff=1)
+        self.play(Write(final_msg))
+
+        self.next_slide(notes="Sonuç: Warp'ın işlem süresi, en uzun dalın süresi değil, tüm dalların toplam süresidir.")
+        
+        self.play(*[FadeOut(mob)for mob in self.mobjects])
+
+    def chapter_6_6_shared_memory(self):
+        # -----------------------------------------
+        # PART 1: LATENCY COMPARISON
+        # -----------------------------------------
+        title = Text("Shared Memory: Yönetilebilir Önbellek", font_size=40, color=ORANGE).to_edge(UP)
+        self.play(Write(title))
+        self.next_slide(notes="Global bellek çok yavaştır. Çözüm: Shared Memory.")
+
+        # --- Visual Setup: Distance Metaphor ---
+        # 1. GPU Core (Registers)
+        core = Circle(radius=0.5, color=GREEN, fill_opacity=0.5).to_edge(LEFT, buff=1)
+        core_label = Text("Core\n(Registers)", font_size=20).next_to(core, DOWN)
+        
+        # 2. Shared Memory (On-Chip)
+        shared_box = Rectangle(width=1, height=2, color=ORANGE, fill_opacity=0.5).next_to(core, RIGHT, buff=2)
+        shared_label = Text("Shared\nMemory", font_size=20, color=ORANGE).next_to(shared_box, DOWN)
+        
+        # 3. Global Memory (Off-Chip DRAM)
+        global_box = Rectangle(width=1.5, height=4, color=BLUE, fill_opacity=0.5).to_edge(RIGHT, buff=1)
+        global_label = Text("Global\nMemory\n(DRAM)", font_size=20, color=BLUE).next_to(global_box, DOWN)
+
+        self.play(
+            FadeIn(core), Write(core_label),
+            FadeIn(shared_box), Write(shared_label),
+            FadeIn(global_box), Write(global_label)
+        )
+
+        # --- Latency Animation ---
+        
+        # Path 1: Core <-> Global (The Long Haul)
+        arrow_global = DoubleArrow(core.get_right(), global_box.get_left(), buff=0.1, color=BLUE)
+        dist_text = Text("~400 Cycles", font_size=24, color=BLUE).next_to(arrow_global, UP)
+        
+        pkt_global = Dot(color=WHITE)
+        self.play(Create(arrow_global), Write(dist_text))
+        self.play(MoveAlongPath(pkt_global, arrow_global), run_time=3) # Slow
+        self.play(FadeOut(pkt_global))
+        
+        self.next_slide(notes="Global belleğe erişmek (400 cycle), işlemci için sonsuzluk gibidir.")
+
+        # Path 2: Core <-> Shared (The Short Hop)
+        arrow_shared = DoubleArrow(core.get_right(), shared_box.get_left(), buff=0.1, color=ORANGE)
+        dist_text_s = Text("~30 Cycles", font_size=24, color=ORANGE).next_to(arrow_shared, UP)
+        
+        pkt_shared = Dot(color=WHITE)
+        self.play(
+            FadeOut(arrow_global), FadeOut(dist_text), # Hide global path
+            Create(arrow_shared), Write(dist_text_s)
+        )
+        self.play(MoveAlongPath(pkt_shared, arrow_shared), run_time=0.5) # Fast
+        self.play(FadeOut(pkt_shared))
+
+        self.next_slide(notes="Shared Memory ise işlemcinin yan komşusudur. Çok daha hızlıdır.")
+
+        # Cleanup Part 1
+        self.play(FadeOut(Group(core, core_label, shared_box, shared_label, global_box, global_label, arrow_shared, dist_text_s)))
+
+        # -----------------------------------------
+        # PART 2: TILING VISUALIZATION
+        # -----------------------------------------
+        tiling_title = Text("Optimizasyon Tekniği: Tiling", font_size=32, color=YELLOW).next_to(title, DOWN)
+        self.play(Write(tiling_title))
+        
+        # --- Setup Grid of Data (Global Memory) ---
+        grid_global = VGroup(*[Square(side_length=0.4, color=BLUE, fill_opacity=0.2) for _ in range(16)])
+        grid_global.arrange_in_grid(4, 4, buff=0.05).to_edge(RIGHT, buff=2)
+        label_g = Text("Global Data", font_size=20, color=BLUE).next_to(grid_global, UP)
+        
+        # --- Setup Thread Block ---
+        threads = VGroup(*[Circle(radius=0.15, color=GREEN) for _ in range(4)])
+        threads.arrange(DOWN, buff=0.5).to_edge(LEFT, buff=2)
+        label_t = Text("Threads", font_size=20, color=GREEN).next_to(threads, UP)
+
+        self.play(Create(grid_global), Write(label_g), Create(threads), Write(label_t))
+        #self.next_slide(notes="Tiling: Veriyi Global'den Shared'a 'parça parça' taşıyıp orada tekrar tekrar kullanmaktır.")
+
+        # --- SCENARIO A: Naive Access (Bad) ---
+        # Threads accessing Global directly multiple times
+        arrows_bad = VGroup()
+        for t in threads:
+            for i in range(2): # simulate 2 accesses per thread
+                start = t.get_right()
+                end = grid_global[i*4].get_left() # random target
+                arr = Line(start, end, color=RED, stroke_opacity=0.5)
+                arrows_bad.add(arr)
+        
+        self.play(Create(arrows_bad), run_time=2)
+        bad_text = Text("Yavaş Erişim!", color=RED, font_size=24).move_to(ORIGIN)
+        self.play(Write(bad_text))
+        self.play(FadeOut(bad_text))
+        
+        self.next_slide(notes="Saf yöntemde her thread uzaktaki belleğe defalarca gider.")
+        self.play(FadeOut(arrows_bad))
+
+        # --- SCENARIO B: Tiled Access (Good) ---
+        
+        # 1. Create Shared Memory Buffer
+        smem_buf = Rectangle(width=1, height=2, color=ORANGE, fill_opacity=0.2).move_to(ORIGIN)
+        label_s = Text("__shared__", font_size=16, color=ORANGE).next_to(smem_buf, UP)
+        
+        self.play(Create(smem_buf), Write(label_s))
+        
+        # 2. Cooperative Load (Global -> Shared) - ONE TRIP
+        load_arrows = VGroup()
+        for i in range(4):
+            # Visualizing the block working together to load a tile
+            arr = Arrow(grid_global[i].get_left(), smem_buf.get_right(), color=BLUE, buff=0.1, stroke_width=2)
+            load_arrows.add(arr)
+            
+        self.play(GrowArrow(load_arrows[0]), GrowArrow(load_arrows[1]), GrowArrow(load_arrows[2]), GrowArrow(load_arrows[3]))
+        self.play(smem_buf.animate.set_fill(ORANGE, opacity=0.8)) # Data Loaded
+        self.play(FadeOut(load_arrows))
+        
+        code_sync = Text("__syncthreads();", font_size=20, color=YELLOW, font="Monospace").next_to(smem_buf, DOWN)
+        self.play(Write(code_sync))
+        
+        #self.next_slide(notes="Tiling'de: Önce tüm threadler el birliğiyle veriyi Shared Memory'ye yükler. Sonra senkronize olurlar.")
+        
+        # 3. Fast Access (Shared -> Thread) - MANY TRIPS
+        fast_arrows = VGroup()
+        for t in threads:
+            for i in range(3): # Many accesses
+                arr = Line(smem_buf.get_left(), t.get_right(), color=GREEN, stroke_width=1)
+                fast_arrows.add(arr)
+                
+        self.play(FadeOut(code_sync))
+        self.play(Create(fast_arrows, run_time=1.5))
+        
+        good_text = Text("Hızlı & Tekrar Kullanım!", color=GREEN, font_size=24).next_to(smem_buf, DOWN)
+        self.play(Write(good_text))
+
+        self.next_slide(notes="Artık veriler yakındadır (Shared). Defalarca, çok hızlı erişebilirler.")
+
+        # Cleanup
+        self.play(FadeOut(Group(*self.mobjects)))
