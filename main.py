@@ -1112,15 +1112,15 @@ class ParallelComputingPresentation(Slide):
             self.play(Write(host_title))
             
             host_code_str = """int main() {
-        cudaMalloc(&d_a, bytes);
+        cudaMalloc(&deviceData, bytes);
 
-        cudaMemcpy(d_a, h_a, bytes, cudaMemcpyHostToDevice);
+        cudaMemcpy(deviceData, hostData, bytes, cudaMemcpyHostToDevice);
 
-        vectorAdd<<<blocks, threads>>>(d_a, d_b, d_c, n);
+        vectorAdd<<<blocks, threads>>>(deviceData, deviceData, deviceResult, size);
 
-        cudaMemcpy(h_c, d_c, bytes, cudaMemcpyDeviceToHost);
+        cudaMemcpy(hostResult, deviceResult, bytes, cudaMemcpyDeviceToHost);
         
-        cudaFree(d_a);
+        cudaFree(deviceData);
     }"""
             host_code = Code(
                 code_string=host_code_str,
