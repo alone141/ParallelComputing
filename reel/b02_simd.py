@@ -2,27 +2,30 @@
 
 The incoming plain token opens into a CPU core. Sixteen lanes hold the digits of pi
 (A, cyan bars) and e (B, ink bars hanging above), with a '+' between the two operand
-rows. SCALAR first: the other lanes dim and three lanes are added one at a time (each
-lane outlined, its digits popped, one tick each, a lime result; HUD '1' pulses). Then a
-deliberate RESET (1.12 -> 1.30, one eased move on the riser): the three results lift back
-to their hang together, drain back to INK/CYAN and dim with the other 13 lanes, so the
-register is back at its start line exactly when ONE instruction (vaddps zmm0,zmm1,zmm2)
-issues at 1.30, relights all 16 lanes (the reset's apex flows into the drop) and drops
-every B bar onto its A bar on the same frame, 1.50: the light wave
-(16 lane outlines + stacks flash INK, then LIME, '+' becomes '='), HUD 1 -> 16, x16.
-LOCKSTEP: four more literal issues of the same instruction on the next 16 digits of pi
-and e (digits hard-swap, bars re-stage and re-drop, all 16 land on one frame), 'That's
-SIMD.', then the core collapses (cut_times) into handoff_token('core') (E02). The kicker
-and 'That's SIMD.' stay fully visible through the collapse and settle and are hard-cut by
-the canonical exit at 4.95 (like b01), so no frame before the cut is text-less except the
-contract's static E02 hold.
+rows. '1 instruction.' is read through the build; then SCALAR (0.87): the other lanes dim and
+three lanes are added one at a time (each lane outlined, its digits popped, one tick each, a
+lime result; HUD '1' pulses). '16 numbers at once.' lands on the three results (1.31) and is
+read before the deliberate RESET (1.79 -> 1.97, one eased move on the riser): the three
+results lift back to their hang together, drain back to INK/CYAN and dim with the other 13
+lanes, so the register is back at its start line exactly when ONE instruction
+(vaddps zmm0,zmm1,zmm2) issues at 1.97, relights all 16 lanes (the reset's apex flows into the
+drop) and drops every B bar onto its A bar on the same frame, 2.17: the light wave (16 lane
+outlines + stacks flash INK, then LIME, '+' becomes '='), HUD 1 -> 16 + LIME x16 (1.7 s).
+The payoff HOLDS 1.02 s (the stacks breathe, the stage drifts). LOCKSTEP: five more literal
+issues of the same instruction on the next 16 digits of pi and e, 0.45 s apart (digits
+hard-swap, bars re-stage and re-drop, all 16 land on one frame); 'That's SIMD.' pops on the
+2nd landing (3.82) and holds; then the core collapses (cut_times) into handoff_token('core')
+(E02). The kicker and 'That's SIMD.' stay fully visible through the collapse and settle and
+are hard-cut by the canonical exit at 5.95 (like b01), so no frame before the cut is
+text-less except the contract's static E02 hold.
 
-Everything that moves is a pure function of self.now (one driver updater); the scene
-only holds until the structural switch points (collapse capture, canonical exit).
+Everything that moves is a pure function of self.now (one driver updater + the stage drift);
+the scene only holds until the structural switch points (collapse capture, canonical exit).
 """
 
 from style import *
 from motif import *
+import math
 
 # --------------------------------------------------------------------------
 # World layout (storyboard b02 visuals; top band loosened per the review: the
@@ -58,7 +61,17 @@ SIGN_X, SIGN_Y = -3.56, 0.22
 SIGN_POP = 1.12
 
 # --------------------------------------------------------------------------
-# Timeline (beat-local seconds)
+# Timeline (beat-local seconds). The 6.0 s slot is filled by SEQUENCING, not by slowing: every
+# motion keeps its snappy duration (scalar step 0.14, drop 0.10, reset 0.18, issue -> land
+# 0.20, re-drop 0.18, pulse pitch 0.45); the extra second sits BETWEEN the ideas:
+#   0.00-0.81  open + build; '1 instruction.' pops on story frame 1 and is read through the build
+#   0.81-0.87  calm                      -> the headline has been up 0.66 s when the scalar demo starts
+#   0.87-1.41  SCALAR: three adds, one tick each, HUD '1' pulses
+#   1.31-1.56  '16 numbers at once.' lands on the scalar results (read 0.61 s before the landing)
+#   1.79-1.97  RESET -> 1.97 issue -> 2.17 all 16 land: light wave, HUD 16 + LIME x16 (1.7 s)
+#   2.17-3.19  PAYOFF HOLD (1.02 s): the lime stacks breathe, the stage drifts
+#   3.19-5.17  LOCKSTEP: five issues 0.45 s apart; 'That's SIMD.' pops on the 2nd landing (3.82)
+#   5.43-5.95  collapse + settle, 5.95-6.00 static E02
 # --------------------------------------------------------------------------
 T_OPEN = 0.45                       # token -> core frame
 T_BUILD = 0.15                      # base line / guides / A bars start
@@ -67,28 +80,38 @@ GUIDE_GROW = 0.26
 PAIR_STAGGER = 0.024                # = 0.012 s per lane, centre outwards (pairs land together)
 B_IN0, B_IN_STEP, B_IN_DUR = 0.40, 0.012, 0.22
 T_SIGN = 0.55                       # '+' pops in
-T_DIM0, T_DIM1 = 0.62, 0.72         # scalar spotlight: lanes not being worked on dim to DIM_K
+T_DIM0, T_DIM1 = 0.87, 0.97         # scalar spotlight: lanes not being worked on dim to DIM_K
 DIM_K = 0.30
-SCALAR_T = (0.63, 0.77, 0.91)       # one scalar add per tick on lanes 0, 1, 2
+SCALAR_T = (0.88, 1.02, 1.16)       # one scalar add per tick on lanes 0, 1, 2
 SCALAR_STEP = 0.14
 SCALAR_DROP = 0.10
 N_SCALAR = len(SCALAR_T)
-T_SIMD = 1.30                       # instruction issued: every lane relights
+T_SUB = SCALAR_T[-1] + SCALAR_DROP + 0.05   # 1.31: '16 numbers at once.' fades in on the 3 results
+T_LAND = 130 / 60                   # 2.1667: all 16 lanes land on this frame
+T_SIMD = T_LAND - 0.20              # 1.9667: instruction issued: every lane relights
 # RESET: the scalar results lift back to their hang (and dim with the rest) in ONE eased move
 # that ends on the issue frame, so the register is at its start line when the instruction fires
-T_REW0, T_REW1 = 1.12, T_SIMD
-T_REW_DIM = 1.20                    # the lifted lanes dim back over the reset's last 0.10 s
-T_LAND = 1.50                       # all 16 lanes land on this frame
-T_LIME = 1.65
-PULSES = (1.95, 2.40, 2.85, 3.30, 3.75)   # same instruction, next data (chunks 1..5)
+T_REW0, T_REW1 = T_SIMD - 0.18, T_SIMD
+T_REW_DIM = T_SIMD - 0.10           # the lifted lanes dim back over the reset's last 0.10 s
+T_LIME = T_LAND + 0.15              # the 16 stacks are LIME
+PAY_HOLD = 1.02                     # the payoff (16 lime stacks, HUD 16 + x16) holds before the lockstep
+PULSE_STEP = 0.45
+PULSES = tuple(T_LAND + PAY_HOLD + PULSE_STEP * k for k in range(5))  # 3.19 ... 4.99: same instruction, next data (chunks 1..5)
 PULSE_DROP = 0.18                   # re-drop: every lane lands at tp + 0.18 (one frame)
 PULSE_LIFT = 0.30
-T_CARD1_OUT = PULSES[2] + PULSE_DROP - 0.20     # 2.83: gone exactly when "That's SIMD." pops
-T_CARD2 = PULSES[2] + PULSE_DROP                # 3.03: the 3rd lockstep landing
-T_COL, T_SET, T_EXIT = cut_times(5.0)      # 4.433 / 4.833 / 4.95
+T_CARD2 = PULSES[1] + PULSE_DROP                # 3.817: 'That's SIMD.' pops on the 2nd lockstep landing
+T_CARD1_OUT = T_CARD2 - 0.20                    # 3.617: card 1 is gone exactly when it pops
+MULT_HOLD = 1.70                    # the LIME x16 pill: settled (after its 0.2 s slam) for 1.5 s
+T_COL, T_SET, T_EXIT = cut_times(6.0)      # 5.433 / 5.833 / 5.95
 T_TEXT_OUT = T_EXIT                        # kicker + headline hold to the exit, then hard-cut
+# ambient life under the holds: the stage (frame + lanes) drifts in 1.0 -> 1.015 (frame top 3.24,
+# inside STAGE) and the landed lime stacks breathe in lockstep (alpha x 1 -> 0.85 -> 1, 1.2 s)
+DRIFT_S1 = 1.015
+BREATH_P, BREATH_A = 1.20, 0.15
 
 assert SCALAR_T[-1] + SCALAR_DROP + 2 / 60 + 0.06 < T_REW0     # the 3rd result turns LIME first
+assert T_SUB + 0.25 + 0.15 <= T_REW0                             # the sub-line is read before the reset
+assert PULSES[-1] + PULSE_DROP + 0.25 < T_COL                   # the last landing settles before the collapse
 LANE_RANK = np.array([int(abs(i - 7.5) - 0.5) for i in range(N_LANES)])   # 0 = centre pair
 T_A = T_BUILD + PAIR_STAGGER * LANE_RANK
 T_B = B_IN0 + B_IN_STEP * np.arange(N_LANES)
@@ -155,11 +178,21 @@ def spot_at(i: int, now: float) -> float:
     return 1.0 if now < t1 - EPS else 1.0 - ease_out_cubic(ramp(now, t1, t1 + 0.06))
 
 
+def breath(now: float) -> float:
+    """Alpha factor of the landed lime stacks from T_LIME on: one slow, shared (lockstep) breath,
+    1 -> 1 - BREATH_A -> 1 every BREATH_P seconds, so the payoff hold is never a dead frame."""
+    if now < T_LIME:
+        return 1.0
+    return 1.0 - BREATH_A * (0.5 - 0.5 * math.cos(2 * math.pi * (now - T_LIME) / BREATH_P))
+
+
 def landed_color(now: float, t_land: float) -> np.ndarray:
-    """INK on the landing frame + the next (2 story frames), then INK -> LIME by +0.15 s."""
+    """INK on the landing frame + the next (2 story frames), then INK -> LIME by +0.15 s; the
+    16-lane results (not the scalar ones) breathe."""
     if flash_frames(now, t_land, 2):
         return INK_FILL
-    return lerp(INK_FILL, LIME_FILL, ease_out_cubic(ramp(now, t_land + 2 / 60, t_land + 0.15)))
+    lime = LIME_FILL if t_land < T_LAND - EPS else with_alpha(LIME_FILL, breath(now))
+    return lerp(INK_FILL, lime, ease_out_cubic(ramp(now, t_land + 2 / 60, t_land + 0.15)))
 
 
 def flash_decay(now: float, t: float, dur: float) -> float:
@@ -249,16 +282,18 @@ class B02Simd(BeatScene):
         track.on(kick("SCALE 1/6 · ONE CORE"), 0.0, T_TEXT_OUT, exit="cut")
         c1 = card([("1 instruction.", "H96", INK, {"1": CYAN}), ("16 numbers at once.", "S56", CYAN)])
         track.on(c1[0], 1 / 60, T_CARD1_OUT, enter="pop")
-        track.on(c1[1], T_SIMD, T_CARD1_OUT)
+        # the sub-line lands on the three scalar results, BEFORE the issue it describes
+        track.on(c1[1], T_SUB, T_CARD1_OUT)
         c2 = card([("That's SIMD.", "H96", INK, {"SIMD.": CYAN})])
-        track.on(c2[0], T_CARD2, T_TEXT_OUT, enter="pop", exit="cut")   # on the 3rd lockstep landing
+        track.on(c2[0], T_CARD2, T_TEXT_OUT, enter="pop", exit="cut")   # on the 2nd lockstep landing
 
         # ---------------- HUD (not part of E01: fades up 0.10 -> 0.40) ----------------
         hud = Hud("1", "CALCULATION AT ONCE", scene=self)
         hud.fade_to(0.10, 0.40, 0.0, 1.0, DOWN * 0.2, ORIGIN, ease=ease_out_expo)
         for ts in SCALAR_T:
             hud.pulse(ts + SCALAR_DROP, 1.25)          # each scalar result: still '1' at once
-        hud.slam(T_LAND, "16", mult="×16")
+        hud.slam(T_LAND, "16")
+        hud.mult(T_LAND, "×16", hold=MULT_HOLD)        # the LIME pill holds through the payoff
         hud.label(T_LAND, CALC_LABEL)                  # plural on the hit frame itself
         for tp in PULSES:
             hud.pulse(tp + PULSE_DROP, 1.06, 0.18)
@@ -269,6 +304,12 @@ class B02Simd(BeatScene):
         self.collapse = None
         self._draw(0.0)
         drive(self, self._draw)
+        # camera life: the stage (core frame + everything in it; never text or HUD) drifts in
+        # from the end of the open to the collapse (ease_in_out_sine: it leaves the open and
+        # meets the collapse at rest); added after the driver so it composes on this frame's
+        # drawing, released right before COLLAPSE captures the drifted pose
+        self.drift = drift(self, VGroup(frame, self.content), T_OPEN, T_COL, s1=DRIFT_S1, dy=0.0,
+                           ease=ease_in_out_sine)
 
         # ---------------- audio ----------------
         self.cue("hit", gain=0.8, note="match-cut")
@@ -277,7 +318,8 @@ class B02Simd(BeatScene):
         for k, ts in enumerate(SCALAR_T):
             self.cue("tick", dt=ts, gain=0.7, freq=(3200, 3600, 4000)[k], pan=round(-0.55 + 0.1 * k, 2),
                      note=f"scalar add {k + 1} (lane {k})")
-        self.cue("riser", dt=1.00, dur=0.50, note="into the SIMD landing (scores the scalar reset 1.12-1.30)")
+        self.cue("riser", dt=round(T_LAND - 0.50, 4), dur=0.50,
+                 note=f"into the SIMD landing (scores the scalar reset {T_REW0:.2f}-{T_REW1:.2f})")
         self.cue("tick", dt=T_SIMD, freq=6000, gain=0.8, note="instruction issued")
         self.cue("hit", dt=T_LAND, note="all 16 lanes land on one frame")
         self.cue("sub_drop", dt=T_LAND, dur=0.6)
@@ -291,12 +333,13 @@ class B02Simd(BeatScene):
 
         # ---------------- run ----------------
         self.hold_until(T_COL)
-        # capture the (static, lime) state and collapse it -- digits and instruction included --
-        # into the core token
+        # capture the (static, lime, drifted) state and collapse it -- digits and instruction
+        # included -- into the core token
+        self.drift.release()
         self.collapse = COLLAPSE(frame, self.content, "core")
         self.add(self.collapse.glyph)
         hold_floor(self, T_EXIT)
-        exit_to(self)                               # canonical E02, static to 5.00
+        exit_to(self)                               # canonical E02, static to 6.00
 
     # ------------------------------------------------------------------
     def _draw(self, now: float) -> None:

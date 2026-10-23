@@ -1,4 +1,4 @@
-"""b09 LOOP: so why build 100,000 GPUs? Back to one worker (3.5 s, film 44.0-47.5).
+"""b09 LOOP: so why build 100,000 GPUs? Back to one worker (3.5 s, film 51.5-55.0).
 
 Frame 0 is E08: the bright serial token (AMBER fill 0.58, crisp #FFD27A rim) + the '10×' HUD.
 On frame 1 the comment question POPs in and the camera is already pulling back
@@ -6,8 +6,9 @@ On frame 1 the comment question POPs in and the camera is already pulling back
 crawl): the token was cell 0 of the hook grid all along. Drawn on the grid's top layer, it
 fills in to the lone solid-amber worker within 0.6 s (rim -> INK, x1.4, its halo growing in
 with the morph), while the HUD drops away in 0.12 s, before the field is dense. 'Wrong
-answers only ↓' (the caption's CTA, BG knockout) joins at 1.00 as the grid settles into its
-own footprint. Count-in: the settled worker pulses twice (f84, f100; halo swells, the cell
+answers only ↓' (the caption's CTA, BG knockout over the still-settling field) joins at 0.43,
+once the question has been read alone for 0.4 s, so the CTA gets its full reading window
+(fully in 0.68 -> 2.40 = 1.72 s >= 0.3 s x 3 words + 0.8). Count-in: the settled worker pulses twice (f84, f100; halo swells, the cell
 blinks hot, a low tick, the CTA arrow nudges down), and the crawl's first hop (f116) lands on
 the same 16-frame interval. From f113 the worker crawls on the same integer frame clock as
 b01 (hop every 3 frames); at 2.40 the question cuts and 'One at a time.' + the
@@ -22,7 +23,8 @@ from motif import *
 F = 1 / 60
 T_HUD_OUT = 0.12                # HUD fades out + drops 0.3 (ease_out_quad): gone before the grid is dense
 T_Q_IN = F                      # 'So why build / 100,000 GPUs?' POPs on story frame 1
-T_CB_IN = 1.00                  # 'Wrong answers only ↓' (grid inside its footprint by ~1.1; BG knockout)
+T_CB_IN = 26 * F                # 0.4333 'Wrong answers only ↓' CARD_IN (BG knockout over the settling grid);
+                                # fully in 0.683 -> T_CUT 2.40 = 1.717 s (reading floor 1.70)
 T_ZOOM0 = 0.0                   # reverse zoom (ease_out_quart) from the cut ...
 T_ZOOM1 = 113 * F               # ... lands exactly on f113 (1.8833)
 T_FILL1 = 0.60                  # token fill 0.58 -> 1.0 (the worker's solid amber) by 0.6 s

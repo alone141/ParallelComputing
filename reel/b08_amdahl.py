@@ -1,30 +1,32 @@
-"""b08 - THE CATCH: Amdahl's law (8.0 s, film 36.0-44.0).
+"""b08 - THE CATCH: Amdahl's law (9.0 s, film 42.5-51.5).
 
 Frame 0 is E07: BG + dust only (b07 retires its HUD; st.hud is an EMPTY Hud that draws nothing
 until b08 schedules the SPEEDUP meter on it). The cut lands on black and 'So… infinite speed?'
 cracks in on story frame 2 (the opening glitch, 0.00-0.30, now lives on the question: its two
 lines jitter independently on the HUD's 30 Hz glitch clock (glitch_at), flicker AMBER on odd
 steps, split CYAN/MAGENTA on two steps, and thin scan tears flash across the frame). It pays off
-the hook's open loop. One big CYAN job bar, captioned 'TIME TO FINISH', wipes in at frame centre
-and shimmers, and the camera leans in. At 1.50 'No.' hard-cuts in: the bar splits, its left 10%
-turns into the AMBER serial block, and the HUD comes in as the SPEEDUP meter ('1.0×'). The serial
-block tries to split twice (an INK crack, the halves fly apart, then snap back with a thunk). At
-2.45 the bar group whips up to the top and the speedup graph ('SPEEDUP' over 'GPUs →') draws in
-under it. Four doublings of the GPU count halve the parallel rows (1.8×, 3.0×, 4.7×, 6.4×) while
-the Amdahl curve grows on a log axis; then the GPU count races to 1,000,000, the speedup turns
-AMBER and stalls at 9.9×, and the curve flattens onto THE WALL. 5.90: 'GPUs: ∞', the HUD SLAMs
-'10×' with its assumption ('MAX SPEEDUP · 10% SERIAL'), and an AMBER burst + shock ring fire from
-the curve head at the wall.
-The takeaway (5.95, '10% serial / = max 10×.') clears the deck: the axis titles and the bar
-labels fade out and 'TIME TO FINISH' stays gone, so the frame carries 7 text items (kicker, the
-two takeaway lines, 'GPUs: ∞', 'THE WALL: 10×' (held back to 0.60), the 10× meter + its label).
-Then the stage never sits still until the token lands: a slow lean-in (1.0 -> 1.05 about AC),
-light flowing up the curve into the wall, and a heartbeat that speeds up into the morph (lubs at
-6.20 / 6.67 / 7.07, each interval 0.88x the last): each LUB swells the serial block (1.25x, AMBER
-ring), a light pulse runs up the curve, and the DUB lands on the wall (head flare + ring, wall
-flash, the meter pulses). The fourth beat (7.43, ring + lub) launches the block into the bright
-AMBER serial token (E08: token_fill(AMBER) 0.58, #FFD27A rim) that b09 opens back into the lone
-hook worker.
+the hook's open loop. The question sits alone for a moment, then one big CYAN job bar, captioned
+'TIME TO FINISH', wipes in at frame centre and shimmers, the bed ducks and the camera leans in:
+the question gets its pause. At 1.767 'No.' hard-cuts in: the bar splits, its left 10% turns into
+the AMBER serial block, and the HUD comes in as the SPEEDUP meter ('1.0×'). The serial block
+tries to split twice (an INK crack, the halves fly apart, then snap back with a thunk). At 2.667
+the bar group whips up to the top and the speedup graph ('SPEEDUP' over 'GPUs →') draws in under
+it; 'No.' hard-swaps to 'Some work / can't be split.' on the whip (2.867), which is read for 0.60 s
+before four doublings of the GPU count halve the parallel rows (1.8×, 3.0×, 4.7×, 6.4×) while the
+Amdahl curve grows on a log axis. Only once the card has had its 2.3 s does the GPU count race to
+1,000,000 (5.20): the speedup turns AMBER and stalls at 9.9×, and the curve flattens onto THE
+WALL. 6.80: 'GPUs: ∞', the HUD SLAMs '10×' with its assumption ('MAX SPEEDUP · 10% SERIAL'),
+and an AMBER burst + shock ring fire from the curve head at the wall.
+The takeaway (POPs on 6.833, '10% serial / = max 10×.') clears the deck: the axis titles and the
+bar labels fade out and 'TIME TO FINISH' stays gone, so the frame carries 7 text items (kicker,
+the two takeaway lines, 'GPUs: ∞', 'THE WALL: 10×' (held back to 0.60), the 10× meter + its
+label). It holds 1.60 s before the collapse and 2.02 s in all. The stage never sits still until
+the token lands: a slow lean-in (1.0 -> 1.05 about AC), light flowing up the curve into the wall,
+and a heartbeat that speeds up into the morph (lubs at 7.20 / 7.67 / 8.07, each interval 0.88x
+the last): each LUB swells the serial block (1.25x, AMBER ring), a light pulse runs up the curve,
+and the DUB lands on the wall (head flare + ring, wall flash, the meter pulses). The fourth beat
+(8.433, ring + lub) launches the block into the bright AMBER serial token (E08: token_fill(AMBER)
+0.58, #FFD27A rim) that b09 opens back into the lone hook worker.
 
 Everything that moves is a pure function of self.now (one driver), so 30-fps previews and
 the 60-fps final show the same story frames.
@@ -37,9 +39,9 @@ import math
 # --------------------------------------------------------------------------
 # World layout
 # --------------------------------------------------------------------------
-# The bar group has two poses: SETUP (0.30-2.45: big, at frame centre, so the question,
-# 'No.' and the failed splits play on a balanced frame) and GRAPH (from 2.70: compact at the
-# top, the speedup graph below). It whips between them over 2.45-2.70 (ease_in_out_quart: expo
+# The bar group has two poses: SETUP (0.40-2.667: big, at frame centre, so the question,
+# 'No.' and the failed splits play on a balanced frame) and GRAPH (from 2.917: compact at the
+# top, the speedup graph below). It whips between them over 2.667-2.917 (ease_in_out_quart: expo
 # read as a jump cut at 30 fps).
 BAR_X0, BAR_X1 = -3.70, 3.00                   # job bar
 BAR_CX = (BAR_X0 + BAR_X1) / 2
@@ -96,10 +98,41 @@ HEAD_PUSH = 0.06                               # the head strains right (+x) on 
 C_CY, C_AM, C_INK, C_DIM = RGB_CYAN, RGB_AMBER, RGB_INK, RGB_DIM
 
 # --------------------------------------------------------------------------
-# Timeline (beat-local seconds)
+# Timeline (beat-local seconds; story frames on the 60-fps grid, events on even frames so the
+# 30-fps preview shows them on the same frame). The 9.0 s slot is filled by SEQUENCING (card
+# lands -> read -> the motion it describes -> payoff hold), never by slowing: the glitch (0.30),
+# wipe (0.45), lean-in (0.50), SLAM / POPs (0.20), cracks (12 frames + 0.15 thunk), whip (0.25),
+# axes (0.40), doublings (0.30, every 0.40), ramp (1.60), wall (0.25), heartbeat, collapse and
+# settle keep their durations; the time sits BETWEEN them. Card windows are the reading floor
+# (0.3 s/word + 0.8 s, counted from all lines at full opacity (POP / SLAM: at once) to the start
+# of the exit). The cards hard-swap (the film's card-swap grammar): every 0.2 s fade or 0.25 s
+# CARD_IN between cards would come out of a reading window, and 9.0 s holds no slack for them.
+#   0.033       'So… infinite / speed?' POPs (glitch to 0.30); alone on black 0.30-0.40
+#   0.40-0.85   bar wipe, caption 0.45, 'GPUs: 1' 0.55, shimmer from 0.85
+#   1.267-1.767 the pause: the bed ducks, the camera leans in          (Q 0.033 -> 1.767 = 1.73 s >= 1.70)
+#   1.767       'No.' SLAM (+ split, HUD '1.0×', kicker), bar labels 1.867
+#   2.167/2.567 the block tries to split, twice (read 'No.' 0.40 s first)
+#   2.667-2.917 whip up to the GRAPH pose; axes + head 2.817-3.217, axis titles 2.917
+#   2.867       hard swap -> 'Some work / can't be split.'              ('No.' 1.767 -> 2.867 = 1.10 s >= 1.10)
+#   3.467-4.967 four doublings, every 0.40 (read the card 0.60 s first); '6.4×' holds 0.53 s
+#   5.20        the card leaves as the ramp starts                      (2.867 -> 5.20 = 2.33 s >= 2.30)
+#   5.20-6.80   RAMP (fast), wall 5.80-6.05, stall at 9.9× from ~5.92
+#   6.80        HIT: 'GPUs: ∞', '10×' + 'MAX SPEEDUP · 10% SERIAL'
+#   6.833       '10% serial / = max 10×.' POPs                          (6.833 -> 8.85 = 2.02 s >= 2.00)
+#   6.833-8.433 PAYOFF HOLD (1.60 s): flow light, lean-in; heartbeat 7.20 / 7.665 / 8.073
+#   8.433-8.95  4th beat: the block collapses into the E08 token under the held takeaway
+#   8.85-8.95   kicker + takeaway out; 8.95-9.00 static E08 (3 frames)
 # --------------------------------------------------------------------------
+BEAT_SLOT = 9.0                                # timeline.py slot (asserted in beat())
+
+
+def F(n: int) -> float:
+    """Story frame n -> beat-local seconds."""
+    return n / 60
+
+
 T_GLITCH1 = 0.30                               # opening glitch 0.00-0.30 (on the question + scan tears)
-T_Q_IN = 2 / 60                                # 'So… infinite / speed?' POP on story frame 2: the glitch
+T_Q_IN = F(2)                                  # 'So… infinite / speed?' POP on story frame 2: the glitch
                                                # clock's first live step (frame 1 of a 30-fps preview)
 GL_AMP = 0.09                                  # glitch x-jitter (per line, own seeds: the lines tear apart)
 GL_SEEDS = (8, 9)
@@ -107,57 +140,63 @@ GL_SPLIT = (6, 14)                             # story frames with the CYAN/MAGE
 GL_SPLIT_DX, GL_SPLIT_A = 0.05, 0.5
 TEAR_N = 3                                     # scan tears: thin bands flashing across the frame
 TEAR_SEED = 83
-T_WIPE0, T_WIPE1 = 0.30, 0.75                  # bar wipe (ease_out_cubic)
-T_CAP_IN = 0.35                                # 'TIME TO FINISH'
-T_N_IN = 0.45                                  # 'GPUs: 1' POP
-T_SHIM = 0.75                                  # shimmer
-T_PUSH0, T_PUSH1 = 1.00, 1.50                  # lean-in 1.00 -> 1.04
+T_WIPE0, T_WIPE1 = 0.40, 0.85                  # bar wipe (ease_out_cubic): the question sits alone first
+T_CAP_IN = T_WIPE0 + 0.05                      # 'TIME TO FINISH'
+T_N_IN = T_WIPE0 + 0.15                        # 'GPUs: 1' POP
+T_SHIM = T_WIPE1                               # shimmer
+T_NO = F(106)                                  # 1.767 'No.' HIT: split, HUD back
+T_PUSH0, T_PUSH1 = T_NO - 0.50, T_NO           # lean-in 1.00 -> 1.04 into the answer
 PUSH_K = 0.04
-T_NO = 1.50                                    # 'No.' HIT: split, HUD back
 T_GAP = 0.12
-T_LABELS = 1.60
-T_CRACKS = (1.95, 2.35)
-T_SLIDE0, T_SLIDE1 = 2.45, 2.70                # SETUP -> GRAPH pose
-T_NO_GONE = 2.60
-T_AXES0, T_AXES1 = 2.60, 3.00
-T_AXLAB = 2.70                                 # 'SPEEDUP' / 'GPUs →'
-T_HEAD = 2.60
-T_DBL = (2.70, 3.10, 3.50, 3.90)               # N 1 -> 2 -> 4 -> 8 -> 16
+T_LABELS = T_NO + 0.10
+T_SWAP = T_NO + F(66)                          # 2.867: 'No.' hard-swaps to 'Some work / can't be split.'
+T_SLIDE0 = T_SWAP - 0.20                       # 2.667 SETUP -> GRAPH pose (the swap lands on the whip)
+T_SLIDE1 = T_SLIDE0 + 0.25
+T_CRACKS = (T_SLIDE0 - 0.50, T_SLIDE0 - 0.10)  # 2.167 / 2.567: 'No.' read 0.40 s first
+T_AXES0, T_AXES1 = T_SLIDE0 + 0.15, T_SLIDE0 + 0.55
+T_AXLAB = T_SLIDE0 + 0.25                      # 'SPEEDUP' / 'GPUs →'
+T_HEAD = T_AXES0
+T_DBL = tuple(T_SWAP + F(36 + 24 * k) for k in range(4))    # 3.467 ... 4.667 (every 0.40): N 1 -> 16
 DBL_DUR = 0.30
-T_SOME_IN, T_SOME_GONE = 2.60, 4.45
-T_RAMP0, T_RAMP1 = 4.30, 5.90
-T_DIM0, T_DIM1 = 4.45, 4.60
-T_CAP_OUT0, T_CAP_OUT1 = 4.30, 4.45            # caption steps aside while N spins wide (and stays
+T_RAMP0 = T_SWAP + F(140)                      # 5.20: the card has had its 2.3 s (+2 frames)
+T_RAMP1 = T_RAMP0 + 1.60
+T_DIM0, T_DIM1 = T_RAMP0 + 0.15, T_RAMP0 + 0.30
+T_CAP_OUT0, T_CAP_OUT1 = T_RAMP0, T_RAMP0 + 0.15   # caption steps aside while N spins wide (and stays
                                                # out: the takeaway frame has no room for it)
-T_WALL0, T_WALL1 = 4.90, 5.15
-T_HIT = 5.90                                   # 'GPUs: ∞', '10×'
-T_TAKE = 5.95                                  # '10% serial / = max 10×.'
+T_WALL0, T_WALL1 = T_RAMP0 + 0.60, T_RAMP0 + 0.85
+T_HIT = T_RAMP1                                # 6.80 'GPUs: ∞', '10×'
+T_TAKE = T_HIT + F(2)                          # 6.833 '10% serial / = max 10×.' POPs (1 preview frame later)
 T_DECL0, T_DECL1 = T_TAKE, T_TAKE + 0.30       # declutter: axis titles + bar labels fade out
 WALL_LAB_TAKE = 0.60                           # 'THE WALL: 10×' steps back under the takeaway (3rd '10×')
-T_COL, T_SET, T_EXIT = cut_times(8.0)          # 7.433 / 7.833 / 7.95: block -> E08 token
-# Heartbeat (5.90 -> T_COL): LUB on the serial block (scale 1.25 + AMBER ring), a light pulse runs
+T_COL, T_SET, T_EXIT = cut_times(BEAT_SLOT)    # 8.433 / 8.833 / 8.95: block -> E08 token
+# Heartbeat (T_HIT -> T_COL): LUB on the serial block (scale 1.25 + AMBER ring), a light pulse runs
 # up the curve into the wall, DUB at the wall (head flare + ring, wall flash, the meter pulses).
 # The serial part is what caps the speedup, and the picture says so with every beat. The first
 # lub is the hit; three more follow once the takeaway has landed, each interval HB_ACCEL x the
-# last, so the heart speeds up into the morph (the 4th beat, T_COL) instead of idling.
-T_HB0 = 6.20
+# last, so the heart speeds up into the morph (the 4th beat, T_COL) instead of idling. Same
+# rhythm as before the re-time (1.233 s from the 2nd lub to T_COL): the extra post-hit time sits
+# between the hit and the 2nd lub, where the takeaway lands.
+T_HB0 = T_COL - F(74)                          # 7.20
 HB_ACCEL = 0.88
 _HB_I0 = (T_COL - T_HB0) / sum(HB_ACCEL ** k for k in range(3))
 HB_INT = tuple(_HB_I0 * HB_ACCEL ** k for k in range(3))                 # 0.465, 0.409, 0.360
-T_LUBS = (T_HIT,) + tuple(T_HB0 + sum(HB_INT[:k]) for k in range(3))   # 5.90 | 6.200, 6.665, 7.073
+T_LUBS = (T_HIT,) + tuple(T_HB0 + sum(HB_INT[:k]) for k in range(3))   # 6.80 | 7.200, 7.665, 8.073
 HB_AMP = 0.25                                  # block scale 1.0 -> 1.25 per lub
 LUB_DUR = 0.22
 HB_TRAVELS = tuple(0.45 * i for i in HB_INT)   # pulse run time, block beat -> wall (shrinks with the beat)
-T_DUBS = tuple(t + d for t, d in zip(T_LUBS[1:], HB_TRAVELS))           # 6.409, 6.849, 7.235
+T_DUBS = tuple(t + d for t, d in zip(T_LUBS[1:], HB_TRAVELS))           # 7.409, 7.849, 8.235
 DUB_DURS = tuple(0.55 * i for i in HB_INT)     # each dub ends exactly on the next lub (the last on T_COL)
 T_CLEAR0, T_CLEAR1 = T_COL, T_COL + 0.25
 MORPH_FILL0 = 0.95                             # the block's fill, held high while it flies to AC
-T_TEXT_OUT = 7.85
+T_TEXT_OUT = T_EXIT - 0.10                     # 8.85: kicker + takeaway fade out into the static E08
 # Never static after the hit: the stage (graph, bar, stage text; never the cards or the HUD) leans
 # in 1.0 -> 1.05 about AC (where the token will land) over T_HIT -> T_CAM1 (ease_in_out_sine: its
 # fastest stretch is the heartbeat), and light flows up the curve into the wall.
 CAM_K, T_CAM1 = 0.05, T_CLEAR1 + 0.30
 FLOW_N, FLOW_PER, FLOW_W, FLOW_A = 3, 1.35, 0.40, 0.38   # glints, s per run, width (log10 N), strength
+# Ambient life while 'Some work / can't be split.' is read (its read lead and the '6.4×' hold would
+# otherwise leave only the dust moving): the serial block breathes, a slow INK lift of its fill.
+BREATH_PER, BREATH_INK = 0.80, 0.16
 
 LOG16 = math.log10(16)
 
@@ -195,7 +234,7 @@ def rr_box(x0, y0, x1, y1, r) -> np.ndarray:
 
 
 def bar_pose(now: float) -> tuple[float, float]:
-    """(y0, y1) of the job bar / serial block / rows: SETUP pose -> GRAPH pose over 2.45-2.70."""
+    """(y0, y1) of the job bar / serial block / rows: SETUP pose -> GRAPH pose over T_SLIDE0-T_SLIDE1."""
     e = ease_in_out_quart(ramp(now, T_SLIDE0, T_SLIDE1))
     yc, h = lerp(BAR_YC0, BAR_YC1, e), lerp(BAR_H0, BAR_H1, e)
     return yc - h / 2, yc + h / 2
@@ -252,7 +291,7 @@ def thunk_scale(now: float) -> float:
 
 
 def log_n_ramp(now: float) -> float:
-    """log10 N during the ramp: 16 -> 1,000,000 (ease_in_out_cubic, 4.30-5.90)."""
+    """log10 N during the ramp: 16 -> 1,000,000 (ease_in_out_cubic, T_RAMP0-T_RAMP1)."""
     return LOG16 + (LOG_MAX - LOG16) * ease_in_out_cubic(ramp(now, T_RAMP0, T_RAMP1))
 
 
@@ -297,8 +336,17 @@ def n_str(n) -> str:
     return "GPUs: ∞" if n == math.inf else f"GPUs: {n:,}"
 
 
+def breath(now: float) -> float:
+    """Idle glow of the serial block (0..1) under the 'Some work' card: eases in after the swap,
+    out over the ramp's calm first 0.30 s (0 before T_SWAP and from T_RAMP0 + 0.30)."""
+    env = smooth(ramp(now, T_SWAP + 0.05, T_SWAP + 0.35)) * (1.0 - smooth(ramp(now, T_RAMP0, T_RAMP0 + 0.30)))
+    if env <= 0.0:
+        return 0.0
+    return env * (0.5 - 0.5 * math.cos(TAU * (now - T_SWAP - 0.05) / BREATH_PER))
+
+
 def lub(now: float) -> float:
-    """Serial-block LUB envelope (0..1, fast attack) on each beat from 5.90; 0 from T_COL."""
+    """Serial-block LUB envelope (0..1, fast attack) on each beat from T_HIT; 0 from T_COL."""
     return max(bump((now - t) / LUB_DUR) for t in T_LUBS)
 
 
@@ -460,21 +508,20 @@ class B08Amdahl(BeatScene):
         self.open_g = VGroup(self.tears, self.s_qc, self.s_qm, self.s_q)
 
         # ---------------- cards + kicker (frame-exact schedule) ----------------
+        assert beat_duration(type(self).__name__) == BEAT_SLOT, "timeline.py slot changed: re-time b08"
         tr = TextTrack(self)
         no = card([("No.", "H150", AMBER)])[0]
-        # The H150 'No.' sits ~0.1 under the kicker, so a centre SLAM (1.3x) and CARD_OUT's
-        # 0.15 upward drift both pushed it into 'THE CATCH · AMDAHL'S LAW': SLAM about the top
-        # edge (grows downward) and fade out in place.
-        no_out = T_NO_GONE - 0.20
-        tr.on(no, T_NO, no_out, enter="slam", about=no.get_top(),
-              shift=lambda now: DOWN * 0.15 * smooth(clip01((now - no_out) / 0.20)))
+        # The H150 'No.' sits ~0.1 under the kicker, so a centre SLAM (1.3x) pushed it into
+        # 'THE CATCH · AMDAHL'S LAW': SLAM about the top edge (grows downward). It hard-swaps to
+        # the next card on the whip (its reading floor runs to the swap).
+        tr.on(no, T_NO, T_SWAP, enter="slam", exit="cut", about=no.get_top())
         some = card([("Some work", "H84", INK), ("can't be split.", "H84", INK, {"can't": AMBER})])
-        tr.on(some[0], T_SOME_IN, T_SOME_GONE - 0.20)
-        tr.on(some[1], T_SOME_IN + 0.08, T_SOME_GONE - 0.20)
+        tr.on(some[0], T_SWAP, T_RAMP0, enter="pop")      # the whole card POPs on the swap: its
+        tr.on(some[1], T_SWAP, T_RAMP0, enter="pop")      # 2.3 s floor starts at once; out as the ramp starts
         take = card([("10% serial", "H84", INK, {"10% serial": AMBER}),
                      ("= max 10×.", "H84", INK, {"10×": AMBER})])
-        tr.on(take[0], T_TAKE, T_TEXT_OUT, exit_dur=T_EXIT - T_TEXT_OUT)
-        tr.on(take[1], T_TAKE + 0.08, T_TEXT_OUT, exit_dur=T_EXIT - T_TEXT_OUT)
+        tr.on(take[0], T_TAKE, T_TEXT_OUT, enter="pop", exit_dur=T_EXIT - T_TEXT_OUT)
+        tr.on(take[1], T_TAKE, T_TEXT_OUT, enter="pop", exit_dur=T_EXIT - T_TEXT_OUT)
         tr.on(kick("THE CATCH · AMDAHL'S LAW", AMBER, tracking=80), T_NO, T_TEXT_OUT,
               exit_dur=T_EXIT - T_TEXT_OUT)
         for ln in (*q, *some, *take):              # the stage never reaches into a card
@@ -523,24 +570,25 @@ class B08Amdahl(BeatScene):
         # ---------------- audio ----------------
         self.cue("glitch", dt=0.0, gain=0.8, dur=0.30,
                  note="the question cracks in out of the black (glitch on its lines + scan tears)")
-        self.cue("whoosh", dt=0.52, dur=0.45, direction="up", note="bar wipe")
-        self.cue("silence", dt=1.00, dur=0.50, note="duck the bed under 'So… infinite speed?'")
-        self.cue("hit", dt=T_NO, gain=1.0, note="'No.'")
-        self.cue("sub_drop", dt=T_NO, dur=1.6, note="dark")
+        self.cue("whoosh", dt=round(T_WIPE0 + 0.22, 4), dur=0.45, direction="up", note="bar wipe")
+        self.cue("silence", dt=round(T_PUSH0, 4), dur=0.50,
+                 note="duck the bed under 'So… infinite speed?' (the pause before the answer)")
+        self.cue("hit", dt=round(T_NO, 4), gain=1.0, note="'No.'")
+        self.cue("sub_drop", dt=round(T_NO, 4), dur=1.6, note="dark")
         for t in T_CRACKS:
             self.cue("glitch", dt=t, gain=0.5, dur=0.10, note="failed split: the block cracks")
             self.cue("hit", dt=round(t + CRACK_HOLD / 60, 4), gain=0.3, note="snap-back thunk")
         self.cue("whoosh", dt=round((T_SLIDE0 + T_SLIDE1) / 2, 4), dur=0.40, gain=0.6, direction="up",
                  note="bar group whips up, graph draws in")
         for t, fr in zip(T_DBL, (2400, 3000, 3600, 4400)):
-            self.cue("tick", dt=t, gain=0.9, freq=fr, pan=0, note="doubling")
-        self.cue("ticks_burst", dt=T_RAMP0, dur=0.72, rate0=30, rate1=4,
-                 note="speedup ticks slowing, silent at ~5.02 (the stall)")
-        self.cue("riser", dt=T_RAMP0, dur=1.60, note="into the wall")
-        self.cue("hit", dt=T_WALL1, gain=0.6, note="THE WALL label")
-        self.cue("hit", dt=T_HIT, gain=1.0, note="'10×' and '∞'")
-        self.cue("sub_drop", dt=T_HIT, dur=2.0)
-        self.cue("pad_swell", dt=T_TAKE, dur=1.6, chord=1, note="dark chord under the takeaway")
+            self.cue("tick", dt=round(t, 4), gain=0.9, freq=fr, pan=0, note="doubling")
+        self.cue("ticks_burst", dt=round(T_RAMP0, 4), dur=0.72, rate0=30, rate1=4,
+                 note=f"speedup ticks slowing, silent at ~{T_RAMP0 + 0.72:.2f} (the stall)")
+        self.cue("riser", dt=round(T_RAMP0, 4), dur=round(T_RAMP1 - T_RAMP0, 4), note="into the wall")
+        self.cue("hit", dt=round(T_WALL1, 4), gain=0.6, note="THE WALL label")
+        self.cue("hit", dt=round(T_HIT, 4), gain=1.0, note="'10×' and '∞'")
+        self.cue("sub_drop", dt=round(T_HIT, 4), dur=2.0)
+        self.cue("pad_swell", dt=round(T_TAKE, 4), dur=1.6, chord=1, note="dark chord under the takeaway")
         for t, d in zip(T_LUBS[1:], T_DUBS):
             self.cue("hit", dt=round(t, 4), gain=0.35, note="heartbeat lub: the block + ring (speeding up)")
             self.cue("hit", dt=round(d, 4), gain=0.22, note="heartbeat dub: the pulse hits the wall")
@@ -555,7 +603,7 @@ class B08Amdahl(BeatScene):
         self.collapse = COLLAPSE(self.serial, None, "plain", AMBER)
         self.add(self.collapse.glyph)
         hold_floor(self, T_EXIT)
-        exit_to(self)                              # canonical E08, static 7.95-8.00
+        exit_to(self)                              # canonical E08, static 8.95-9.00
 
     # ======================================================================
     # Driver
@@ -688,7 +736,7 @@ class B08Amdahl(BeatScene):
         else:
             hb = min(1.0, lub(now) + 0.3 * dub(now))
             flash = max(decay(now - T_NO, 0.22), decay(now - T_HIT, 0.30))
-            s_fill = [*lerp(C_AM, C_INK, max(0.65 * flash, 0.15 * hb)), MORPH_FILL0]
+            s_fill = [*lerp(C_AM, C_INK, max(0.65 * flash, 0.15 * hb, BREATH_INK * breath(now))), MORPH_FILL0]
             sc = (1.0 + HB_AMP * hb) * thunk_scale(now)
             self.serial.points = rrect_c(P(SER_CX, yc) + off, SER_W * sc, h * sc, SER_R * sc)
             set_style(self.serial, s_fill, [*C_INK, 1.0], 2.0)
@@ -848,7 +896,7 @@ class B08Amdahl(BeatScene):
             # POP about the inner edges so the gap between the labels never closes
             self._show(self.s_lab_a, self.t_lab_a, a, sc, self.t_lab_a.get_right() + lab_dy, sh_a, tint_a)
             self._show(self.s_lab_b, self.t_lab_b, a, sc, self.t_lab_b.get_left() + lab_dy, sh + lab_dy)
-        # 'TIME TO FINISH' (rides the bar; the lean-in camera too). Out for good at 4.30-4.45: the
+        # 'TIME TO FINISH' (rides the bar; the lean-in camera too). Out for good as the ramp starts: the
         # takeaway frame keeps only 'GPUs: ∞' on that row.
         ca = ease_out_cubic(ramp(now, T_CAP_IN, T_CAP_IN + 0.25))
         ca *= (1.0 - smooth(ramp(now, T_CAP_OUT0, T_CAP_OUT1))) * clear
@@ -860,7 +908,7 @@ class B08Amdahl(BeatScene):
             c = P(BAR_CX, (y0 + y1) / 2)
             shift = np.array([0.0, y1 - BAR_Y1F - 0.12 * (1 - ca), 0.0]) + (row - c) * (k - 1) + sh
             self._show(self.s_cap, self.t_cap, ca, k, self.t_cap.get_center(), shift)
-        # axis titles (taught by 2.70; gone under the takeaway)
+        # axis titles (taught from T_AXLAB; gone under the takeaway)
         aa = ease_out_cubic(ramp(now, T_AXLAB, T_AXLAB + 0.25)) * (1.0 - smooth(ramp(now, T_DECL0, T_DECL1))) * clear
         for slot, t in ((self.s_ax_y, self.t_ax_y), (self.s_ax_x, self.t_ax_x)):
             if aa <= 0:
@@ -908,7 +956,7 @@ class B08Amdahl(BeatScene):
         k = push_k(now)
         c = P(BAR_CX, BAR_YC0)
         shift = np.array([0.0, y1 - BAR_Y1F, 0.0]) + (ab + np.array([0.0, y1 - BAR_Y1F, 0.0]) - c) * (k - 1) + sh
-        # glitch-snap to '∞' at 5.90: decaying x-jitter + CYAN/MAGENTA split copies
+        # glitch-snap to '∞' at T_HIT: decaying x-jitter + CYAN/MAGENTA split copies
         df = f - story_frame(T_HIT)
         if 0 <= df <= 6:
             shift = shift + np.array([jitter(df, 0.07 * (1 - df / 7), seed=59), 0.0, 0.0])

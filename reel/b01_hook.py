@@ -1,4 +1,4 @@
-"""b01 HOOK: one at a time vs all at once (4.5 s, film 0.0-4.5).
+"""b01 HOOK: one at a time vs all at once (5.0 s, film 0.0-5.0).
 
 Frame 0 is handoff_state('LOOP') (== b09's last frame): the x1.4 amber worker with its soft
 halo is mid-crawl on idx 32 (10-cell bright trail, #2E3445 idle field), under the
@@ -10,11 +10,15 @@ dead on the 8-frame micro-freeze (headline jitter, silence); at 1.00 s every oth
 lights up in a radial INK->CYAN wave (white radial burst + CYAN shock ring from the worker)
 while the lone worker stays AMBER, drawn on the grid's top layer with its halo (above the
 1.3x flashing neighbours); the halo fades out during the push-in, before the token lands.
+Read-holds: 'All at once.' + '320 WORKERS · 1 STEP' hold over the shimmering field until 2.667
+(1.67 s after the hit; the readout until 3.22), then the hook pair hard-swaps to the open-loop
+card (POP, 2.667) on the calm field, read for 1.23 s before the push-in fires. The swap is the
+film's card-swap grammar: no 0.20 s CARD_OUT + 0.25 s CARD_IN gap eats the reading windows.
 The camera then never sits still: a slow linear push-in about the worker (1.035 -> 1.06,
-1.30-3.40) carries straight into the ease_in_out_expo push-in (3.40-4.33), with a second,
-softer diagonal light pulse on the open-loop card (2.35). The worker morphs into the cyan
-E01 token and settles (cut_times(4.5): land 4.333, settle 0.12 s, static E01 f267-f269).
-The kicker + open-loop card stay fully visible until the token is static (hard cut at 4.45),
+1.30-3.90) carries straight into the ease_in_out_expo push-in (3.90-4.83, 56 frames), with a
+second, softer diagonal light pulse on the open-loop card (2.667). The worker morphs into the
+cyan E01 token and settles (cut_times(5.0): land 4.833, settle 0.12 s, static E01 f297-f299).
+The kicker + open-loop card stay fully visible until the token is static (hard cut at 4.95),
 so the cut never shows an empty, text-less frame before b02's frame 0.
 
 Everything per frame is a pure function of self.now (one vectorised grid updater + the
@@ -32,20 +36,28 @@ T_FREEZE0 = 52 * F              # f52..f59 micro-freeze (headline jitter)
 T_HIT = 1.00                    # f60 the parallel wave
 WAVE_SPAN = 0.35                # flash front reaches the farthest cell 0.35 s after the hit
 FLASH_SETTLE = 0.25             # INK flash -> LIT
-T_HOOK_OUT = 2.15               # hook cards leave (gone by 2.35, no overlap with the next card)
-T_CARDS = 2.35                  # open-loop card in (+ the second light pulse)
-T_RO_OUT = 2.85                 # '320 WORKERS · 1 STEP' out
+# Read-holds (5.0 s slot; the first second above is untouched): the payoff ('All at once.' +
+# '320 WORKERS · 1 STEP' over the shimmering cyan field) holds 1.67 s after the hit, then the
+# hook pair HARD-SWAPS to the open-loop card (POP), read on the calm field for 1.23 s before the
+# push-in fires. The text window is 1.00 (the sacred hit) -> 4.95 (exit) = 3.95 s for floors of
+# 1.70 ('All at once.', 3 words) + 2.30 (open-loop card, 5 words); the swap at f160 splits the
+# 0.05 s shortfall: 1.667 s / 2.283 s (counted from full opacity: SLAM / POP are opaque at once).
+T_SWAP = 160 * F                # 2.6667 hook pair cut -> open-loop card POP
+T_CARDS = T_SWAP                # open-loop card in (+ the second light pulse)
+T_RO_OUT = T_CARDS + 0.55       # 3.217 '320 WORKERS · 1 STEP' out (gone 3.417, before the push-in)
 CREEP_S = 1.035                 # camera creeps in about the worker during the crawl (1.0 -> 1.035,
                                 # ease_in_quad from f0, stops dead on the micro-freeze, holds)
 T_CHARGE0 = 0.45                # visual riser (with the audio riser): the idle field charges,
 CHARGE_STROKE = rgba(CYAN, 0.45)   # outline only: DIM 0.35 -> CYAN 0.45 by the freeze (the fill
                                 # stays idle grey: the cyan fill is the hit's reveal)
-T_DRIFT0, T_DRIFT1 = 1.30, 3.40 # slow push-in about the worker (linear) ...
+SLOT = beat_duration("B01Hook") # 5.0
+_, T_PUSH1, T_SETTLE1 = cut_times(SLOT)  # 4.8333 (f290) lands, 4.95 (f297) settled
+PUSH_DUR = 56 * F               # push-in on the worker (ease_in_out_expo), same 0.933 s as before
+T_PUSH0 = T_PUSH1 - PUSH_DUR    # 3.90 (f234)
+T_DRIFT0, T_DRIFT1 = 1.30, T_PUSH0   # slow push-in about the worker (linear) under both holds ...
 DRIFT_S = 1.06                  # ... CREEP_S -> 1.06, handing its speed to the push-in
-T_PUSH0 = T_DRIFT1              # push-in on the worker (ease_in_out_expo)
-_, T_PUSH1, T_SETTLE1 = cut_times(4.5)   # 4.3333 (f260) lands, 4.45 (f267) settled
-T_FADE0, T_FADE1 = 3.55, 4.20   # non-worker cells fade out
-T_MORPH0 = 3.70                 # worker -> token style
+T_FADE0, T_FADE1 = T_PUSH0 + 0.15, T_PUSH0 + 0.80   # 4.05-4.70 non-worker cells fade out
+T_MORPH0 = T_PUSH0 + 0.30       # 4.20 worker -> token style
 T_TXT_OUT = T_SETTLE1           # kicker + open-loop card: full until the token is static, then cut
 
 PULSE_SPAN = 0.26               # second light pulse: front crosses the grid diagonal in 0.26 s ...
@@ -103,7 +115,7 @@ def _charge_idle(stroke: np.ndarray, sel: np.ndarray, c: float) -> None:
 
 
 def _pulse(now: float) -> np.ndarray:
-    """Second light pulse (2.35): per-cell 0 -> 1 -> 0 bump as the diagonal front passes."""
+    """Second light pulse (T_CARDS): per-cell 0 -> 1 -> 0 bump as the diagonal front passes."""
     p = (now - _T_PULSE) / PULSE_DUR
     out = np.zeros(HOOK_N)
     on = (p > 0.0) & (p < 1.0)
@@ -233,19 +245,19 @@ class B01Hook(BeatScene):
                 return np.array([jitter(f, 0.03, JITTER_SEED), 0.0, 0.0])
             return ORIGIN
 
-        tr.on(head, 0.0, T_HOOK_OUT, enter="cut", exit="out", alpha=head_alpha, shift=head_shift)
+        tr.on(head, 0.0, T_SWAP, enter="cut", exit="cut", alpha=head_alpha, shift=head_shift)
         # 'All at once.' shares line 1's H96 scale (a matched pair, card()'s baseline pitch): it
         # sits 0.75 above the grid and its SLAM can run at full strength inside the safe zone.
         pair = card([("One at a time.", "H96", INK), ("All at once.", "H96", CYAN)])
         allc = pair[1]
-        tr.on(allc, T_HIT, T_HOOK_OUT, enter="slam", exit="out",
+        tr.on(allc, T_HIT, T_SWAP, enter="slam", exit="cut",
               scale=fit_scale(allc, 1.3, box=SAFE_BOX), cap=False)
         # The topic is part of the LOOP frame (b09 POPs it in at 2.40), so it is on screen from
         # frame 0 with no fade-in, stays when the open-loop card arrives and cuts with the token.
         tr.on(st.kicker, 0.0, T_TXT_OUT, enter="cut", exit="cut")
         ol = card([("It scales…", "H84", INK), ("until it doesn't.", "H84", AMBER)])
-        tr.on(ol[0], T_CARDS, T_TXT_OUT, exit="cut")
-        tr.on(ol[1], T_CARDS, T_TXT_OUT, exit="cut")
+        tr.on(ol[0], T_CARDS, T_TXT_OUT, enter="pop", exit="cut")   # both lines POP on the swap
+        tr.on(ol[1], T_CARDS, T_TXT_OUT, enter="pop", exit="cut")
 
         par = "320 WORKERS · 1 STEP"
 
@@ -273,10 +285,10 @@ class B01Hook(BeatScene):
         self.cue("silence", dt=T_FREEZE0, dur=0.133)
         self.cue("hit", dt=T_HIT, gain=1.0)
         self.cue("sub_drop", dt=T_HIT, dur=1.4)
-        self.cue("shimmer", dt=1.05, dur=1.3)
+        self.cue("shimmer", dt=1.05, dur=round(T_CARDS - 1.05, 4), note="the lit field, hit -> open-loop card")
         self.cue("tick", dt=T_CARDS, gain=0.5)
         self.cue("shimmer", dt=T_CARDS, gain=0.45, dur=0.5, note="second light pulse")
-        self.cue("pad_swell", dt=2.90, dur=1.4)
+        self.cue("pad_swell", dt=T_PUSH0 - 0.50, dur=1.4, note="swells into the push-in landing")
         self.cue("whoosh", dt=(T_PUSH0 + T_PUSH1) / 2, dur=0.9, direction="up")
         self.cue("tick", dt=T_PUSH1, gain=0.5)
 

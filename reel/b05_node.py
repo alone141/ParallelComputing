@@ -1,20 +1,26 @@
 """b05 - SCALE 4/6 - ONE SERVER: 8 GPUs in one box, wired by NVLink through the NVSwitch.
 
 The GPU token (E04) is one of the 8 GPUs of an HGX H100 node: the camera pulls back
-(EXPAND, 0.50 s, INK charge on the hero outline). Three all-reduce cycles: every GPU
-computes its own slice (its texture rewrites itself to a different partial result), then
-every GPU sends a packet GPU-to-GPU THROUGH the NVSwitch to its partner on the other side
+(EXPAND, 0.50 s, INK charge on the hero outline) while '8 GPUs. / Wired together by NVLink.'
+is read. Three all-reduce cycles (0.80, 1.85, 3.10): every GPU computes its own slice (its
+texture rewrites itself to a different partial result; the first compute is the 135,168 slam,
+and its partial results sit for 0.10 s before they are sent), then every GPU sends a packet
+GPU-to-GPU THROUGH the NVSwitch to its partner on the other side
 (~2.75 units: along its NVLink, across the switch, along the partner's link; full duplex,
 left->right just above the link, right->left just below, so each pair passes inside the
 switch). Packets carry long, bright comet trails with a hot INK core; they are MAGENTA (data
 in flight) until they enter the switch, flash white-hot in it as the switch body lights up
 (its label turns INK so it stays readable) and leave it LIME (the reduced result); on
 arrival every GPU flashes LIME and now shows the SAME texture (every GPU holds the full
-answer). Cycle 2 runs under a slow 1.0 -> 1.04 stage push-in. The third arrival (3.45) is
-the light wave: GPUs, links and switch flash INK, then the GPUs go LIME (results) while the
-switch and links glow MAGENTA (data movement), and a MAGENTA shock ring leaves the switch.
-The chassis then collapses (cut_times) into handoff_token('node') (E05); kicker + headline
-hold to the exit and hard-cut with the canonical swap.
+answer). Cycle 2 runs under a slow 1.0 -> 1.04 stage push-in. The first card hard-swaps to
+'Share results.' (POP) on the second arrival (2.65), read 0.67 s before the third exchange
+leaves (3.32). The third arrival
+(3.90) is the light wave: GPUs, links and switch flash INK, then the GPUs go LIME (results)
+while the switch and links glow MAGENTA (data movement), and a MAGENTA shock ring leaves the
+switch; the GPUs keep a breathing LIME glow (every GPU holds the shared result; a faint sheen
+sweeps all 8 textures in sync) for a 1.03 s hold. The chassis then collapses (cut_times) into
+handoff_token('node') (E05); kicker + headline hold to the exit and hard-cut with the
+canonical swap.
 
 Everything that moves is a pure function of self.now (one driver updater + the drift);
 the scene only holds until the structural switch points (collapse capture, canonical exit).
@@ -58,13 +64,32 @@ PKT_CORE = 0.30                                                              # p
 # --------------------------------------------------------------------------
 # Timeline (beat-local seconds)
 # --------------------------------------------------------------------------
-CYCLES = (0.75, 1.70, 2.65)          # c0: compute; +0.22..0.80 GPU -> switch -> GPU; +0.80 LIME
+# Pacing (5.5 s slot): each idea is SEQUENCED - card first, a read, the motion, then a held payoff.
+# Only the gaps between motions grew; every motion keeps its old duration (EXPAND 0.50, texture
+# write 0.25, packet flight 0.58, LIME flash 0.30, light wave 0.55, collapse 0.40).
+#   0.00-0.50  EXPAND; '8 GPUs.' POPs on frame 1, 'Wired together by NVLink.' 0.12 (fully in 0.37)
+#   0.80       cycle 1 compute = 135,168 SLAM + '8 GPUs × 16,896' (1.6 s fully visible); the
+#              first packets leave at 1.12, 0.75 s after the sub-line is fully in
+#   1.85       cycle 2 (under the push-in); on its arrival (2.65) c1 hard-swaps to 'Share results.'
+#              (POP): c1 0.017 -> 2.65 = 2.63 s for its 6 words (>= 2.60), no fade/CARD_IN between
+#   3.10       cycle 3 compute; its packets leave 3.32 (0.67 s after 'Share results.' lands)
+#   3.90       third arrival = the light wave; held LIME result 3.90 -> 4.933 (1.03 s), collapse
+C_COMP = (0.80, 1.85, 3.10)          # compute: every GPU writes its own partial result (texture)
+C_SEND = (0.90, 1.85, 3.10)          # exchange origin c0: +T_DEP leave, +T_SW switch, +T_ARR land
 T_DEP, T_ARR = 0.22, 0.80            # packet flight inside a cycle (c0 + ...): inside the switch +0.45..0.57
 T_SW = 0.45                          # the switch flashes as the packets enter it
-T_WAVE = 3.45                        # third arrival = light wave
-T_DRIFT0, T_DRIFT1 = CYCLES[1], CYCLES[1] + 0.80   # cycle 2: slow stage push-in 1.0 -> 1.04
-T_COL, T_SET, T_EXIT = cut_times(4.5)               # 3.933 / 4.333 / 4.45
+MULT_HOLD = 1.70                     # '8 GPUs × 16,896': fully visible 0.90 -> 2.50
+T_C2 = round(C_SEND[1] + T_ARR, 4)   # 2.65: 'Share results.' POPs with the second arrival ...
+T_C1_OUT = T_C2                      # ... as the '8 GPUs.' card hard-cuts (the card-swap grammar)
+T_WAVE = round(C_SEND[2] + T_ARR, 4) # 3.90: third arrival = light wave
+T_DRIFT0, T_DRIFT1 = C_COMP[1], C_COMP[1] + 0.80   # cycle 2: slow stage push-in 1.0 -> 1.04
+T_COL, T_SET, T_EXIT = cut_times(5.5)               # 4.933 / 5.333 / 5.45
 T_TEXT_OUT = T_EXIT                                 # kicker + headline hold to the exit, then hard-cut
+# the held result: after the light wave every GPU keeps a LIME glow (it holds the shared answer)
+# that breathes until the collapse fades it, so the 1 s hold on the synchronized wave is alive
+HELD, HELD_AMP, HELD_T = 0.55, 0.10, 0.90           # LIME level, breathing amplitude, period (s)
+# ... and a faint diagonal sheen sweeps all 8 shared-result textures IN SYNC (same phase on every GPU)
+SHEEN, SHEEN_T, SHEEN_IN = 0.35, 0.75, (0.30, 0.60)  # peak lift, sweep period, fade-in after T_WAVE
 
 # --------------------------------------------------------------------------
 # GPU textures: partial results differ per GPU, the all-reduced result is shared
@@ -73,8 +98,8 @@ _GPU_P0 = (0.25 + 0.65 * np.random.default_rng(5).random((8, 8))).reshape(64)   
 _ROW, _COL = np.divmod(np.arange(64), 8)
 PHASE = (_ROW + _COL) / 14.0         # diagonal write order inside a texture
 _prng = np.random.default_rng(55)
-PARTIAL = 0.25 + 0.65 * _prng.random((len(CYCLES), N_GPU, 64))
-COMBINED = 0.25 + 0.65 * _prng.random((len(CYCLES), 64))
+PARTIAL = 0.25 + 0.65 * _prng.random((len(C_COMP), N_GPU, 64))
+COMBINED = 0.25 + 0.65 * _prng.random((len(C_COMP), 64))
 COMBINED[-1] = _GPU_P0               # the last all-reduce returns the token's own glyph
 
 C_CY = RGB_CYAN
@@ -129,14 +154,14 @@ class B05Node(BeatScene):
         track = TextTrack(self)
         track.on(kick("SCALE 4/6 · ONE SERVER"), 0.0, T_TEXT_OUT, exit="cut")
         c1 = card([("8 GPUs.", "H96", INK, {"8": CYAN}), ("Wired together by NVLink.", "S56", MAGENTA)])
-        track.on(c1[0], 1 / 60, 2.45, enter="pop")    # POPs on story frame 1 (frame 0 stays E04);
-        track.on(c1[1], 0.12, 2.45)                    # gone by 2.65, when 'Share results.' enters
+        track.on(c1[0], 1 / 60, T_C1_OUT, enter="pop", exit="cut")   # POPs on story frame 1 (frame 0
+        track.on(c1[1], 0.12, T_C1_OUT, exit="cut")                  # stays E04); hard swap at 2.65
         c2 = card([("Share results.", "H96", INK, {"results.": LIME})])
-        track.on(c2, 2.65, T_TEXT_OUT, exit="cut")
+        track.on(c2, T_C2, T_TEXT_OUT, enter="pop", exit="cut")
 
         # ---------------- HUD: the jump explains its own multiplication ----------------
-        hud.slam(CYCLES[0], "135,168")
-        hud.mult(CYCLES[0], "8 GPUs × 16,896")
+        hud.slam(C_COMP[0], "135,168")
+        hud.mult(C_COMP[0], "8 GPUs × 16,896", hold=MULT_HOLD)
 
         # ---------------- z-order: dust, ring, world, packets, shock ring, text, HUD ----------------
         self.remove(st.token)                         # the hero GPU now draws the token
@@ -162,16 +187,16 @@ class B05Node(BeatScene):
         # ---------------- audio ----------------
         self.cue("hit", gain=0.8, note="match-cut and ring")
         self.cue("whoosh", dt=0.05, dur=0.50, direction="up", note="GPUs fly in")
-        self.cue("hit", dt=CYCLES[0], gain=0.6, note="x8 compute")
-        for c0 in CYCLES:
+        self.cue("hit", dt=C_COMP[0], gain=0.6, note="x8 compute")
+        for c0 in C_SEND:
             self.cue("whoosh", dt=round(c0 + T_DEP, 4), dur=0.55, direction="up",
                      note="packets fly GPU -> NVSwitch -> partner GPU")
             self.cue("tick", dt=round(c0 + T_SW, 4), note="packets cross the switch (flash)")
-        for c0 in CYCLES[:2]:
+        for c0 in C_SEND[:2]:
             self.cue("pop", dt=round(c0 + T_ARR, 4), note="results land: every GPU flashes LIME")
-        self.cue("riser", dt=2.25, dur=1.2, note="into the third cycle")
+        self.cue("riser", dt=round(T_WAVE - 1.2, 4), dur=1.2, note="into the third cycle")
         self.cue("hit", dt=T_WAVE, gain=0.8, note="all 8 flash together")
-        self.cue("shimmer", dt=T_WAVE, dur=0.8)
+        self.cue("shimmer", dt=T_WAVE, dur=1.0, note="rides the held LIME result")
         self.cue("whoosh", dt=round(T_COL - 0.10, 4), dur=0.55, direction="down", note="collapse")
         self.cue("tick", dt=round(T_SET, 4), gain=0.5, note="settle")
 
@@ -183,7 +208,7 @@ class B05Node(BeatScene):
         self.collapse = COLLAPSE(self.chassis, VGroup(self.links, self.switch, self.sw_label, self.gpus), "node")
         self.add(self.collapse.glyph)
         hold_floor(self, T_EXIT)
-        exit_to(self)                                 # canonical E05, static to 4.50
+        exit_to(self)                                 # canonical E05, static to 5.50
 
     # ------------------------------------------------------------------
     def _draw(self, now: float) -> None:
@@ -193,7 +218,7 @@ class B05Node(BeatScene):
                 e = ease_in_out_expo(ramp(now, T_COL, T_SET))
                 self._style(now, 1.0 - ramp(e, 0.45, 0.80), self.collapse.s1 ** e)
             return
-        if now < CYCLES[0] - EPS:
+        if now < C_COMP[0] - EPS:
             ink = 1.0 if flash_frames(now, 1 / 60, 2) else 0.0
             EXPAND(self.world, GPU_C[HERO], GPU_U, ease_out_expo(ramp(now, 0.0, EXPAND_TIME)), ink=ink)
             return
@@ -205,17 +230,18 @@ class B05Node(BeatScene):
     def _style(self, now: float, a: float, sw_k: float = 1.0) -> None:
         f = story_frame(now)
         ink = 0 <= f - story_frame(T_WAVE) < 2
-        wave = 0.0
+        wave = held = 0.0
         if now >= T_WAVE - EPS and not ink:
             wave = 1.0 - ease_in_out_sine(ramp(now, T_WAVE + 2 / 60, T_WAVE + 0.55))
-        lime = max(flash_env(now - (c0 + 0.80), 0.05, 0.30) for c0 in CYCLES[:2])
-        lime = max(lime, wave)
+            held = held_glow(now)                     # takes over as the wave decays below it
+        lime = max(flash_env(now - (c0 + T_ARR), 0.05, 0.30) for c0 in C_SEND[:2])
+        lime = max(lime, wave, held)
         comp = 0.0
-        for c0 in CYCLES:
+        for c0 in C_COMP:
             if now >= c0 - EPS:
                 comp = max(comp, 1.0 - ease_out_quad(ramp(now, c0, c0 + 0.30)))
-        swf = max(flash_env(now - (c0 + T_SW), 0.06, 0.30) for c0 in CYCLES)   # while the packets cross it
-        transit = max(ramp(now, c0 + 0.20, c0 + 0.30) * (1 - ramp(now, c0 + 0.78, c0 + 0.90)) for c0 in CYCLES)
+        swf = max(flash_env(now - (c0 + T_SW), 0.06, 0.30) for c0 in C_SEND)   # while the packets cross it
+        transit = max(ramp(now, c0 + 0.20, c0 + 0.30) * (1 - ramp(now, c0 + 0.78, c0 + 0.90)) for c0 in C_SEND)
 
         # ---- GPU units
         if ink:
@@ -225,20 +251,24 @@ class B05Node(BeatScene):
             u_stroke = np.array([*lerp(C_CY, C_LIME, lime), a])
         uf, us = u_fill.reshape(1, 4), u_stroke.reshape(1, 4)
 
-        # ---- textures: partial results written diagonally at c0, shared result at c0 + 0.80
+        # ---- textures: partial results written diagonally at the compute time, shared result
+        # on arrival (exchange origin + T_ARR)
         tex_rgb = lerp(C_CY, C_LIME, 0.85 * lime)
+        sheen, sheen_pos = held_sheen(now)
         for g in range(N_GPU):
             pat = _GPU_P0.copy()
             band = np.zeros(64)
-            for cyc, c0 in enumerate(CYCLES):
+            for cyc, (c0, s0) in enumerate(zip(C_COMP, C_SEND)):
                 if now >= c0 - EPS:
                     pos = ease_out_cubic(ramp(now, c0, c0 + 0.25)) * 1.2
                     pat = np.where(PHASE <= pos - 0.1, PARTIAL[cyc, g], pat)
                     if now < c0 + 0.32:
                         band = np.maximum(band, 0.55 * np.exp(-((PHASE - (pos - 0.1)) / 0.10) ** 2)
                                           * (1 - ramp(now, c0 + 0.22, c0 + 0.32)))
-                if now >= c0 + 0.80 - EPS:
+                if now >= s0 + T_ARR - EPS:
                     pat = COMBINED[cyc]
+            if sheen > 0:
+                band = np.maximum(band, sheen * np.exp(-((PHASE - sheen_pos) / 0.12) ** 2))
             op = np.clip(pat * (1.0 + 0.6 * comp) + band, 0.0, 1.0)
             if ink:
                 rows = np.tile(np.array([*C_INK, 1.0]), (64, 1))
@@ -282,7 +312,7 @@ class B05Node(BeatScene):
         for g in range(N_GPU):
             pk, tr, co = self.packets[g], self.trails[g], self.cores[g]
             q = None
-            for c0 in CYCLES:
+            for c0 in C_SEND:
                 if c0 + T_DEP - EPS <= now < c0 + T_ARR - EPS:
                     q = ramp(now, c0 + T_DEP, c0 + T_ARR)
             if q is None:
@@ -312,6 +342,24 @@ class B05Node(BeatScene):
                 m.sheen_direction = np.array([dirn, 0.0, 0.0])
                 m.fill_rgbas = np.array([[*lerp(pkt_rgb(lerp(far, near, u), dirn), C_INK, tint), a * al]
                                          for u, a in zip(us, stops)])
+
+
+def held_glow(now: float) -> float:
+    """LIME level every GPU keeps after the light wave (it holds the shared result): HELD,
+    breathing +/- HELD_AMP over HELD_T (starts at HELD on the wave frame, so max() with the
+    decaying wave hands over without a jump)."""
+    return HELD + HELD_AMP * math.sin(2 * PI * (now - T_WAVE) / HELD_T)
+
+
+def held_sheen(now: float) -> tuple[float, float]:
+    """(lift, diagonal position) of the synchronized sheen over the held result: fades in over
+    SHEEN_IN after the light wave, then a band sweeps every texture (PHASE 0 -> 1) once per
+    SHEEN_T; it wraps far outside the texture (-0.35 / 1.35), so the loop has no visible jump."""
+    t0 = T_WAVE + SHEEN_IN[0]
+    if now < t0 - EPS:
+        return 0.0, 0.0
+    k = SHEEN * ramp(now, t0, T_WAVE + SHEEN_IN[1])
+    return k, ((now - t0) / SHEEN_T) % 1.0 * 1.7 - 0.35
 
 
 def pkt_rgb(x: float, dirn: float) -> np.ndarray:

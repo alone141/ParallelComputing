@@ -4,29 +4,33 @@ The cluster token (E06) shrinks into the hub (project server) at the centre of a
 globe (R 2.85, bright points, an atmospheric CYAN rim) that settles in from 3x (the widest
 zoom-out). Once the HUD has gone (0.75) the camera drifts into the room it left: 1.0 -> 1.10x
 and 0.45 lower by 1.55 (ease_in_out_sine; globe y[-3.14, 3.14], hub at y 0.0). 'Home PCs. /
-350,000+ GPUs, online.' POPs on the cut, so the planet's number sits in the SAME unit as b06's
-'100,000+ GPUs' headline. Volunteer PCs pop up across the front side;
-from 1.00 a work unit leaves the hub every 0.10 s (MAGENTA arc + packet), the device computes
-(INK flash + ring) and a LIME result rides back. Job 0 is slowed and drawn bolder so its
-'work unit' / 'result' labels (Inter Bold 44) tell the request/response story.
+350,000+ GPUs, online.' POPs on the cut (headline story frame 1, sub-line frame 2), so the
+planet's number sits in the SAME unit as b06's '100,000+ GPUs' headline. Volunteer PCs pop up
+across the front side from 0.80 (the sub-line's 'online'); the card has been read 1.27 s when,
+at 1.30, the first work unit leaves the hub, then one every 0.10 s (MAGENTA arc + packet), the
+device computes (INK flash + ring) and a LIME result rides back. Job 0 is slowed and drawn
+bolder so its 'work unit' / 'result' labels (Inter Bold 44) tell the request/response story.
 
 HUD: the counter RETIRES here, it never shows the planet's number: muted viewers would read
 '1,689,600,000+' -> '350,000+' as a drop. While the card brings in '350,000+ GPUs', the frozen
 '1,689,600,000+ / CALCULATIONS AT ONCE' dims to 0.5 (0.10-0.35), then slides down and fades out
 (Hud.retire 0.40-0.75, ease_in_cubic: it accelerates away, nothing new drops in, so it reads as
 leaving, not as a slot-machine count). From 0.75 the beat is HUD-free, like its exit state.
-1.95 hard swap to '2020: they beat / the top 500 / supercomputers combined.' (past tense, dated:
-the 2020 claim vs the TOP500 sum, see facts planet_fah_caveats). 2.40 a light wave (CYAN
-wavefront ring + point band, devices flash INK as it passes, rim flash) crosses every visible
-device and the jobs speed up (every 0.04 s) so the planet buzzes; 2.60 the kicker becomes the
-source, 'FOLDING@HOME'. 4.60 glitch-out (x-jolts, RGB-split ghosts, opacity drops, slice
-displacement + tear bars); the kicker and card stay up through it, jolting with the stage (text
-is held through every cut, never a text-less glitch), and 4.90 hard-cuts everything to BG + dust
-(E07: no token, no HUD), static to 5.00; b08's question pops on its story frame 2, so the black
-pattern-interrupt lasts about 0.13 s.
+2.367 hard swap to '2020: they beat / the top 500 / supercomputers combined.' (past tense, dated:
+the 2020 claim vs the TOP500 sum, see facts planet_fah_caveats): the densest card of the film,
+fully visible 3.23 s before the glitch-out starts. It is read for 0.63 s over the work-unit
+traffic before 3.00: a light wave (CYAN wavefront ring + point band, devices flash INK as it
+passes, rim flash) crosses every visible device just as job 0's result lands, and the jobs speed
+up (every 0.04 s) so the planet buzzes; 3.20 the kicker becomes the source, 'FOLDING@HOME'. The
+buzzing planet holds 1.2 s, then 4.50 a slight push-in rides the riser. 5.60 glitch-out
+(x-jolts, RGB-split ghosts, opacity drops, slice displacement + tear bars); the kicker and card
+stay up through it, jolting with the stage (text is held through every cut, never a text-less
+glitch), and 5.90 hard-cuts everything to BG + dust (E07: no token, no HUD), static to 6.00;
+b08's question pops on its story frame 2, so the black pattern-interrupt lasts about 0.13 s.
 
 Everything that moves is a pure function of self.now (one driver). The 900 globe points and
-300 devices are motif.Fields (fixed quantisation: temporally stable colours).
+300 devices are motif.Fields (fixed quantisation: temporally stable colours). The globe spins
+the whole beat, so no hold is ever static.
 """
 
 from style import *
@@ -56,29 +60,50 @@ _drng = np.random.default_rng(7)
 _sinmax = math.sin(math.radians(65))
 DEV_PHI = np.arcsin(_drng.uniform(-_sinmax, _sinmax, N_DEV))
 DEV_LAM = _drng.uniform(0, TAU, N_DEV)
-DEV_PHI[0], DEV_LAM[0] = math.radians(35), 0.52            # job 0's device: upper right at t = 1.0
 DEV_SQ = 0.085
 HUB_SIZE = 0.40
 
 # --------------------------------------------------------------------------
-# Timeline (beat-local seconds)
+# Timeline (beat-local seconds). The 6.0 s slot is filled by SEQUENCING (card lands -> read ->
+# the motion it describes -> payoff hold), never by slowing: the FORM (0.80), HUD retire (0.35),
+# camera drift (0.80), device pops (0.20), job flights (0.40 / 0.30 / 0.40; job 0 0.90 / 0.30 /
+# 0.80), light wave (0.30), push-in (1.10) and glitch-out (0.30) keep their durations; the time
+# sits BETWEEN them. Card windows are the reading floor (0.3 s/word + 0.8 s, counted from all
+# lines at full opacity to the glitch-out, the strictest end):
+#   0.00-0.80  FORM; 'Home PCs. / 350,000+ GPUs, online.' POPs on story frames 1-2
+#              (fully visible 0.033 -> 2.367 = 2.33 s >= 2.30); HUD dims, retires by 0.75
+#   0.80-2.40  devices pop online across the front side; camera drift 0.75-1.55
+#   1.30       the first work unit flies (job 0, labelled), then one every 0.10 s
+#   2.367      '2020: they beat / the top 500 / supercomputers combined.' hard swap
+#              (fully visible 2.367 -> 5.60 = 3.23 s >= 3.20; to the hard cut 3.53 s)
+#   3.00       LIGHT WAVE (read 0.63 s first) as job 0's result lands (3.30); jobs every 0.04 s
+#   3.20       the kicker becomes the source, 'FOLDING@HOME'
+#   3.30-4.50  PAYOFF HOLD: the buzzing planet under the card
+#   4.50-5.60  slight push-in under the riser; 5.60-5.90 glitch-out; 5.90 hard cut, E07 to 6.00
 # --------------------------------------------------------------------------
+BEAT_SLOT = 6.0                                # timeline.py slot (asserted in beat())
 T_FORM = 0.80
+T_C1_SUB = 2 / 60                              # '350,000+ GPUs, online.' POPs 1 story frame after the headline
 T_POP0, T_POP1 = 0.80, 2.40
 POP_DUR = 0.20
-T_JOBS0, T_JOBS1 = 1.00, 4.45
+T_JOBS0 = 1.30                                 # the card has been fully visible 1.27 s: work units fly
+T_GLITCH0, T_GLITCH1 = BEAT_SLOT - 0.40, BEAT_SLOT - 0.10   # 5.60 / 5.90: hard cut 0.10 s before the slot end (E07 is empty)
+T_JOBS1 = T_GLITCH0 - 0.15                     # 5.45: last work unit
 JOB_DT0, JOB_DT1 = 0.10, 0.04                  # before / after the light wave (the planet buzzes)
+JOB0 = (T_JOBS0, 0, T_JOBS0 + 0.90, T_JOBS0 + 1.20, T_JOBS0 + 2.00)   # 1.30 / 2.20 / 2.50 / 3.30
 T_DIM0, T_DIM1 = 0.10, 0.35                    # the frozen HUD dims to 0.5: 'not counting here' ...
 HUD_DIM = 0.5
 T_RETIRE, RETIRE_DUR = 0.40, 0.35              # ... then slides down and out for good (E07 is HUD-free)
 assert T_RETIRE + RETIRE_DUR <= T_CAM0 + 1e-9  # gone before the camera drifts into its space
 RETIRE_SHIFT = DOWN * 0.60
-T_CARD2 = 1.95                                 # hard card swap
-T_WAVE = 2.40
-T_SRC = 2.60                                   # the kicker becomes the source tag
-T_PUSH0 = 3.50
-T_GLITCH0, T_GLITCH1 = 4.60, 4.90             # hard cut 0.10 s before the slot end (E07 is empty)
+T_CARD2 = 142 / 60                             # 2.367: hard card swap
+T_WAVE = 3.00                                  # the light wave: c2 read 0.63 s first; job 0's result lands with it
+T_SRC = T_WAVE + 0.20                          # the kicker becomes the source tag
+T_PUSH0 = T_GLITCH0 - 1.10                     # 4.50: the payoff has held 1.2 s
 T_TEXT_CUT = T_GLITCH1                         # card + kicker ride the glitch (x-jolts) and cut WITH the stage
+# job 0's device: upper right when job 0 is sent (phi 35 deg, lambda 0.52 at t = 1.0, before the
+# re-time; the longitude is wound back by the spin so the labelled flight keeps its geometry)
+DEV_PHI[0], DEV_LAM[0] = math.radians(35), 0.52 - SPIN * (T_JOBS0 - 1.00)
 WAVE_DUR = 0.30                                # light wave reaches the rim (d = R * CAM_SET) after 0.30 s
 N_TEAR = 9                                     # glitch-out tear bars
 
@@ -103,7 +128,7 @@ def sphere_xyz(phi, lam, t):
 # --------------------------------------------------------------------------
 def _schedule():
     rng = np.random.default_rng(17)
-    jobs = [(1.00, 0, 1.90, 2.20, 3.00)]       # job 0: slowed so its labels can be read
+    jobs = [JOB0]                              # job 0: slowed so its labels can be read
     recent = [0]
     ts = [T_JOBS0 + JOB_DT0 * i for i in range(1, 100) if T_JOBS0 + JOB_DT0 * i < T_WAVE - 1e-6]
     ts += [T_WAVE + JOB_DT1 * i for i in range(0, 1000) if T_WAVE + JOB_DT1 * i <= T_JOBS1 + 1e-6]
@@ -240,8 +265,11 @@ class B07Planet(BeatScene):
         # and past tense (true only in April 2020, vs the Nov 2019 TOP500 sum; F@h FLOPS are not HPL)
         c2 = card([("2020: they beat", "H96", INK), ("the top 500", "S56", INK, {"top 500": CYAN}),
                    ("supercomputers combined.", "S56", CYAN)])
+        assert beat_duration(type(self).__name__) == BEAT_SLOT, "timeline.py slot changed: re-time b07"
+        # the whole card POPs on the cut (headline story frame 1, sub-line frame 2): its 2.3 s
+        # reading floor starts at once
         track.on(c1[0], 1 / 60, T_CARD2, enter="pop", exit="cut")
-        track.on(c1[1], 0.12, T_CARD2, exit="cut")
+        track.on(c1[1], T_C1_SUB, T_CARD2, enter="pop", exit="cut")
         track.on(c2[0], T_CARD2, T_TEXT_CUT, enter="pop", exit="cut", shift=gl)
         track.on(c2[1], T_CARD2, T_TEXT_CUT, enter="pop", exit="cut", shift=gl)
         track.on(c2[2], T_CARD2, T_TEXT_CUT, enter="pop", exit="cut", shift=gl)
@@ -299,12 +327,12 @@ class B07Planet(BeatScene):
         self.cue("shimmer", dt=T_WAVE, dur=1.0)
         self.cue("riser", dt=T_PUSH0, dur=round(T_GLITCH0 - T_PUSH0, 4), note="feels like it should peak higher")
         self.cue("glitch", dt=T_GLITCH0, dur=0.30, note="harsh digital tear")
-        self.cue("silence", dt=T_GLITCH1, dur=round(5.05 - T_GLITCH1, 4),
+        self.cue("silence", dt=round(T_GLITCH1, 4), dur=round(BEAT_SLOT + 0.05 - T_GLITCH1, 4),
                  note="pattern interrupt into b08 (until its question pops)")
 
         # ---------------- run ----------------
         self.hold_until(T_GLITCH1)
-        exit_to(self)                          # 4.90 HARD CUT: BG + dust only (E07), static to 5.00
+        exit_to(self)                          # 5.90 HARD CUT: BG + dust only (E07), static to 6.00
         print(f"[b07] jobs {len(JOBS)}; buckets used (max): points {self.points.max_used}, devices "
               f"{self.devices.max_used}; overflow frames: {self.points.overflow + self.devices.overflow}")
 

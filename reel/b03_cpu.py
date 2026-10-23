@@ -1,22 +1,24 @@
 """b03 - SCALE 2/6 - ONE CPU: 16 cores, each running its own thread, one shared memory.
 
-The core token (E02) is core T6 of a 16-core CPU: the camera pulls back (EXPAND, with the
-cut's INK charge). Each core runs its own thread on its own clock, visibly out of phase
-(the opposite of b02's lockstep): FETCH (a MAGENTA packet with a comet trail leaves the
-shared-memory bar, which flashes where it leaves), COMPUTE (INK outline kick + pop, the
-core's progress fill rises at the core's own rate while its 16 lanes light), DONE (the
-full core flashes LIME), WRITE BACK (a LIME packet returns; the bar flashes on arrival).
-At 2.20 the power-on light wave: every core flashes INK -> CYAN, all 256 lanes light, a
-CYAN shock ring runs out from the grid centre and the cores pop as it passes, the memory
-bar flashes, HUD 16 -> 256 (x16); traffic doubles. Hierarchy in the dense powered stretch
-(headline > grid action > labels): the T labels step back to ~0.5 opacity once they have
-done their job, the progress level's INK edge fades out under each label (no strike-through)
-and the LIME done flash is softer (0.60) so the lit lanes still read. At 3.80 traffic drains,
-the CPU package outline draws on and the chip collapses (cut_times) into
-handoff_token('cpu') (E03). Kicker + headline stay fully visible through the collapse and
-settle and are hard-cut by the canonical exit at 4.45 (like b01).
+The core token (E02) is core T6 of a 16-core CPU: the camera pull-back (EXPAND, with the
+cut's INK charge) ends at 0.50 and the stage keeps easing back under a slow drift. '16 cores.
+/ Each runs its own thread.' is read on the calm grid; at 0.80 each core starts its own thread
+on its own clock, visibly out of phase (the opposite of b02's lockstep): FETCH (a MAGENTA
+packet with a comet trail leaves the shared-memory bar, which flashes where it leaves),
+COMPUTE (INK outline kick + pop, the core's progress fill rises at the core's own rate while
+its 16 lanes light), DONE (the full core flashes LIME), WRITE BACK (a LIME packet returns; the
+bar flashes on arrival). At 2.77 the thread line has lifted off and '× 16 lanes each' pops; it
+is read before the power-on at 3.20: every core flashes INK -> CYAN, all 256 lanes light, a
+CYAN shock ring runs out from the grid centre and the cores pop as it passes, the memory bar
+flashes, HUD 16 -> 256 + LIME x16; traffic doubles and the payoff holds 1.6 s.
+Hierarchy in the dense powered stretch (headline > grid action > labels): the T labels step
+back to ~0.5 opacity once they have done their job, the progress level's INK edge fades out
+under each label (no strike-through) and the LIME done flash is softer (0.60) so the lit
+lanes still read. At 4.80 traffic drains, the CPU package outline draws on and the chip
+collapses (cut_times) into handoff_token('cpu') (E03). Kicker + headline stay fully visible
+through the collapse and settle and are hard-cut by the canonical exit at 5.45 (like b01).
 
-Everything that moves is a pure function of self.now (one driver updater).
+Everything that moves is a pure function of self.now (one driver updater + the stage drift).
 """
 
 from style import *
@@ -55,15 +57,29 @@ FILL_W = CORE_U - 2 * FILL_IN
 FILL_R = TOKEN_CORNER * CORE_U - FILL_IN
 
 # --------------------------------------------------------------------------
-# Timeline (beat-local seconds)
+# Timeline (beat-local seconds). The 5.5 s slot is filled by SEQUENCING, not by slowing: the
+# pull-back, thread phases, power-on wave, drain and collapse keep their durations; the extra
+# second sits BETWEEN the ideas:
+#   0.00-0.50  pull-back; '16 cores.' pops on story frame 1, 'Each runs its own thread.' 0.10-0.35
+#   0.50-0.80  calm grid (stage drift)  -> the thread line has been read 0.45 s when the threads start
+#   0.80-3.20  16 out-of-phase threads (every core busy by 1.30)
+#   2.72-2.77  the thread line lifts off; '× 16 lanes each' pops at 2.77 (read 0.43 s first)
+#   3.20       POWER-ON: 256 lanes light, ring, HUD 16 -> 256 + LIME x16 (1.6 s)
+#   3.20-4.80  PAYOFF HOLD (1.6 s) under doubled traffic
+#   4.80-4.93  drain + package outline; 4.93-5.45 collapse + settle; 5.45-5.50 static E03
 # --------------------------------------------------------------------------
 T_EXPAND = EXPAND_TIME                      # 0.50 pull-back
-T_THREADS = T_EXPAND
-T_POWER = 2.20
-T_DRAIN = 3.80                              # no new fetches; in-flight work fades by T_COL
-T_PKG = 3.80                                # package outline Create 3.80 -> T_COL
-T_COL, T_SET, T_EXIT = cut_times(4.5)       # 3.933 / 4.333 / 4.45
+T_THREADS = 0.80                            # thread clocks start (offsets 0..0.49 on top)
+T_LANES = 166 / 60                          # 2.767: '× 16 lanes each' pops (the thread line lifts off 2.717 -> 2.767)
+T_POWER = 3.20                              # the power-on: '× 16 lanes each' has been read 0.43 s
+T_COL, T_SET, T_EXIT = cut_times(5.5)       # 4.933 / 5.333 / 5.45
+T_DRAIN = T_COL - 8 / 60                    # 4.80: no new fetches; in-flight work fades by T_COL
+T_PKG = T_DRAIN                             # package outline Create 4.80 -> T_COL
+MULT_HOLD = T_DRAIN - T_POWER               # 1.60: the LIME x16 pill holds the whole payoff, leaves with the drain
 T_TEXT_OUT = T_EXIT                         # kicker + headline hold to the exit, then hard-cut
+# camera life: after the pull-back the stage keeps easing back, 1.0 -> 0.98 about AC by the
+# collapse (ease_in_out_sine: it leaves the EXPAND and meets the COLLAPSE at rest)
+DRIFT_S1 = 0.98
 
 # thread cycle, as fractions of a period: fetch | compute | write back | idle
 S_FETCH, S_DONE, S_WB = 0.30, 0.68, 0.96
@@ -72,7 +88,7 @@ WRITE_FLASH = 0.25                          # arrival flash on the bar (s)
 LEAVE_FLASH = 0.18                          # departure flash on the bar (s)
 
 # per-core thread clocks (storyboard: P = 0.85 + 0.35u from default_rng(3); offsets 0.5v so
-# every core is busy within half a second of the pull-back)
+# every core is busy within half a second of the thread start)
 _rng = np.random.default_rng(3)
 U = _rng.random(N_CORES)
 V = _rng.random(N_CORES)
@@ -300,17 +316,25 @@ class B03Cpu(BeatScene):
         c_a = card([("16 cores.", "H96", INK, {"16": CYAN}), ("Each runs its own thread.", "S56", INK)])
         c_b = card([("16 cores.", "H96", INK, {"16": CYAN}), ("× 16 lanes each", "S56", CYAN)])
         track.on(c_a[0], 1 / 60, T_TEXT_OUT, enter="pop", exit="cut")
-        # the thread line lifts off 2.15 -> 2.20 so the power-on hard cut lands on a clean line
-        track.on(c_a[1], 0.12, 2.15, exit_dur=0.05)
-        track.on(c_b[1], T_POWER, T_TEXT_OUT, enter="pop", exit="cut")
+        # the thread line lifts off T_LANES - 0.05 -> T_LANES so '× 16 lanes each' pops on a
+        # clean line, and is read BEFORE the power-on it describes
+        track.on(c_a[1], 0.10, T_LANES - 0.05, exit_dur=0.05)
+        track.on(c_b[1], T_LANES, T_TEXT_OUT, enter="pop", exit="cut")
 
         # ---------------- HUD ----------------
-        hud.slam(T_POWER, "256", mult="×16")
+        hud.slam(T_POWER, "256")
+        hud.mult(T_POWER, "×16", hold=MULT_HOLD)       # the LIME pill holds through the payoff
 
         # ---------------- z-order: dust, rings, world, fx, package, text, HUD ----------------
         self.remove(st.token)                  # the hero core now draws the token
         add_behind(self, self.world, self.fx, self.pkg)
-        ring = ShockRing(self, T_POWER, GRID_C, RING["r0"], RING["r1"], RING["w0"], RING["op0"], RING["dur"], CYAN)
+        # the stage drift (world + traffic + package; never text or HUD), added after the driver
+        # below; the power-on ring is placed with the drift's pose at T_POWER
+        self.drift = drift(self, VGroup(self.world, self.fx, self.pkg), T_EXPAND, T_COL, s1=DRIFT_S1,
+                           dy=0.0, ease=ease_in_out_sine, add=False)
+        k, b = self.drift.pose(T_POWER)
+        ring = ShockRing(self, T_POWER, GRID_C * k + b, RING["r0"] * k, RING["r1"] * k, RING["w0"],
+                         RING["op0"], RING["dur"], CYAN)
         add_behind(self, ring)                 # the power-on ring runs behind the cores
         entry_ring(self)
         self.add(track)
@@ -319,6 +343,7 @@ class B03Cpu(BeatScene):
         self.collapse = None
         self._draw(0.0)
         drive(self, self._draw)
+        self.add(self.drift)                   # after the driver: composes on this frame's drawing
 
         # ---------------- audio ----------------
         self.cue("hit", gain=0.8, note="match-cut and ring")
@@ -328,7 +353,8 @@ class B03Cpu(BeatScene):
             pan = float(np.clip((COL_X[i] - X_C) / 2.25 * 0.55 + trng.uniform(-0.15, 0.15), -0.8, 0.8))
             self.cue("tick", dt=round(t, 4), gain=0.3, freq=int(trng.uniform(2600, 5400)), pan=round(pan, 3),
                      note=f"T{i + 1} compute")
-        self.cue("riser", dt=1.70, dur=0.50, note="into the power-on")
+        self.cue("tick", dt=T_LANES, gain=0.4, freq=4200, pan=0, note="'× 16 lanes each' pops")
+        self.cue("riser", dt=round(T_POWER - 0.50, 4), dur=0.50, note="into the power-on")
         self.cue("hit", dt=T_POWER, note="256 lanes light")
         self.cue("sub_drop", dt=T_POWER, dur=0.6)
         self.cue("shimmer", dt=T_POWER, dur=1.0)
@@ -337,20 +363,23 @@ class B03Cpu(BeatScene):
 
         # ---------------- run ----------------
         self.hold_until(T_COL)
-        # draw the fully drained state first, so no packet / trail / flash hangs over the collapse
+        # draw the fully drained state first, so no packet / trail / flash hangs over the collapse,
+        # put the drift camera back on top of it, and let the collapse start from that pose
         self._draw_threads(T_COL)
         self._draw_package(T_COL)
+        self.drift.render_at(T_COL)
+        self.drift.release()
         self.collapse = COLLAPSE(self.pkg, self.world, "cpu")
         self.add(self.collapse.glyph)
         hold_floor(self, T_EXIT)
-        exit_to(self)                          # canonical E03, static to 4.50
+        exit_to(self)                          # canonical E03, static to 5.50
 
     # ------------------------------------------------------------------
     def _draw(self, now: float) -> None:
         if self.collapse is not None:
             self.collapse.render(now, T_COL, T_SET, T_EXIT)
             return
-        if now < T_THREADS + 0.1:              # (from T_THREADS on: e = 1 exactly, i.e. the rest layout)
+        if now < T_EXPAND + 0.1:               # (from T_EXPAND on: e = 1 exactly, i.e. the rest layout)
             EXPAND(self.world, CORE_C[HERO], CORE_U, ease_out_expo(ramp(now, 0.0, T_EXPAND)),
                    ink=1.0 if flash_frames(now, 1 / 60, 2) else 0.0)
         if now >= T_THREADS - EPS:
@@ -369,7 +398,7 @@ class B03Cpu(BeatScene):
             self.pkg.set_stroke(CYAN, width=3, opacity=1)
 
     def _draw_threads(self, now: float) -> None:
-        drain = 1.0 - ramp(now, T_DRAIN, T_COL)               # in-flight work fades 3.80 -> 3.93
+        drain = 1.0 - ramp(now, T_DRAIN, T_COL)               # in-flight work fades 4.80 -> 4.93
         c = cycles_at(now)
         powered = now >= T_POWER - EPS
         ink_flash = powered and flash_frames(now, T_POWER, 2)
