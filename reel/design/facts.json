@@ -1,0 +1,409 @@
+{
+ "facts": [
+  {
+   "id": "hook_serial_time",
+   "topic": "HOOK",
+   "claim": "1,000,000 tasks at 1 task per second, done by one worker, take 1,000,000 seconds, which is 11.57 days (11 d 13 h 46 m 40 s). With 1,000,000 workers each doing one task at once, the ideal time is 1 second, ignoring overhead.",
+   "value": "11.57 days vs 1 second",
+   "source_url": "n/a: arithmetic (1,000,000 s / 86,400 s per day = 11.574)",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "1 worker: 11.6 days. 1,000,000 workers: 1 second."
+  },
+  {
+   "id": "hook_amdahl_callback",
+   "topic": "HOOK / TWIST tie-in",
+   "claim": "If 10% of the same 1,000,000-second job is serial, then even 1,000,000 workers need 100,000 s + 0.9 s = 100,000.9 s, about 27.8 hours (1.16 days). The speedup is 9.9999x, never 10x or more. This is a good twist that calls back to the hook.",
+   "value": "27.8 hours (~10x speedup), not 1 second",
+   "source_url": "n/a: arithmetic using Amdahl's law (see amdahl_law)",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "10% serial? 1,000,000 workers: still 27.8 hours."
+  },
+  {
+   "id": "simd_avx512_fp32",
+   "topic": "SIMD (one CPU core)",
+   "claim": "AVX-512 has 32 vector registers (ZMM0-31), each 512 bits wide. One instruction works on 16 single-precision (FP32) floats or 8 double-precision (FP64) floats at once. By width alone, that is also 32 FP16/BF16 or 64 int8 values.",
+   "value": "16 x FP32 (8 x FP64) per instruction",
+   "source_url": "https://www.intel.com/content/www/us/en/developer/articles/technical/intel-avx-512-instructions.html",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "1 instruction. 16 numbers."
+  },
+  {
+   "id": "simd_fma_flops",
+   "topic": "SIMD (one CPU core)",
+   "claim": "A fused multiply-add (FMA) on 16 FP32 lanes counts as 32 FLOPs (a multiply and an add per lane). Cores with two 512-bit FMA units can reach 64 FP32 FLOPs per cycle. Count 'numbers per instruction' (16), not FLOPs, to avoid confusion.",
+   "value": "16 lanes = 32 FLOPs per FMA instruction",
+   "source_url": "https://cvw.cac.cornell.edu/vector/hardware/registers",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "16 lanes, one instruction"
+  },
+  {
+   "id": "simd_avx512_support",
+   "topic": "SIMD (one CPU core)",
+   "claim": "AMD Zen 5 desktop CPUs (Ryzen 9000, e.g. Ryzen 9 9950X) have a full 512-bit AVX-512 datapath. Intel's current consumer flagship, Core Ultra 9 285K (Arrow Lake), does NOT support AVX-512: its widest is AVX2, 256-bit = 8 FP32 lanes. AVX-512 is expected back in Intel client chips with Nova Lake (AVX10.2), which is not shipped yet.",
+   "value": "AVX-512 on Ryzen 9000 / EPYC / Xeon; not on Intel Core Ultra 200S",
+   "source_url": "https://www.phoronix.com/review/amd-zen5-avx-512-9950x",
+   "confidence": "medium",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "Modern CPUs: up to 16 numbers per instruction"
+  },
+  {
+   "id": "simd_neon",
+   "topic": "SIMD (one CPU core)",
+   "claim": "Arm NEON (Advanced SIMD) is a fixed 128-bit SIMD extension with 32 registers V0-V31. Each register holds 4 FP32 (or 2 FP64, or 16 int8) values. It runs in every Armv8-A phone and Apple M-series chip.",
+   "value": "128-bit = 4 x FP32",
+   "source_url": "https://learn.arm.com/learning-paths/cross-platform/vectorization-comparison/1-vectorization/",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "Your phone: 4 numbers per instruction"
+  },
+  {
+   "id": "simd_sve",
+   "topic": "SIMD (one CPU core)",
+   "claim": "Arm SVE/SVE2 is vector-length agnostic. The hardware chooses a length from 128 to 2048 bits (2048 bits = 64 FP32 lanes), and the same binary runs on all of them. Real chips use 128 to 512 bits (e.g. Fujitsu A64FX in Fugaku = 512-bit). The LX2 CPU in LineShine (June 2026 TOP500 #1) supports SVE2 and SME.",
+   "value": "128-2048 bits (architectural); real chips 128-512",
+   "source_url": "https://support.arm.com/documentation/102476/0101/Introducing-SVE",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "Arm SVE: vectors up to 2048 bits wide"
+  },
+  {
+   "id": "cpu_consumer_amd",
+   "topic": "Multi-core CPU",
+   "claim": "AMD's top desktop CPUs (Ryzen 9 9950X, 9950X3D, 9950X3D2, all Zen 5) have 16 cores / 32 threads. They also have full-width AVX-512, so '16 lanes x 16 cores' is accurate for one real chip.",
+   "value": "16 cores / 32 threads",
+   "source_url": "https://www.phoronix.com/review/amd-zen5-avx-512-9950x",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "16 cores"
+  },
+  {
+   "id": "cpu_consumer_intel",
+   "topic": "Multi-core CPU",
+   "claim": "Intel's top desktop CPU is still the Core Ultra 9 285K: 24 cores (8 P-cores + 16 E-cores), 24 threads, no Hyper-Threading. The 290K Plus refresh was reportedly cancelled. Nova Lake (up to 52 cores) is expected in 2027, not 2026.",
+   "value": "24 cores / 24 threads",
+   "source_url": "https://www.tomshardware.com/pc-components/cpus/the-core-ultra-7-270k-was-too-good-so-intel-scrapped-the-flagship-core-ultra-9-290k-plus-benchmarks-of-the-290k-prototype-find-slim-2-percent-faster-performance-in-gaming-and-applications",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "Desktop CPUs: up to 24 cores"
+  },
+  {
+   "id": "cpu_typical",
+   "topic": "Multi-core CPU",
+   "claim": "8 physical cores is now the most common CPU core count on the Steam Hardware Survey (~30% in Sep 2026), just ahead of 6 cores. Apple M5 Max has an 18-core CPU (6 super + 12 performance cores).",
+   "value": "Typical PC: 6-8 cores; M5 Max: 18 cores",
+   "source_url": "https://hwbusters.com/news/eight-cores-and-16gb-vram-just-took-the-lead-on-steam/",
+   "confidence": "medium",
+   "as_of": "2026-09",
+   "safe_on_screen_phrasing": "Your laptop: ~8 cores"
+  },
+  {
+   "id": "cpu_server",
+   "topic": "Multi-core CPU",
+   "claim": "Flagship server CPUs: AMD EPYC 9965 has 192 Zen 5c cores / 384 threads (shipping since late 2024). Intel Xeon 6+ 6990E+ (Clearwater Forest, Intel 18A) has 288 E-cores per socket (launched ~June 2026). AMD EPYC 9006 'Venice' (Zen 6, 2nm) has up to 256 cores / 512 threads (production ramp May 2026, cloud deployment later in 2026). LineShine's custom LX2 has 304 cores but is not sold commercially.",
+   "value": "192 (EPYC 9965), 256 (EPYC Venice), 288 (Xeon 6+)",
+   "source_url": "https://www.intel.com/content/www/us/en/products/details/processors/xeon/6-plus-series.html",
+   "confidence": "medium",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "Server chips: 200+ cores"
+  },
+  {
+   "id": "gpu_rtx5090",
+   "topic": "GPU",
+   "claim": "GeForce RTX 5090 (GB202, Blackwell) has 21,760 CUDA cores = 170 SMs x 128, plus 680 Tensor cores and 170 RT cores, 32 GB GDDR7 and 575 W, launched Jan 30 2025. It is still NVIDIA's consumer flagship: no RTX 60-series had been announced as of Sep 2026 (rumored 2027).",
+   "value": "21,760 CUDA cores",
+   "source_url": "https://www.nvidia.com/en-us/geforce/graphics-cards/50-series/rtx-5090/",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "21,760 CUDA cores"
+  },
+  {
+   "id": "gpu_cuda_core_definition",
+   "topic": "GPU",
+   "claim": "A 'CUDA core' is NVIDIA's name for one FP32 arithmetic lane (ALU) inside a Streaming Multiprocessor. It is not an independent core: it has no instruction fetch or scheduler of its own. Warp schedulers drive the lanes 32 at a time with one shared instruction (SIMT).",
+   "value": "1 CUDA core = 1 FP32 lane",
+   "source_url": "https://modal.com/gpu-glossary/device-hardware/cuda-core",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "21,760 tiny math lanes"
+  },
+  {
+   "id": "gpu_warp_size",
+   "topic": "GPU",
+   "claim": "NVIDIA GPUs group threads into warps of 32 (lanes 0-31). A warp executes one instruction at a time across all its threads (SIMT); divergent branches run one path at a time with the other lanes masked off. The warp size has been 32 on every NVIDIA architecture to date.",
+   "value": "32 threads per warp",
+   "source_url": "https://docs.nvidia.com/cuda/cuda-programming-guide/01-introduction/programming-model.html",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "Warps of 32. One instruction."
+  },
+  {
+   "id": "gpu_rtx5090_schedulers",
+   "topic": "GPU",
+   "claim": "Each Blackwell SM has 4 processing blocks, each with its own warp scheduler and 32 FP32 lanes. The RTX 5090 therefore has 170 x 4 = 680 schedulers and can issue up to 680 warp-instructions per clock (680 x 32 = 21,760 lanes).",
+   "value": "680 warps per clock x 32 lanes",
+   "source_url": "https://cvw.cac.cornell.edu/gpu-architecture/horizon-gpus-blackwell-b200/b200_sm",
+   "confidence": "medium",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "680 warps x 32 lanes"
+  },
+  {
+   "id": "gpu_resident_threads",
+   "topic": "GPU",
+   "claim": "Compute capability 12.0 (RTX 50-series) allows 48 resident warps = 1,536 threads per SM. The RTX 5090 can therefore keep 170 x 1,536 = 261,120 threads in flight at once, switching between them to hide memory latency.",
+   "value": "261,120 resident threads",
+   "source_url": "https://docs.nvidia.com/cuda/blackwell-tuning-guide/index.html",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "260,000+ threads in flight"
+  },
+  {
+   "id": "gpu_pixels",
+   "topic": "GPU",
+   "claim": "A 4K frame has 3840x2160 = 8,294,400 pixels. This 1080x1920 video frame has 2,073,600 pixels. A GPU shades them in waves of warps, not all in one clock cycle, but it finishes a whole frame in milliseconds.",
+   "value": "8.3M px (4K); 2.07M px (1080x1920)",
+   "source_url": "n/a: arithmetic",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "Millions of pixels, in parallel"
+  },
+  {
+   "id": "gpu_amd_wavefront",
+   "topic": "GPU",
+   "claim": "AMD's equivalent of a warp is a 'wavefront': 64 threads on CDNA/Instinct (MI100-MI355X), and native wave32 on RDNA (Radeon). So '32' applies to NVIDIA, not every GPU.",
+   "value": "NVIDIA 32; AMD CDNA 64; AMD RDNA 32",
+   "source_url": "https://rocm.docs.amd.com/projects/HIP/en/latest/reference/hardware_features.html",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "NVIDIA warp = 32 threads"
+  },
+  {
+   "id": "node_hgx_8gpu",
+   "topic": "Server node",
+   "claim": "NVIDIA DGX/HGX B200 and B300 servers hold 8 GPUs per node, linked by fifth-generation NVLink through NVSwitch. Each GPU gets 1.8 TB/s, for 14.4 TB/s total per 8-GPU board. Each GPU also has an 800 Gb/s network port to the rest of the cluster.",
+   "value": "8 GPUs/node; 1.8 TB/s NVLink per GPU",
+   "source_url": "https://www.nvidia.com/en-us/data-center/hgx/",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "8 GPUs, one box"
+  },
+  {
+   "id": "node_nvl72",
+   "topic": "Server node / rack",
+   "claim": "GB200 NVL72 (and GB300 NVL72) puts 72 Blackwell GPUs + 36 Grace CPUs in one rack: 18 compute trays x 4 GPUs, plus 9 NVLink switch trays. All 72 GPUs share one NVLink domain with 130 TB/s aggregate bandwidth, which NVIDIA says 'acts as a single massive GPU'.",
+   "value": "72 GPUs per rack; 130 TB/s aggregate",
+   "source_url": "https://docs.nvidia.com/dgx/dgxgb200-user-guide/hardware.html",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "72 GPUs acting as one"
+  },
+  {
+   "id": "node_nvlink_vs_pcie",
+   "topic": "Server node",
+   "claim": "NVLink 5 gives 1.8 TB/s per GPU, bidirectional (about 900 GB/s each way). PCIe 5.0 x16 gives about 128 GB/s, bidirectional (about 64 GB/s each way). That makes NVLink roughly 14x faster.",
+   "value": "~14x PCIe 5.0 x16",
+   "source_url": "https://vrlatech.com/nvlink-vs-pcie-for-ai/",
+   "confidence": "medium",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "1.8 TB/s per GPU"
+  },
+  {
+   "id": "node_rubin",
+   "topic": "Server node / rack",
+   "claim": "Vera Rubin NVL72 (announced CES 2026; earlier called 'NVL144' when NVIDIA counted dies) holds 72 Rubin GPUs + 36 Vera CPUs. It uses NVLink 6 at 3.6 TB/s per GPU and ~260 TB/s per rack, and ships in H2 2026. NVIDIA's own spec page has listed 3 TB/s and 216 TB/s in places, so avoid putting these numbers on screen.",
+   "value": "72 GPUs; 3.6 TB/s per GPU (per dev blog)",
+   "source_url": "https://developer.nvidia.com/blog/inside-the-nvidia-rubin-platform-six-new-chips-one-ai-supercomputer/",
+   "confidence": "medium",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "Next gen: 2x the bandwidth"
+  },
+  {
+   "id": "dc_colossus1",
+   "topic": "Data center / AI training",
+   "claim": "According to xAI, Colossus in Memphis (a former Electrolux factory) was built in 122 days with 100,000 NVIDIA H100s (2024). It then doubled to 200,000 GPUs in 92 days (early 2025), in a mix of H100/H200/GB200.",
+   "value": "200,000 GPUs",
+   "source_url": "https://x.ai/colossus",
+   "confidence": "high",
+   "as_of": "2025-2026",
+   "safe_on_screen_phrasing": "200,000 GPUs. One AI."
+  },
+  {
+   "id": "dc_colossus2",
+   "topic": "Data center / AI training",
+   "claim": "Colossus 2 is reported (via Musk's posts) to run roughly 550,000 GB200/GB300 GPUs (~110k GB200 + ~440k GB300) as of ~Sep 2026, with a target of ~1.1-1.44 million across the company's sites by end of 2026. None of this is audited. Satellite analysis by Epoch AI questioned the earlier 1 GW power claims.",
+   "value": "~550,000 GPUs (claimed); 1M+ (planned)",
+   "source_url": "https://www.tomshardware.com/tech-industry/data-centers/elon-musks-spacexai-to-add-another-660-000-ai-gpus-this-year-nearing-a-total-of-1-44-million-in-operation-firm-is-building-1-2-gigawatt-power-plant-to-bring-systems-fully-online",
+   "confidence": "low",
+   "as_of": "2026-09",
+   "safe_on_screen_phrasing": "Hundreds of thousands of GPUs"
+  },
+  {
+   "id": "dc_meta_llama",
+   "topic": "Data center / AI training",
+   "claim": "Meta trained Llama 3.1 405B on 16K+ H100s (2024; the cluster itself had 24,576 GPUs). Zuckerberg said in Oct 2024 that Llama 4 was training on a cluster of more than 100,000 H100s. Frontier AI training at 100,000+ GPUs has been established practice since 2024.",
+   "value": "100,000+ H100s",
+   "source_url": "https://tomshardware.com/tech-industry/artificial-intelligence/meta-is-using-more-than-100-000-nvidia-h100-ai-gpus-to-train-llama-4-mark-zuckerberg-says-that-llama-4-is-being-trained-on-a-cluster-bigger-than-anything-that-ive-seen",
+   "confidence": "high",
+   "as_of": "2024-10",
+   "safe_on_screen_phrasing": "AI models train on 100,000+ GPUs"
+  },
+  {
+   "id": "dc_message_passing",
+   "topic": "Data center / AI training",
+   "claim": "Across nodes, GPUs do not share memory. They exchange messages over InfiniBand or Ethernet (e.g. 8 x 800 Gb/s ports per DGX B300 node) using collectives such as all-reduce (NCCL/MPI) to sync gradients after each training step.",
+   "value": "800 Gb/s per GPU network port",
+   "source_url": "https://docs.nvidia.com/dgx/dgxb300-user-guide/introduction-to-dgxb300.html",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "No shared memory. They pass messages."
+  },
+  {
+   "id": "top500_no1",
+   "topic": "Supercomputer (TOP500)",
+   "claim": "On the June 2026 TOP500 (67th list, ISC Hamburg), No. 1 is LineShine at the National Supercomputing Centre in Shenzhen, China. It scores 2.198 EFlop/s Rmax (HPL, FP64) on 13,789,440 cores of custom 304-core Armv9 LX2 CPUs at 1.55 GHz, draws ~42.2 MW, and is CPU-only with NO GPUs. It ended El Capitan's run and is China's first No. 1 since 2017. The November 2026 list (SC26, mid-Nov) may change this.",
+   "value": "LineShine, 2.198 EF, CPU-only",
+   "source_url": "https://top500.org/news/lineshine-debuts-no-1-top500-enters-new-global-exascale-era/",
+   "confidence": "high",
+   "as_of": "2026-06 (next list Nov 2026)",
+   "safe_on_screen_phrasing": "Fastest supercomputers: 2+ exaflops"
+  },
+  {
+   "id": "top500_el_capitan",
+   "topic": "Supercomputer (TOP500)",
+   "claim": "El Capitan (LLNL, USA) is No. 2 on the June 2026 list at 1.809 EF Rmax (No. 1 from Nov 2024 to Nov 2025). It has 11,136 nodes x 4 AMD MI300A APUs = 44,544 APUs, each a combined CPU+GPU package.",
+   "value": "44,544 MI300A APUs; 1.809 EF",
+   "source_url": "https://hpc.llnl.gov/documentation/user-guides/using-el-capitan-systems/hardware-overview",
+   "confidence": "high",
+   "as_of": "2026-06",
+   "safe_on_screen_phrasing": "El Capitan: 44,544 GPU chips"
+  },
+  {
+   "id": "top500_aurora_jupiter",
+   "topic": "Supercomputer (TOP500)",
+   "claim": "Aurora (Argonne, No. 4, 1.012 EF) has 10,624 nodes x 6 = 63,744 Intel Data Center GPU Max GPUs. JUPITER Booster (Germany, No. 5, 1.000 EF, Europe's first exascale system) has ~24,000 NVIDIA GH200 superchips. Frontier (No. 3, 1.353 EF) has 9,408 nodes x 4 = 37,632 MI250X.",
+   "value": "Aurora 63,744 GPUs; JUPITER ~24,000 GH200",
+   "source_url": "https://docs.alcf.anl.gov/aurora/hardware-overview/machine-overview",
+   "confidence": "high",
+   "as_of": "2026-06",
+   "safe_on_screen_phrasing": "Tens of thousands of GPUs per supercomputer"
+  },
+  {
+   "id": "top500_aggregate",
+   "topic": "Supercomputer (TOP500)",
+   "claim": "The June 2026 TOP500 has 5 systems above 1 EF on HPL (LineShine, El Capitan, Frontier, Aurora, JUPITER). All 500 combined total 18.73 EFlop/s, the #500 entry level is 2.66 PFlop/s, and 276 systems use accelerators.",
+   "value": "5 exascale systems; 18.73 EF combined",
+   "source_url": "https://top500.org/lists/top500/2026/06/highs/",
+   "confidence": "high",
+   "as_of": "2026-06",
+   "safe_on_screen_phrasing": "5 machines beat 1 exaflop"
+  },
+  {
+   "id": "top500_frontier_first",
+   "topic": "Supercomputer (TOP500)",
+   "claim": "Frontier (ORNL) was the first supercomputer to break 1 exaflop on HPL: 1.102 EF on the May/June 2022 TOP500.",
+   "value": "First HPL exascale: 2022",
+   "source_url": "https://www.top500.org/news/ornls-frontier-first-to-break-the-exaflop-ceiling/",
+   "confidence": "high",
+   "as_of": "2022-05",
+   "safe_on_screen_phrasing": "First exascale supercomputer: 2022"
+  },
+  {
+   "id": "planet_fah_exaflop",
+   "topic": "Planet scale / volunteer computing",
+   "claim": "Folding@home (volunteer PCs) became the 'world's first exaFLOP computing system' on March 25, 2020, during the COVID-19 surge. The project's timeline says ~1.5 EF; press at the time said >1 EF, ~6x IBM Summit. On ~April 12-13, 2020 it hit ~2.43 EF, which the project tweeted was 'faster than the top 500 supercomputers combined'. That was true against the Nov 2019 TOP500 sum of ~1.65 EF. All of this came two years before Frontier's HPL exaflop.",
+   "value": "1+ EF (Mar 25 2020); 2.43 EF peak (Apr 2020)",
+   "source_url": "https://foldingathome.org/project-timeline/",
+   "confidence": "high",
+   "as_of": "2020-04",
+   "safe_on_screen_phrasing": "2020: home PCs hit 1 exaflop first"
+  },
+  {
+   "id": "planet_fah_hardware",
+   "topic": "Planet scale / volunteer computing",
+   "claim": "NVIDIA reported that nearly 400,000 gamers donated their GPUs to Folding@home within a couple of days in March 2020. Project stats at ~1.5 EF showed ~4.6 million CPU cores and ~430,000 GPUs active.",
+   "value": "~400k-430k GPUs; ~4.6M CPU cores",
+   "source_url": "https://developer.nvidia.com/blog/foldinghome-gpu-accelerated-exaflop",
+   "confidence": "medium",
+   "as_of": "2020-03",
+   "safe_on_screen_phrasing": "Hundreds of thousands of home PCs"
+  },
+  {
+   "id": "planet_fah_caveats",
+   "topic": "Planet scale / volunteer computing",
+   "claim": "Folding@home's FLOPS are estimated from returned work units ('native'/x86 FLOPS), not the HPL benchmark, so the comparison is not apples-to-apples. The 2020 figures were a peak: today the TOP500 combined (18.73 EF) is far beyond F@h's 2.43 EF peak.",
+   "value": "Not HPL; 2020-only comparison",
+   "source_url": "https://foldingathome.org/",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "In 2020, volunteers beat the top 500 combined"
+  },
+  {
+   "id": "planet_boinc",
+   "topic": "Planet scale / volunteer computing",
+   "claim": "BOINC (the platform behind SETI@home, Einstein@Home and others) reports a 24-hour average of ~14.7 PFLOPS from ~30,000 active volunteers and ~137,000 computers. The snapshot is undated, so treat the numbers as approximate. SETI@home stopped sending out work in March 2020.",
+   "value": "~15 PFLOPS; ~137k computers",
+   "source_url": "https://boinc.berkeley.edu/computing.php",
+   "confidence": "low",
+   "as_of": "2026 (undated live page)",
+   "safe_on_screen_phrasing": "Volunteer PCs, worldwide, one problem"
+  },
+  {
+   "id": "amdahl_law",
+   "topic": "TWIST: Amdahl's law",
+   "claim": "Amdahl's law (Gene Amdahl, 1967): Speedup(N) = 1 / (s + (1 - s)/N), where s is the serial fraction. As N goes to infinity, speedup approaches 1/s. With s = 10%: N=8 gives 4.71x, 16 gives 6.40x, 24 gives 7.27x, 100 gives 9.17x, 1,000 gives 9.91x, 21,760 gives 9.996x, and 1,000,000 gives 9.9999x. The maximum is 10x. With s = 5% the maximum is 20x; with s = 1% it is 100x (and 16 cores give only 13.9x).",
+   "value": "10% serial -> max 10x",
+   "source_url": "https://hpc-training.sdsc.edu/Expanse-Notebooks/assets/jupyter/CIML_2025/2-2/Amdahls%20law.ipynb.html",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "10% serial = max 10x. Forever."
+  },
+  {
+   "id": "gustafson_law",
+   "topic": "TWIST: nuance for comments",
+   "claim": "Gustafson's law (1988) is the standard rebuttal: if the problem size grows with the machine (bigger models, finer simulations), the parallel part dominates and scaled speedup keeps growing. This is why 100,000-GPU clusters still pay off. Useful for pinned comment replies.",
+   "value": "Scale the problem, not just the workers",
+   "source_url": "https://www.dma.unina.it/~murli/didattica/2005_2006/cp/p532-gustafson.pdf",
+   "confidence": "high",
+   "as_of": "2026-10-23",
+   "safe_on_screen_phrasing": "Unless you make the problem bigger..."
+  },
+  {
+   "id": "gpu_h100_sxm_fp32",
+   "topic": "GPU lanes (film lineage: one H100 SXM5)",
+   "claim": "NVIDIA H100 SXM5 has 132 SMs x 128 FP32 CUDA cores = 16,896 FP32 lanes; HGX/DGX H100 nodes hold 8 such GPUs; 100,000+ H100 clusters train frontier models (see dc_meta_llama).",
+   "value": "16,896 FP32 CUDA cores (H100 SXM5)",
+   "as_of": "2022 (Hopper launch); unchanged spec",
+   "source_url": "https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/",
+   "confidence": "high",
+   "safe_on_screen_phrasing": "H100: 16,896 math lanes"
+  }
+ ],
+ "pitfalls": [
+  "Saying the world's fastest supercomputer is GPU-powered, or that El Capitan is No. 1. Since the June 2026 TOP500, No. 1 is LineShine (China), which is CPU-only with 13.8M cores and zero GPUs. The Nov 2026 list (SC26, mid-November) may change it again, so avoid naming the No. 1 on screen.",
+  "Calling CUDA cores 'cores' like CPU cores. The 21,760 are FP32 lanes driven 32 at a time by 680 warp schedulers; they cannot each run their own program.",
+  "Saying a GPU does 'every pixel at the same instant'. A 4K frame has 8.3M pixels, against 21,760 lanes and ~261k resident threads, so the GPU works in waves of warps. Say 'in parallel' or 'all at once (per frame)', not 'in one clock'.",
+  "Saying warp size is 32 on every GPU. That is NVIDIA; AMD CDNA/Instinct uses 64-thread wavefronts.",
+  "Saying AVX-512 does '16 FLOPs' per instruction. It handles 16 FP32 numbers, but an FMA counts as 32 FLOPs. Also, not every modern CPU has AVX-512: Intel Core Ultra 200S (e.g. the 24-core 285K) does not, and has only 8-lane AVX2.",
+  "Pairing '16 SIMD lanes' with the '24-core' Intel CPU in one shot. The 24-core Core Ultra 9 285K lacks AVX-512. A 16-core Ryzen 9 9950X has both, so '16 lanes x 16 cores' is internally consistent.",
+  "Saying SVE vectors are 2048 bits. 2048 is only the architectural maximum; shipping chips use 128-512 bits.",
+  "Counting threads as cores: Ryzen 9 9950X is 16 cores / 32 threads, and Core Ultra 9 285K is 24 cores / 24 threads (no Hyper-Threading).",
+  "Saying a DGX/HGX node has 72 GPUs. A DGX/HGX node has 8 GPUs; NVL72 is a 72-GPU rack (18 trays x 4 GPUs). Also, 'Vera Rubin NVL144' was renamed NVL72, which counts packages, not dies.",
+  "Saying NVLink is 1.8 TB/s each way, or 130 TB/s per GPU. 1.8 TB/s is the bidirectional total per GPU (~900 GB/s each way); 130 TB/s is the aggregate for the whole 72-GPU rack.",
+  "Saying GPUs across a data center share memory. Between nodes, they pass messages over the network (InfiniBand/Ethernet, all-reduce). Shared memory applies to cores within one CPU, and loosely to GPUs inside one NVLink domain.",
+  "Presenting 1 million or 1.44 million GPUs at Colossus as fact. Those are Musk targets or claims and are unaudited. 200,000 is xAI's own stated figure for Colossus 1; '100,000+' or 'hundreds of thousands' is always safe.",
+  "Saying AI clusters like Colossus top the TOP500. Most never submit HPL, and their headline AI exaflops (FP8/FP4) are not comparable to the FP64 HPL exaflops used by TOP500.",
+  "Saying Llama 3 trained on 24,576 GPUs. That was the cluster size; Llama 3.1 405B trained on ~16K H100s. The 100,000+ H100 figure is the Llama 4 cluster (per Zuckerberg, Oct 2024).",
+  "Saying volunteer computing is faster than all supercomputers, in the present tense. That was true only in April 2020 (2.43 EF vs ~1.65 EF TOP500 sum). Today the TOP500 sums to 18.73 EF, and Folding@home's FLOPS are estimates, not HPL.",
+  "Calling Folding@home 'the first exascale supercomputer'. It was the first exaFLOP computing system, a distributed network; the first HPL exascale supercomputer was Frontier (2022).",
+  "Dating the 'faster than the top 500 combined' claim to March 2020. March 25 was the first exaflop; the 'top 500 combined' claim came with ~2.4 EF around April 12-13, 2020.",
+  "Presenting SETI@home as active. It stopped distributing work in March 2020.",
+  "Rounding 1,000,000 seconds to '12 days' or 'a week'. It is 11.57 days, so use '11.6 days'.",
+  "Stating that 1,000,000 workers make it 1 second as a real-world result. That is the ideal case. With just 10% serial work it becomes ~27.8 hours (Amdahl), which is the twist.",
+  "Claiming Amdahl's law makes parallelism pointless. Gustafson's law (scale the problem) explains why huge clusters still win, so expect this in comments.",
+  "A counter that mixes units (16 lanes -> 24 cores -> 21,760 CUDA cores -> 72 GPUs -> 200,000 GPUs) appears to DROP from 21,760 to 72, which reads as a mistake to muted viewers. Either relabel the unit on every step (LANES / CORES / CUDA CORES / GPUs) or count something consistent, such as GPUs: 1 -> 8 -> 72 -> 200,000.",
+  "Saying the RTX 5090 has been replaced. As of Oct 2026 no RTX 60-series has been announced, and RTX 6090 core counts (~28k-32k) are pure speculation."
+ ]
+}
