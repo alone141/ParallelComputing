@@ -1,5 +1,6 @@
 media
 slides
 .vscode
-.pyc
+*.pyc
 __pycache__/
+reel/build/
