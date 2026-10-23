@@ -3,7 +3,6 @@
 **Files**
 - Video: `the_doubling_final.mp4`, 68 s, 1080×1920, 60 fps, with the original soundtrack. Use `the_doubling_final_silent.mp4` if you'd rather add a trending sound in the app.
 - Cover: `assets/posts/the_doubling_cover_hook.jpg` (the hook question, inside Instagram's 3:4 grid crop).
-- Don't use `the_doubling_cover_milky_way.jpg` for this post: it shows **185**, the answer to the hook.
 
 > Keep the answer, 185, out of every caption, title and comment you write. The whole post runs on people guessing it.
 
@@ -50,10 +49,10 @@ Send it to a friend so they can guess first ✦
 - Upload the original MP4, never a TikTok download with its watermark. Instagram demotes recycled watermarked videos.
 - Turn on *Also share to feed*.
 - Pin the same comment as on TikTok.
-- Alt text, if your app offers it for Reels (753 / 1,000):
+- Alt text, if your app offers it for Reels (754 / 1,000):
 
 ```
-Vertical animated film on a deep black, space-like background. A tiny glowing dot, labeled as the Planck length (1.6 × 10⁻³⁵ meters), doubles in size again and again while a step counter climbs. On-screen text asks: How many times must you double this to reach a galaxy? Guess before it ends. At each of 13 stops a step chip appears and copies of the previous object line up across the new one: a proton at step 66, a hydrogen atom at 82, a virus at 92, a red blood cell at 99, an ant at 108, a person (you) at 116, Mount Everest at 129, Earth at 139, the Sun at 146, the solar system at 159, the nearest star at 171, the Milky Way at 185 and the observable universe at 205. Closing text: 205 doublings. From the Planck length to the edge of everything.
+Vertical animated film on a deep black, space-like background. A tiny glowing dot, labelled as the Planck length (1.6 × 10⁻³⁵ metres), doubles in size again and again while a step counter climbs. On-screen text asks: How many times must you double this to reach a galaxy? Guess before it ends. At each of 13 stops a step chip appears and copies of the previous object line up across the new one: a proton at step 66, a hydrogen atom at 82, a virus at 92, a red blood cell at 99, an ant at 108, a person (you) at 116, Mount Everest at 129, Earth at 139, the Sun at 146, the solar system at 159, the nearest star at 171, the Milky Way at 185 and the observable universe at 205. Closing text: 205 doublings. From the Planck length to the edge of everything.
 ```
 
 ## YouTube Shorts
@@ -98,7 +97,7 @@ planck length, the doubling, doubling, powers of two, exponential growth, scale 
 ```
 
 - Pin the same comment.
-- Shorts pick their own thumbnail from the video. The hook frame is the first frame, so it usually shows.
+- Pick the thumbnail yourself: the hook frame at ~1.9 s. Frame 0 shows only the dot.
 
 ## Launch checklist
 

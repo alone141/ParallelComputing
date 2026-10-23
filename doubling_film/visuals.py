@@ -120,7 +120,8 @@ class MeasureRow:
         self.b = np.array([spec.end[0], spec.end[1], 0.0]) * D0
         length = float(np.linalg.norm(self.b - self.a))
         col = spec.color
-        self.dots = spec.count <= 150
+        # individual dots when each copy is at least ~4 px at 1080 wide (120 px per unit)
+        self.dots = float(np.linalg.norm(self.b - self.a)) * 120 / spec.count >= 4.0
         n = int(round(spec.count)) if self.dots else self.MAX_BEADS
         self.glow = VMobject(stroke_color=col, stroke_width=10, stroke_opacity=0.22 if not self.dots else 0.12,
                              fill_opacity=0)

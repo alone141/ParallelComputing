@@ -5,7 +5,7 @@ Everything needed to open **Lumiera** on TikTok, Instagram and YouTube Shorts:
 - `assets/`: logo, profile pictures, YouTube banner and watermark, Instagram highlight covers, Reels covers.
 - `PROFILE.md`: handles, names and bios, ready to paste.
 - `FIRST_POST.md`: the launch post for *The Doubling* (captions, hashtags, pinned comment, posting checklist).
-- `BRAND.md`: how the brand looks and sounds (palette, type, logo rules, voice, content pillars).
+- Brand rules (palette, type, logo, voice, pillars) live in [`../playbook/brand.md`](../playbook/brand.md). `BRAND.md` here only points to them.
 
 All images are generated from code (`build_brand.py` + `brandlib.py`), so any of them can be
 rebuilt or resized. The text-dependent pieces (tagline, highlight names) are read from `copy.json`.
@@ -25,7 +25,6 @@ python build_brand.py        # writes assets/ (the Reels covers need ../doubling
 | `assets/youtube/youtube_watermark_150.png` | YouTube Studio → Customization → Branding → Video watermark | 150×150, transparent, single colour, ≤ 1 MB |
 | `assets/instagram/highlight_*.png` | Instagram story highlight covers | 1080×1920; the icon sits inside the circle Instagram crops |
 | `assets/posts/the_doubling_cover_hook.jpg` | Cover for the first video on TikTok and Reels | 1080×1920; the question stays inside Instagram's 3:4 grid crop |
-| `assets/posts/the_doubling_cover_milky_way.jpg` | Alternative cover for a later re-post | Shows "185", the hook's answer, so don't use it for the first post |
 | `assets/logo/lumiera_mark_*.png` | The mark on its own (transparent, on dark, white mono) | 2048×2048 |
 | `assets/logo/lumiera_lockup_*` | Mark + wordmark, horizontal or stacked | For end cards, thumbnails, collaborations |
 | `assets/logo/lumiera_wordmark_*.png` | "LUMIERA" wordmark, white or dark | Transparent |

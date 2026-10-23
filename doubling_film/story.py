@@ -93,12 +93,12 @@ MILESTONES: list[Milestone] = [
     ),
     Milestone(
         "proton", 1.68e-15, "A PROTON", "0.0000000000000017 m",
-        "[100 quintillion] Planck lengths wide", "#FF8A5B", 3.2,
+        "About [100 quintillion] Planck lengths wide", "#FF8A5B", 3.2,
         row=Row(1e20, "Planck lengths", (-0.5, 0.0), (0.5, 0.0), "#B9A6FF"),
     ),
     Milestone(
         "atom", 1.06e-10, "A HYDROGEN ATOM", "0.1 nanometres",
-        "[60,000×] wider than its proton", "#5CC8FF", 3.2,
+        "[≈60,000×] wider than its proton", "#5CC8FF", 3.2,
         row=Row(60_000, "protons", (-0.5, 0.0), (0.5, 0.0), "#FF8A5B"),
     ),
     Milestone(
@@ -163,7 +163,7 @@ MILESTONES: list[Milestone] = [
     ),
     Milestone(
         "universe", 93e9 * LIGHT_YEAR, "THE OBSERVABLE UNIVERSE", "93 billion light-years",
-        "Just [20] more doublings.", "#FF6FD8", 4.6,
+        "Just [20] more doublings", "#FF6FD8", 4.6,
         note="[930,000] Milky Ways across", note_delay=1.3, you=(0.0, 0.0),
         row=Row(930_000, "Milky Ways", (-0.5, 0.0), (0.5, 0.0), "#C7A6FF", label_side="down"), row_delay=1.45,
     ),

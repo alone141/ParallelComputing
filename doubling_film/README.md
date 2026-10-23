@@ -1,5 +1,7 @@
 # The Doubling
 
+> Style rules for all Lumiera films are in [`../playbook/film-style.md`](../playbook/film-style.md). This film is their reference implementation.
+
 A ~68-second vertical (9:16) film for TikTok and Instagram Reels, made with
 [Manim](https://www.manim.community/). It starts at the Planck length and keeps
 doubling. After **116** steps you reach a human, after **185** the Milky Way,
@@ -82,9 +84,9 @@ Doublings are `log2(size / 1.616e-35 m)`. The STEP chip shows the nearest whole 
 "You're closer to a galaxy than to the Planck length" is measured in doublings:
 116 steps separate you from the Planck length, and only 69 separate you from the Milky Way.
 
-## Posting notes
+## Posting
 
-* All text sits inside the TikTok/Reels safe area. Nothing important is in the
-  bottom ~18% (caption) or in the right-hand button column.
-* Suggested cover: the Milky Way punchline frame (~56 s) or the "205" frame (~65 s).
-* Caption idea: *"Double the Planck length 205 times and you get… everything. Guess where you are 👇"*
+Posting rules are in [`../playbook/brand.md`](../playbook/brand.md) §6 (cover, captions, hashtags,
+the answer rule) and the safe zones in [`../playbook/film-style.md`](../playbook/film-style.md) §1.
+The launch package for this film, with its cover `the_doubling_cover_hook.jpg` (the hook frame at
+1.9 s), is [`../lumiera_brand/FIRST_POST.md`](../lumiera_brand/FIRST_POST.md).

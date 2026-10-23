@@ -222,7 +222,7 @@ def build():
     rms = np.sqrt((out**2).mean())
     out *= 10 ** (-14 / 20) / (rms + 1e-12)
     out = np.tanh(out * 1.1) / np.tanh(1.1)
-    out *= 10 ** (-1 / 20) / np.abs(out).max()
+    out *= 10 ** (-1.5 / 20) / np.abs(out).max()  # leaves room for AAC: true peak <= -1 dBTP
     return out
 
 

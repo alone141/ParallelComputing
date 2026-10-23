@@ -30,9 +30,9 @@ from brandlib import (
 HERE = Path(__file__).parent
 OUT = HERE / "assets"
 FILM = HERE.parent / "doubling_film" / "out" / "the_doubling_final.mp4"
-COPY = json.loads((HERE / "copy.json").read_text()) if (HERE / "copy.json").exists() else {}
-TAGLINE = COPY.get("tagline", "Science, visualized.")
-HIGHLIGHTS = COPY.get("highlights", ["Start here", "Space", "Physics", "Life", "Math"])
+COPY = json.loads((HERE / "copy.json").read_text())  # required: the tagline and highlights come from here
+TAGLINE = COPY["tagline"]
+HIGHLIGHTS = COPY["highlights"]
 
 
 def save(img: Image.Image, rel: str, **kw):
@@ -251,7 +251,7 @@ def brand_sheet() -> Image.Image:
     d.text((90, y + 170), "Body", font=font("mono", 26), fill=PALETTE["mist"])
     d.text((90, y + 210), "Inter — clear, calm, precise.", font=font("body", 48), fill=PALETTE["starlight"])
     d.text((90, y + 310), "Numbers", font=font("mono", 26), fill=PALETTE["mist"])
-    d.text((90, y + 350), "STEP 185 · 1.0 × 10^21 m", font=font("mono", 46), fill=PALETTE["lavender"])
+    d.text((90, y + 350), "STEP 116 · 1.7 m", font=font("mono", 46), fill=PALETTE["lavender"])
     for i, name in enumerate(HIGHLIGHTS[:5]):
         ic = icon(name, 150, PALETTE["starlight"])
         base.paste(ic, (1010 + (i % 3) * 190, y + 20 + (i // 3) * 210), ic)
@@ -298,9 +298,6 @@ def main():
     hook = film_frame(1.9)
     if hook:
         save(hook, "posts/the_doubling_cover_hook.jpg", quality=94)
-    galaxy = film_frame(56.6)
-    if galaxy:
-        save(galaxy, "posts/the_doubling_cover_milky_way.jpg", quality=94)
     print("assets written to", OUT)
 
 

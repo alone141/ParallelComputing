@@ -270,7 +270,8 @@ class DoublingFilm(Scene):
             c_out = t_note if note else t_out
             for s, ti_, to_ in [(compare, t_in + 0.16, c_out)] + ([(note, t_note + 0.12, t_out)] if note else []):
                 c = fit_width(markup(s, 31 if "\n" not in s else 29, accent, color=BODY, weight=MEDIUM), safe_w)
-                c.move_to([0, yc - (c.height - 0.32) / 2, 0])
+                # two-line notes grow downward; nudge them up so the last baseline stays at or above y = -4.8
+                c.move_to([0, yc - (c.height - 0.32) / 2 + (0.05 if len(c.submobjects) > 1 else 0.0), 0])
                 self.labels.append(AnimText(c, ti_, to_, stagger=0.008))
 
         planck = MILESTONES[0]

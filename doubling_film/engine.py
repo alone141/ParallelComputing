@@ -5,7 +5,7 @@ which is far too slow for dozens of glows per frame at 1080x1920.  ``Sprite``
 plus ``FilmCamera`` composite only the pixels a sprite covers, add light with a
 "screen" blend (so glows add up like real light), pick a mip level so big
 textures don't shimmer when they shrink, and finish each frame with a
-vignette and film grain.
+vignette (film grain is added at encode time, see render.sh).
 """
 
 from __future__ import annotations
