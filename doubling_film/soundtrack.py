@@ -17,7 +17,7 @@ import wave
 import numpy as np
 from scipy.signal import fftconvolve
 
-from story import BY_KEY, HOOK, MILESTONES, TIMELINE
+from story import BY_KEY, HOOK, MILESTONES, ROW_DURATION, STEP_TIMES, TIMELINE
 
 SR = 48_000
 
@@ -154,9 +154,26 @@ def build():
     rt = np.arange(int(1.4 * SR)) / SR
     riser = lowpass_blocks(rng.normal(size=len(rt)), 300 + 5000 * (rt / 1.4) ** 2) * (rt / 1.4) ** 2.2
     mix.add(rs / SR, riser, gain=0.09, send=0.3)
-    for k, nm in enumerate(("E4", "A4", "C5")):
+    steps = ("E4", "G4", "A4", "C5", "D5", "E5", "G5", "A5")[: len(STEP_TIMES)]
+    for k, nm in enumerate(steps):
         tk = float(grid[np.argmax(n_grid >= k + 1 - 0.02)])
-        mix.add(tk, pluck(note(nm)), gain=0.45, pan=(-0.3, 0.0, 0.3)[k], send=0.4)
+        mix.add(tk, pluck(note(nm)), gain=0.42, pan=-0.35 + 0.7 * k / max(len(steps) - 1, 1), send=0.4)
+
+    # comparison rows: a soft ratchet while the counter climbs, a chime when it lands
+    for m in MILESTONES[1:]:
+        if m.key not in tl.row_start:
+            continue
+        rs = tl.row_start[m.key]
+        u = np.linspace(0, 1, 4000)
+        p = np.where(u < 0.5, 4 * u**3, 1 - (-2 * u + 2) ** 3 / 2)  # ease_in_out, as in the picture
+        clicks = 22
+        for i in range(1, clicks + 1):
+            tc = rs + ROW_DURATION * float(u[np.argmax(p >= i / clicks)])
+            ct = np.arange(int(0.02 * SR)) / SR
+            f = 1500 + 1700 * i / clicks
+            click = np.sin(2 * np.pi * f * ct) * np.exp(-ct / 0.004)
+            mix.add(tc, click, gain=0.05, pan=-0.3 + 0.6 * i / clicks, send=0.15)
+        mix.add(rs + ROW_DURATION, bell(note("E6"), dur=1.6, decay=0.5, bright=0.3), gain=0.09, send=0.5)
 
     # milestones ------------------------------------------------------------
     scale = ["A3", "C4", "D4", "E4", "G4", "A4", "C5", "D5", "E5", "G5", "A5"]

@@ -15,6 +15,7 @@ import numpy as np
 from manim import (
     BOLD,
     DOWN,
+    RIGHT,
     MEDIUM,
     UP,
     Circle,
@@ -60,6 +61,7 @@ from story import (
     N_GALAXY,
     N_HUMAN,
     PLANCK,
+    STEP_TIMES,
     TIMELINE,
 )
 from visuals import D0, ORDER, R0, polyline_points, sprite
@@ -88,6 +90,21 @@ def bg_colour(n):
         if n <= n1:
             return mix(hex_rgb(c0), hex_rgb(c1), smooth(n0, n1, n))
     return hex_rgb(BG_KEYS[-1][1])
+
+
+def step_of(m):
+    """The step (doubling) shown for a milestone: the nearest whole doubling."""
+    return int(round(m.n))
+
+
+def count_text(value, total):
+    """Format a running count, switching to words for astronomically big totals."""
+    if total >= 1e7:
+        for div, name in ((1e18, "quintillion"), (1e15, "quadrillion"), (1e12, "trillion"),
+                          (1e9, "billion"), (1e6, "million")):
+            if total >= div:
+                return f"{value / div:,.0f} {name}"
+    return f"{int(round(value)):,}"
 
 
 def markup(s, size, accent, **kw):
@@ -223,6 +240,10 @@ class DoublingFilm(Scene):
         self.brackets = [AnimText(VGroup(brA, lA), t_ans, t_end, stagger=0.0),
                          AnimText(VGroup(brB, lB), t_ans + 0.35, t_end, stagger=0.0)]
         self.hud_static = Rig(VGroup(self.hud_label, self.ruler, self.meter_base, self.meter_zero, *self.meter_ticks))
+        # live counter that rides the head of each comparison row
+        self.font_count = MonoFont(size=21, weight=BOLD, letters=True)
+        self.count_shadow = MonoLine(self.font_count, 40, color="#000000", stroke_width=8, stroke_color="#000000")
+        self.count_line = MonoLine(self.font_count, 40, color="#FFFFFF")
 
     def meter_y(self, n):
         return self.my0 + (self.my1 - self.my0) * clamp01(n / N_END)
@@ -232,10 +253,17 @@ class DoublingFilm(Scene):
         self.labels = []
         ya, yt, yc = -2.98, -3.63, -4.33
 
-        def block(size_text, title, compare, accent, t_in, t_out, note=None, t_note=None):
+        def block(size_text, title, compare, accent, t_in, t_out, note=None, t_note=None, step=None):
             mono = not re.search("[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]", size_text)
             a = text(size_text, 25 if mono else 27, font=MONO if mono else INTER, weight=MEDIUM,
-                     color=accent).move_to([0, ya, 0])
+                     color=accent if step is None else BODY)
+            if step is not None:
+                chip_txt = text(step, 22, font=MONO, weight=BOLD, color=accent)
+                chip = RoundedRectangle(width=chip_txt.width + 0.38, height=0.44, corner_radius=0.22,
+                                        fill_color=accent, fill_opacity=0.16, stroke_color=accent, stroke_width=1.6)
+                chip_txt.move_to(chip)
+                a = VGroup(VGroup(chip, chip_txt), a).arrange(RIGHT, buff=0.26)
+            a.move_to([0, ya, 0])
             ti = fit_width(text(title, 60, font=INTER_DISPLAY, weight=BOLD, color=WHITE_TXT), 7.8).move_to([0, yt, 0])
             self.labels += [AnimText(a, t_in, t_out), AnimText(ti, t_in + 0.06, t_out, stagger=0.018)]
             c_out = t_note if note else t_out
@@ -245,18 +273,20 @@ class DoublingFilm(Scene):
                 self.labels.append(AnimText(c, ti_, to_, stagger=0.008))
 
         planck = MILESTONES[0]
-        block(planck.size_text, planck.title, planck.compare, planck.accent, 0.45, tl.steps_end - 0.15)
+        block(planck.size_text, planck.title, planck.compare, planck.accent, 0.45, 3.3)
+        block("2 → 4 → 8 → 16 → … Planck lengths", "DOUBLE IT. AGAIN.", "Every step makes it [twice] as long.",
+              "#B9A6FF", 3.45, tl.steps_end - 0.1)
         # Colliders resolve ~1e-20 m (about doubling 50): only claim "beyond any
         # experiment" while the counter is below that.
         ts = np.linspace(tl.steps_end, tl.arrive["proton"], 4000)
         t50 = float(ts[np.argmax(tl.n_at(ts) >= 49.5)])
-        block("DOUBLINGS 4 → 50", "THE GREAT DESERT", "Smaller than [any experiment] can probe.", "#B9A6FF",
-              tl.steps_end + 0.15, t50)
+        block(f"STEPS {len(STEP_TIMES) + 1} → 50", "THE GREAT DESERT", "Smaller than [any experiment] can probe.",
+              "#B9A6FF", tl.steps_end + 0.15, t50)
         for m in MILESTONES[1:]:
             t_in = tl.arrive[m.key] - 0.3
             t_out = tl.leave[m.key] - 0.02 if m.key != "universe" else tl.outro_start + 0.05
             t_note = tl.arrive[m.key] + m.note_delay if m.note else None
-            block(m.size_text, m.title, m.compare, m.accent, t_in, t_out, m.note, t_note)
+            block(m.size_text, m.title, m.compare, m.accent, t_in, t_out, m.note, t_note, step=f"STEP {step_of(m)}")
 
     def build_hook_and_outro(self):
         tl = self.tl
@@ -397,6 +427,40 @@ class DoublingFilm(Scene):
             if vis.visible:
                 subs.append(vis.mob)
 
+        # the comparison counter ------------------------------------------------
+        for vis in self.visuals:
+            row = vis.row
+            if row is None or not vis.visible or t < row.t_start:
+                continue
+            leave = tl.leave[vis.key] if vis.key != "universe" else tl.outro_start + 0.05
+            a = smooth(row.t_start, row.t_start + 0.15, t) * (1 - smooth(leave - 0.25, leave, t))
+            a *= vis.alpha(n, t)
+            if a < 0.003:
+                continue
+            spec = row.spec
+            label = f"{count_text(row.progress(t) * spec.count, spec.count)} {spec.noun}"
+            hx, hy = row.head_point()[:2]
+            width = len(label) * self.font_count.adv
+            if spec.label_side in ("up", "down"):
+                # ride the middle of the filled part, so it lands centred on the row
+                sx, sy = row.glow.points[0][:2]
+                mx, my = (sx + hx) / 2, (sy + hy) / 2
+                x = min(max(mx, -4.2 + width / 2), 4.2 - width / 2)
+                pos, align = (x, my + (0.3 if spec.label_side == "up" else -0.3)), "center"
+            elif spec.label_side == "left":
+                pos, align = (hx - 0.2, hy), "right"
+            else:
+                pos, align = (hx + 0.2, hy), "left"
+            col = mix(hex_rgb(spec.color), np.ones(3), 0.4)
+            chars = [(ch, 1.0, 0.0) for ch in label]
+            self.count_shadow.alpha = 0.78 * a
+            self.count_shadow.show(chars, pos, align)
+            self.count_line.alpha = a
+            self.count_line.show(chars, pos, align)
+            for slot in self.count_line.submobjects:
+                slot.fill_rgbas[:, :3] = col
+            subs += [self.count_shadow, self.count_line]
+
         # YOU pin ------------------------------------------------------------
         pin_a = smooth(N_HUMAN - 0.6, N_HUMAN - 0.25, n) * (1 - smooth(o, o + 0.5, t))
         if pin is not None and pin_a > 0.003:
@@ -438,9 +502,16 @@ class DoublingFilm(Scene):
         # the counter (it flies to the centre for the outro) ------------------
         cnt_a = smooth(2.4, 2.95, t) * (1 - smooth(tl.total - 1.45, tl.total - 1.1, t))
         if cnt_a > 0.003:
-            shown = min(int(math.floor(n + 0.35)), 205) if t < o else 205
+            shown = min(int(round(n)), 205) if t < o else 205
+            punch = 0.0
+            for m in MILESTONES[1:]:
+                if tl.arrive[m.key] - 0.05 <= t <= tl.leave[m.key]:
+                    shown = step_of(m)
+                dt_a = t - tl.arrive[m.key]
+                if 0.0 <= dt_a <= 0.5:
+                    punch = math.sin(math.pi * dt_a / 0.5)
             fly = ease_in_out((t - o - 0.05) / 0.85)
-            s = mix(1.0, 2.15, fly)
+            s = mix(1.0, 2.15, fly) * (1 + 0.16 * punch)
             cy = mix(5.6, 0.95, fly)
             flash, fcol = 0.0, np.ones(3)
             for m in MILESTONES[1:]:

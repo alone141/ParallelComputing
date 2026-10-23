@@ -14,7 +14,6 @@ from manim import (
     RIGHT,
     UP,
     Circle,
-    DashedLine,
     DashedVMobject,
     Dot,
     Ellipse,
@@ -42,7 +41,7 @@ from engine import (
     smooth,
     text,
 )
-from story import EVEREST_SUMMIT_X, GALAXY_SUN, SOLAR_EARTH
+from story import EVEREST_SUMMIT_X, GALAXY_SUN, ROW_DURATION, SOLAR_EARTH
 
 D0 = 5.2  # reference diameter in scene units
 R0 = D0 / 2
@@ -109,6 +108,59 @@ def blob(points, fill, opacity=1.0, stroke=None, stroke_width=0.0, smooth_it=Tru
     return v
 
 
+class MeasureRow:
+    """The comparison, acted out: copies of the previous thing fill a line
+    across the current one while a counter (drawn by the film) climbs."""
+
+    MAX_BEADS = 90
+
+    def __init__(self, spec, t_start):
+        self.spec, self.t_start = spec, t_start
+        self.a = np.array([spec.start[0], spec.start[1], 0.0]) * D0
+        self.b = np.array([spec.end[0], spec.end[1], 0.0]) * D0
+        length = float(np.linalg.norm(self.b - self.a))
+        col = spec.color
+        self.dots = spec.count <= 150
+        n = int(round(spec.count)) if self.dots else self.MAX_BEADS
+        self.glow = VMobject(stroke_color=col, stroke_width=10, stroke_opacity=0.22 if not self.dots else 0.12,
+                             fill_opacity=0)
+        self.core = VMobject(stroke_color=col, stroke_width=3.2, stroke_opacity=0.0 if self.dots else 0.95,
+                             fill_opacity=0)
+        for line in (self.glow, self.core):
+            line.points = polyline_points([self.a[:2], self.a[:2] + 1e-3])
+            line.set_cap_style(CapStyleType.ROUND)
+        bead_col = col if self.dots else "#FFFFFF"
+        radius = 0.46 * length / n if self.dots else 0.022
+        self.bead_pos = [(i + 0.5) / n for i in range(n)]
+        self.beads = [Dot(radius=radius, color=bead_col, fill_opacity=1.0 if self.dots else 0.75)
+                      .move_to(self.a + (self.b - self.a) * s) for s in self.bead_pos]
+        self.head = sprite("star", 0.55, col, spikes=0.0)
+        self.group = Group(self.glow, self.core, *self.beads, self.head)
+
+    def progress(self, t):
+        return ease_in_out((t - self.t_start) / ROW_DURATION)
+
+    def animate(self, t):
+        p = self.progress(t)
+        for m in (self.glow, self.core, self.head, *self.beads):
+            for leaf in m.get_family():
+                leaf.k = 0.0
+        if t < self.t_start:
+            return
+        head = self.a + (self.b - self.a) * max(p, 1e-3)
+        set_rest(self.glow, polyline_points([self.a, head]))
+        set_rest(self.core, polyline_points([self.a, head]))
+        self.glow.k = self.core.k = 1.0
+        for s, bead in zip(self.bead_pos, self.beads):
+            bead.k = smooth(s - 0.01, s + 0.004, p)
+        set_rest(self.head, quad(head[0], head[1], 0.55))
+        self.head.k = 1.0 - smooth(ROW_DURATION, ROW_DURATION + 0.6, t - self.t_start)
+
+    def head_point(self):
+        """Current (posed) screen position of the growing end."""
+        return self.head.points[:4].mean(axis=0)
+
+
 class Visual:
     fade_in = (1.6, 0.55)
     fade_out = (3.4, 6.4)
@@ -121,6 +173,9 @@ class Visual:
         self.t_leave = tl.leave[ms.key]
         self.spinners: list = []
         self.mob = self.build()
+        self.row = MeasureRow(ms.row, tl.row_start[ms.key]) if ms.row else None
+        if self.row:
+            self.mob.add(self.row.group)
         self.rig = Rig(self.mob)
         for group, _ in self.spinners:
             for m in group.get_family():
@@ -154,6 +209,8 @@ class Visual:
             return
         self.visible = True
         self.animate(t, n)
+        if self.row:
+            self.row.animate(t)
         self.rig.pose(s, [center[0], center[1], 0.0], a, self.angle(t))
 
     def stagger(self, mobs, t, start, step, dur=0.18):
@@ -171,7 +228,7 @@ class Planck(Visual):
 
     def build(self):
         self.halo = sprite("glow", D0 * 1.35, "#8F6BFF", alpha=0.55)
-        self.dots = [sprite("star", 1.0, "#E4DCFF", spikes=0.0) for _ in range(64)]
+        self.dots = [sprite("star", 1.0, "#E4DCFF", spikes=0.0) for _ in range(256)]
         self.line = Line(LEFT * R0, RIGHT * R0, stroke_width=3.0, color="#D4C8FF")
         circ = DashedVMobject(Circle(radius=R0, stroke_width=1.6, color="#B9A6FF"), num_dashes=90)
         ticks = VGroup(*[Line(RIGHT * (R0 - 0.12), RIGHT * (R0 + 0.12), stroke_width=1.8, color="#B9A6FF")
@@ -182,31 +239,31 @@ class Planck(Visual):
         return Group(self.halo, *self.dots, self.line, self.reticle)
 
     def update(self, t, n, center, alpha_mult=1.0):
-        self.visible = n < 12 and alpha_mult > 0.003
+        self.visible = n < 16 and alpha_mult > 0.003
         if not self.visible:
             return
         cx, cy = center
         m = int(math.floor(n + 1e-9))
         f = n - m
         p = ease_in_out(f)
-        row_a = (1 - smooth(4.2, 6.6, n)) * alpha_mult
+        row_a = (1 - smooth(7.7, 9.4, n)) * alpha_mult
         breathe = 1 + 0.035 * math.sin(2 * math.pi * 0.7 * t) * (1 - smooth(0, 0.5, n))
         for d in self.dots:
             d.alpha = 0.0
-        if m < 6 and row_a > 0.003:
+        if m < 8 and row_a > 0.003:
             count = 2**m
             u_m, u_m1 = D0 / count, D0 / count / 2
             for j in range(2 * count):
                 i = j // 2
                 start = (i - (count - 1) / 2) * u_m
                 end = (j - (2 * count - 1) / 2) * u_m1
-                h = mix(u_m, u_m1, p) * 1.15 * breathe
+                h = max(mix(u_m, u_m1, p) * 1.15, 0.16) * breathe
                 d = self.dots[j]
                 d.points = quad(cx + mix(start, end, p), cy, h)
                 d.alpha = row_a * (1.0 if j % 2 == 0 else smooth(0.0, 0.2, p))
         self.halo.points = quad(cx, cy, D0 * 1.35 * breathe)
         self.halo.alpha = 0.55 * (1 - smooth(0.6, 4.0, n)) * alpha_mult
-        self.line_rig.pose(1.0, [cx, cy, 0], smooth(3.3, 4.6, n) * (1 - smooth(7.5, 11.5, n)) * 0.9 * alpha_mult)
+        self.line_rig.pose(1.0, [cx, cy, 0], smooth(6.6, 8.2, n) * (1 - smooth(10.5, 15.0, n)) * 0.9 * alpha_mult)
         self.ret_rig.pose(1.0, [cx, cy, 0], 0.7 * (1 - smooth(0.25, 1.6, n)) * alpha_mult)
 
 
@@ -314,12 +371,7 @@ class RedBloodCell(Visual):
         dh = Ellipse(width=w * 0.6, height=h * 0.38).shift(DOWN * h * 0.04)
         inner_hi = VMobject(stroke_color="#FF9AAA", stroke_width=3.5, stroke_opacity=0.4, fill_opacity=0)
         inner_hi.pointwise_become_partial(dh, 0.6, 0.9)
-        self.row = [Dot(radius=D0 / 150, color="#FF8FCB").move_to([-w / 2 + (i + 0.5) * w / 75, 0, 0])
-                    for i in range(75)]
-        return Group(glow, outer, dimple, rim_hi, inner_hi, *self.row)
-
-    def animate(self, t, n):
-        self.stagger(self.row, t, self.t_arrive + 0.3, 0.011)
+        return Group(glow, outer, dimple, rim_hi, inner_hi)
 
 
 class Ant(Visual):
@@ -530,12 +582,7 @@ class Sun(Visual):
         inner = sprite("glow", D0 * 1.45, "#FFC86B", alpha=0.65, sigma=0.4)
         disc = sprite("sun_disc", D0, blend="over")
         bloom = sprite("glow", D0 * 1.12, "#FFF1C9", alpha=0.22)
-        self.row = [Dot(radius=D0 / 218 * 0.88, color="#8CCBFF").move_to([-R0 + (i + 0.5) * D0 / 109, 0, 0])
-                    for i in range(109)]
-        return Group(corona, inner, disc, bloom, *self.row)
-
-    def animate(self, t, n):
-        self.stagger(self.row, t, self.t_arrive + 0.25, 0.0062)
+        return Group(corona, inner, disc, bloom)
 
 
 PLANETS = [  # (name, AU, radius px at 1080p, colour, start angle)
@@ -588,11 +635,9 @@ class NearestStar(Visual):
         prox = sprite("star", 0.75, "#FFB49C", spikes=0.35, at=(px, 0))
         ab = [sprite("star", 0.62, "#FFF0C8", spikes=0.3, at=(px - 0.2, 0.22)),
               sprite("star", 0.5, "#FFD9A0", spikes=0.3, at=(px - 0.12, 0.27))]
-        line = DashedLine([sx + 0.25, 0, 0], [px - 0.25, 0, 0], dash_length=0.12, stroke_width=2.2,
-                          color="#FFFFFF", stroke_opacity=0.5)
         l1 = text("Sun", 20, color="#C9D1E6").move_to([sx, -0.42, 0])
         l2 = text("Proxima Centauri", 20, color="#C9D1E6").move_to([px - 0.55, -0.42, 0])
-        return Group(sun_glow, prox_glow, line, sun, prox, *ab, l1, l2)
+        return Group(sun_glow, prox_glow, sun, prox, *ab, l1, l2)
 
 
 class MilkyWay(Visual):

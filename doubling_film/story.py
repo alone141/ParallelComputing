@@ -25,6 +25,20 @@ def doublings(size_m: float) -> float:
 
 
 @dataclass
+class Row:
+    """The comparison, acted out: ``count`` copies of the previous thing lined
+    up from ``start`` to ``end`` (units of this milestone's size)."""
+
+    count: float
+    noun: str
+    start: tuple[float, float]
+    end: tuple[float, float]
+    color: str
+    label_side: str = "up"  # where the live counter sits: up | down | left | right
+    shown: str | None = None  # final counter text when it differs from the count
+
+
+@dataclass
 class Milestone:
     key: str
     size: float  # characteristic size in metres (drawn as the reference diameter)
@@ -42,6 +56,8 @@ class Milestone:
     attach: tuple[float, float] = (0.0, 0.0)
     # Where "you" are inside this object (drives the YOU pin), or None.
     you: tuple[float, float] | None = None
+    row: Row | None = None
+    row_delay: float = 0.5  # seconds after arrival that the row starts filling
     n: float = field(init=False)
 
     def __post_init__(self):
@@ -74,66 +90,79 @@ MILESTONES: list[Milestone] = [
     ),
     Milestone(
         "proton", 1.68e-15, "A PROTON", "0.0000000000000017 m",
-        "[100 quintillion] Planck lengths wide", "#FF8A5B", 1.7,
+        "[100 quintillion] Planck lengths wide", "#FF8A5B", 3.2,
+        row=Row(1e20, "Planck lengths", (-0.5, 0.0), (0.5, 0.0), "#B9A6FF"),
     ),
     Milestone(
         "atom", 1.06e-10, "A HYDROGEN ATOM", "0.1 nanometres",
-        "[60,000×] wider than its proton", "#5CC8FF", 1.7,
+        "[60,000×] wider than its proton", "#5CC8FF", 3.2,
+        row=Row(60_000, "protons", (-0.5, 0.0), (0.5, 0.0), "#FF8A5B"),
     ),
     Milestone(
         "virus", 1.0e-7, "A VIRUS", "100 nanometres",
-        "About [1,000] atoms across", "#FF5FA2", 1.45,
+        "About [1,000] atoms across", "#FF5FA2", 3.2,
+        row=Row(1_000, "atoms", (-0.5, 0.0), (0.5, 0.0), "#5CC8FF"),
     ),
     Milestone(
         "rbc", 7.5e-6, "A RED BLOOD CELL", "7.5 micrometres",
-        "[75] viruses side by side", "#FF4D5E", 1.6,
+        "[75] viruses side by side", "#FF4D5E", 3.2,
+        row=Row(75, "viruses", (-0.5, 0.0), (0.5, 0.0), "#FF8FCB"),
     ),
     Milestone(
         "ant", 4.0e-3, "AN ANT", "4 millimetres",
-        "[530] blood cells, nose to tail", "#FFB547", 1.5,
+        "[530] blood cells, nose to tail", "#FFB547", 3.2,
+        row=Row(530, "blood cells", (-0.5, -0.25), (0.5, -0.25), "#FF4D5E"),
     ),
     Milestone(
         "human", 1.7, "YOU", "1.7 metres",
-        "[425] ants tall", "#6CF2FF", 2.8,
-        note="Doubling [116]. Remember that.", note_delay=1.15,
+        "[425] ants tall", "#6CF2FF", 3.8,
+        note="Doubling [116]. Remember that.", note_delay=2.3,
+        row=Row(425, "ants", (-0.3, -0.5), (-0.3, 0.5), "#FFB547", label_side="left"),
         sit=(0.16, -0.47), attach=(0.0, -0.5), you=(0.0, 0.51),
     ),
     Milestone(
         "everest", 8849.0, "MOUNT EVEREST", "8,849 metres",
-        "[5,200] people stacked up", "#A9D6FF", 1.5,
+        "[5,200] people stacked up", "#A9D6FF", 3.2,
+        row=Row(5_200, "people", (EVEREST_SUMMIT_X, -0.5), (EVEREST_SUMMIT_X, 0.5), "#6CF2FF", label_side="right"),
         sit=(EVEREST_SUMMIT_X, 0.5), attach=(EVEREST_SUMMIT_X, -0.5),
         you=(EVEREST_SUMMIT_X, 0.5),
     ),
     Milestone(
         "earth", 1.2742e7, "EARTH", "12,742 km",
-        "[1,440] Everests wide", "#4DA3FF", 1.7,
+        "[1,440] Everests wide", "#4DA3FF", 3.2,
+        row=Row(1_440, "Everests", (-0.5, 0.0), (0.5, 0.0), "#A9D6FF"),
         sit=EARTH_NEPAL, you=EARTH_NEPAL,
     ),
     Milestone(
         "sun", 1.3927e9, "THE SUN", "1.39 million km",
-        "[109] Earths across", "#FFB13B", 1.7,
+        "[109] Earths across", "#FFB13B", 3.2,
+        row=Row(109, "Earths", (-0.5, 0.0), (0.5, 0.0), "#8CCBFF"),
         sit=(0.535, 0.0), you=(0.535, 0.0),
     ),
     Milestone(
         "solar", 2 * 30.07 * AU, "OUR SOLAR SYSTEM", "out to Neptune",
-        "[6,500] Suns wide", "#8FB8FF", 1.7,
+        "[6,500] Suns wide", "#8FB8FF", 3.2,
+        row=Row(6_500, "Suns", (-0.5, 0.0), (0.5, 0.0), "#FFB13B", label_side="down"),
         you=SOLAR_EARTH,
     ),
     Milestone(
         "star", 4.2465 * LIGHT_YEAR, "THE NEAREST STAR", "4.2 light-years away",
-        "[4,500] solar systems away", "#FF8C6B", 1.6,
+        "[4,500] solar systems away", "#FF8C6B", 3.2,
+        row=Row(4_500, "solar systems", (-0.47, 0.0), (0.47, 0.0), "#8FB8FF"),
         sit=(-0.5, 0.0), attach=(-0.5, 0.0), you=(-0.5, 0.0),
     ),
     Milestone(
         "milkyway", 1.0e5 * LIGHT_YEAR, "THE MILKY WAY", "100,000 light-years",
-        "[23,000] trips to the nearest star", "#C7A6FF", 3.9,
+        "[23,000] trips to the nearest star", "#C7A6FF", 5.4,
         note="You're closer to [a galaxy]\nthan to the Planck length.",
-        note_delay=1.35, sit=GALAXY_SUN, you=GALAXY_SUN,
+        note_delay=2.5, sit=GALAXY_SUN, you=GALAXY_SUN,
+        row=Row(23_000, "trips", (-0.5, 0.0), (0.5, 0.0), "#FF8C6B"),
     ),
     Milestone(
         "universe", 93e9 * LIGHT_YEAR, "THE OBSERVABLE UNIVERSE", "93 billion light-years",
-        "Just [20] more doublings.", "#FF6FD8", 3.1,
-        note="[930,000] Milky Ways across", note_delay=1.25, you=(0.0, 0.0),
+        "Just [20] more doublings.", "#FF6FD8", 4.6,
+        note="[930,000] Milky Ways across", note_delay=1.3, you=(0.0, 0.0),
+        row=Row(930_000, "Milky Ways", (-0.5, 0.0), (0.5, 0.0), "#C7A6FF", label_side="down"), row_delay=1.45,
     ),
 ]
 
@@ -147,7 +176,8 @@ N_END = BY_KEY["universe"].n
 # ---------------------------------------------------------------------------
 
 HOOK = 2.75  # seconds of question before the first doubling
-STEP_TIMES = (0.36, 0.33, 0.30)  # the first three doublings, one by one
+STEP_TIMES = (0.40, 0.36, 0.33, 0.31, 0.29, 0.27, 0.26, 0.25)  # the first doublings, one by one
+ROW_DURATION = 1.5  # seconds a comparison row takes to fill
 ARRIVE_BEFORE = 0.15  # dwell starts this many doublings before a milestone...
 LEAVE_AFTER = 0.25  # ...and ends this many after it
 OUTRO = 4.2
@@ -197,12 +227,15 @@ class Timeline:
         self.steps_end = t
         self.arrive: dict[str, float] = {"planck": 0.0}
         self.leave: dict[str, float] = {"planck": HOOK}
+        self.row_start: dict[str, float] = {}
         t += 2.45  # the long sprint through the empty zone
         prev_n = 3.0
         for m in MILESTONES[1:]:
             if m.key != "proton":
                 t += transition_time(m.n - prev_n)
             self.arrive[m.key] = t
+            if m.row:
+                self.row_start[m.key] = t + m.row_delay
             kf.append((t, m.n - ARRIVE_BEFORE))
             t += m.dwell
             self.leave[m.key] = t
@@ -228,4 +261,5 @@ if __name__ == "__main__":
     tl = TIMELINE
     print(f"total {tl.total:.2f}s")
     for m in MILESTONES:
-        print(f"{m.key:9s} n={m.n:7.2f}  arrive={tl.arrive[m.key]:6.2f}s  leave={tl.leave[m.key]:6.2f}s")
+        print(f"{m.key:9s} n={m.n:7.2f}  arrive={tl.arrive[m.key]:6.2f}s  leave={tl.leave[m.key]:6.2f}s"
+              f"  row={tl.row_start.get(m.key, float('nan')):6.2f}s")

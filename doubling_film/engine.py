@@ -335,14 +335,15 @@ class MonoFont:
     without re-running Pango."""
 
     CHARSET = "0123456789.,-−×+#:mkly"
+    LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-    def __init__(self, size=48, weight=BOLD, font=MONO):
+    def __init__(self, size=48, weight=BOLD, font=MONO, letters=False):
         ref = Text("0" * 8, font=font, weight=weight, font_size=size, disable_ligatures=True)
         self.adv = ref.submobjects[1].get_center()[0] - ref.submobjects[0].get_center()[0]
         # Each character is rendered next to a reference "0" so its baseline
         # and side bearing are kept (whole-string rendering trips ligatures).
         self.glyphs = {}
-        for ch in self.CHARSET:
+        for ch in self.CHARSET + (self.LETTERS if letters else ""):
             t = Text("0" + ch, font=font, weight=weight, font_size=size, disable_ligatures=True)
             zero, g = t.submobjects
             self.glyphs[ch] = g.points - (zero.get_center() + np.array([self.adv, 0, 0]))
@@ -352,8 +353,9 @@ class MonoFont:
 class MonoLine(VGroup):
     """A fixed pool of glyph slots that can display any short string."""
 
-    def __init__(self, font: MonoFont, slots=16, color="#FFFFFF"):
-        super().__init__(*[VMobject(fill_color=color, fill_opacity=1, stroke_width=0) for _ in range(slots)])
+    def __init__(self, font: MonoFont, slots=16, color="#FFFFFF", stroke_width=0.0, stroke_color="#000000"):
+        super().__init__(*[VMobject(fill_color=color, fill_opacity=1, stroke_width=stroke_width,
+                                    stroke_color=stroke_color, stroke_opacity=1) for _ in range(slots)])
         self.font = font
         self.alpha = 1.0
 
@@ -377,6 +379,7 @@ class MonoLine(VGroup):
             slot.points = np.zeros((0, 3))
         for slot in self.submobjects:
             slot.fill_rgbas[:, 3] = self.alpha
+            slot.stroke_rgbas[:, 3] = self.alpha
         return width
 
 
