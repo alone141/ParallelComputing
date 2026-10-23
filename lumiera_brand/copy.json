@@ -1,0 +1,70 @@
+{
+  "tagline": "The universe, drawn in light.",
+  "handles": {
+    "preferred": "lumiera",
+    "primary": "lumiera_science",
+    "backups": [
+      "lumierascience",
+      "lumiera.explained",
+      "lumiera_explained"
+    ]
+  },
+  "display_names": {
+    "tiktok": "Lumiera · Science Explained",
+    "instagram": "Lumiera · Science & Space",
+    "youtube": "Lumiera · Science Explained Visually"
+  },
+  "bios": {
+    "tiktok": "Physics, space, biology & math, drawn in light ✦\nGuess before it ends.",
+    "instagram": "The universe, drawn in light ✦\nPhysics · space · biology · math\nGuess before it ends.\nNew film weekly · Start with The Doubling ↓",
+    "youtube_description": "Start at the Planck length, where known physics runs out, and keep doubling. How many doublings until you reach a galaxy? Guess before it ends.\n\nLumiera is science, drawn in light: physics, space, biology and math as short cinematic films, glowing on deep space. Each film asks one clear question and gives you time to guess. Then it acts out the answer: copies line up, counters climb, and the scale finally makes sense.\n\nWhat you'll find here:\n- Scale journeys, from the Planck length to the observable universe\n- Life up close, from viruses to blood cells\n- Space and light, from the Sun to the Milky Way\n- Math you can watch happen\n\nA new film every week. Every number is checked, every comparison is real, and no title promises more than the film delivers. If we get a number wrong, we pin the correction.\n\nLumiera, from lumière: light."
+  },
+  "link_in_bio": "One \"Start here\" page (Linktree, Beacons or similar) used on all three profiles: (1) Watch The Doubling, (2) Ask Lumiera a question, (3) Lumiera on TikTok · Instagram · YouTube, (4) optional: The numbers, a sources page that copies doubling_film/README.md 'The numbers' (proton 1.68 fm, hydrogen atom 0.106 nm, Proxima Centauri 4.25 light-years, ...). TikTok shows a clickable link from about 1,000 followers; on YouTube the link goes in the channel's Links section.",
+  "first_post": {
+    "tiktok_caption": "Start at the Planck length (1.6 × 10⁻³⁵ m), where known physics runs out. Double it. Then again. How many doublings until you reach a galaxy? Guess before it ends, then leave your number in the comments.",
+    "tiktok_hashtags": [
+      "#science",
+      "#physics",
+      "#space",
+      "#scaleoftheuniverse",
+      "#learnontiktok"
+    ],
+    "instagram_caption": "The Doubling.\n\nBegin at the Planck length: 1.6 × 10⁻³⁵ m, where known physics runs out. Double it. Then again.\n\nStep 66: a proton.\nStep 116: you. Remember that one.\nStep 205: the edge of the observable universe.\n\nHow many doublings to reach a galaxy? Guess before it ends, then leave your number in the comments.\n\nSend it to a friend so they can guess first ✦",
+    "instagram_hashtags": [
+      "#scienceexplained",
+      "#physics",
+      "#astronomy",
+      "#scaleoftheuniverse",
+      "#sizecomparison"
+    ],
+    "instagram_alt_text": "Vertical animated film on a deep black, space-like background. A tiny glowing dot, labelled as the Planck length (1.6 × 10⁻³⁵ metres), doubles in size again and again while a step counter climbs. On-screen text asks: How many times must you double this to reach a galaxy? Guess before it ends. At each of 13 stops a step chip appears and copies of the previous object line up across the new one: a proton at step 66, a hydrogen atom at 82, a virus at 92, a red blood cell at 99, an ant at 108, a person (you) at 116, Mount Everest at 129, Earth at 139, the Sun at 146, the solar system at 159, the nearest star at 171, the Milky Way at 185 and the observable universe at 205. Closing text: 205 doublings. From the Planck length to the edge of everything.",
+    "youtube_title": "Planck length to a galaxy: how many doublings? Guess first",
+    "youtube_description": "Start at the Planck length (1.6 × 10⁻³⁵ m), where known physics runs out, and keep doubling. How many doublings until you reach a galaxy? Guess before it ends, then put your number in the comments.\n\nThe stops:\n66 · a proton\n82 · a hydrogen atom\n92 · a virus\n99 · a red blood cell\n108 · an ant\n116 · you\n129 · Mount Everest\n139 · Earth\n146 · the Sun\n159 · the solar system\n171 · the nearest star\n??? · the Milky Way (your guess)\n205 · the observable universe\n\nStep numbers are rounded to whole doublings. Sizes used: Planck length 1.616 × 10⁻³⁵ m · proton 1.68 fm · hydrogen atom 0.106 nm · virus 100 nm · red blood cell 7.5 µm · ant 4 mm · you 1.7 m · Everest 8,849 m · Earth 12,742 km · Sun 1.39 million km · solar system 60.1 AU (Neptune's orbit) · Proxima Centauri 4.25 light-years · Milky Way 100,000 light-years · observable universe 93 billion light-years.\n\nLumiera: science, drawn in light. A new film every week.\n\n#science #physics #space",
+    "youtube_tags": [
+      "planck length",
+      "the doubling",
+      "doubling",
+      "powers of two",
+      "exponential growth",
+      "scale of the universe",
+      "size comparison",
+      "observable universe",
+      "milky way",
+      "cosmic scale",
+      "physics",
+      "space",
+      "science explained",
+      "science shorts",
+      "lumiera"
+    ],
+    "pinned_comment": "Lock in your guess: how many doublings to a galaxy? One number. Then tell us how close you got. (Hint: you were doubling 116.)"
+  },
+  "highlights": [
+    "Start here",
+    "Scale",
+    "Cosmos",
+    "Life",
+    "Patterns"
+  ],
+  "_note": "Data for build_brand.py and the final profile/post texts. Brand rules, voice and ideas live in ../playbook/."
+}
