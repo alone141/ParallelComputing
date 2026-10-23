@@ -1,6 +1,6 @@
 # Parallel computing — at every scale
 
-A 47.5 s vertical (1080×1920, 60 fps) animated short for TikTok and Instagram
+A 55 s vertical (1080×1920, 60 fps) animated short for TikTok and Instagram
 Reels, made with [Manim Community](https://www.manim.community/) 0.22.
 
 | File | What it is |
@@ -15,17 +15,21 @@ and that token opens as a single unit of the next scale. A counter in one honest
 unit, *calculations at once* (simultaneous FP32 lanes), climbs as it goes, and
 a lime line under it explains every jump.
 
+Pacing rule: every idea lands on a calm stage and is read before the animation
+it describes fires, and each payoff holds. Cards stay up at least
+0.3 s per word + 0.8 s; the lime equation lines stay up at least 1.5 s.
+
 | Film time | Beat | Scale | Mechanism on screen | Counter |
 |---|---|---|---|---|
 | 0.0 | `b01_hook` | Hook | one worker, one task at a time → 320 workers, one step | — |
-| 4.5 | `b02_simd` | 1/6 one core | SIMD: one `vaddps` adds 16 number pairs in lockstep | 1 → 16 |
-| 9.5 | `b03_cpu` | 2/6 one CPU | 16 cores, each running its own thread over shared memory | 256 |
-| 14.0 | `b04_gpu` | 3/6 one GPU | H100: 16,896 lanes; warps of 32 threads, one instruction | 16,896 |
-| 20.5 | `b05_node` | 4/6 one server | 8 GPUs exchanging results through NVSwitch | 135,168 |
-| 25.0 | `b06_datacenter` | 5/6 data center | no shared memory: GPUs pass messages; 100,000+ GPUs train one AI | 1,689,600,000+ |
-| 31.0 | `b07_planet` | 6/6 the planet | Folding@home 2020: work units out, results back | (retired) |
-| 36.0 | `b08_amdahl` | the catch | Amdahl's law: 10% serial work caps speedup at 10× | speedup meter |
-| 44.0 | `b09_loop` | loop | "So why build 100,000 GPUs?" → back to frame 0 | — |
+| 5.0 | `b02_simd` | 1/6 one core | SIMD: one `vaddps` adds 16 number pairs in lockstep | 1 → 16 |
+| 11.0 | `b03_cpu` | 2/6 one CPU | 16 cores, each running its own thread over shared memory | 256 |
+| 16.5 | `b04_gpu` | 3/6 one GPU | H100: 16,896 lanes; warps of 32 threads, one instruction | 16,896 |
+| 24.0 | `b05_node` | 4/6 one server | 8 GPUs exchanging results through NVSwitch | 135,168 |
+| 29.5 | `b06_datacenter` | 5/6 data center | no shared memory: GPUs pass messages; 100,000+ GPUs train one AI | 1,689,600,000+ |
+| 36.5 | `b07_planet` | 6/6 the planet | Folding@home 2020: work units out, results back | (retired) |
+| 42.5 | `b08_amdahl` | the catch | Amdahl's law: 10% serial work caps speedup at 10× | speedup meter |
+| 51.5 | `b09_loop` | loop | "So why build 100,000 GPUs?" → back to frame 0 | — |
 
 The last frame of `b09` is the first frame of `b01`, and the worker's hop
 clock runs straight through the cut, so the video loops seamlessly. Every
@@ -41,8 +45,8 @@ number is in [`design/facts.json`](design/facts.json) with its source.
 - **Pinned comment:** Hint: Gustafson's law (1988). Grow the problem, not just the workers.
 - **Hashtags:** #parallelcomputing #computerscience #gpu #cuda #simd #nvidia
   #supercomputer #ai #amdahlslaw #programming #coding #techtok #learnontiktok #stem #manim
-- **Cover frame:** film time ≈ 28.45 s (b06 local 3.45): the hall has just
-  flashed, with "100,000+" up top and "1,689,600,000+" below.
+- **Cover frame:** film time ≈ 34.6 s (b06 local ~5.1): the hall right after
+  the big drop, with "100,000+" up top and "1,689,600,000+" below.
 - **Accuracy notes for replies:**
   - The counter counts FP32 lanes only: no tensor cores, no FMA-as-2-FLOPs.
   - The Folding@home comparison holds only for April 2020, and it was not the HPL benchmark.
