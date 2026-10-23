@@ -14,8 +14,12 @@ Cairo frame buffer (no video encode, no grade). The dust field is kept (its time
 what makes waits render frame by frame) but drawn invisible, so frames compare bit for bit.
 
 The seams come from timeline.BEATS + motif.handoff_contract() (exit of beat N == entry of beat
-N+1, and the last beat -> the first: the loop). Script v2: 6 beats, 6 seams
+N+1, and the last beat -> the first: the loop). Script v2/v3: 6 beats, 6 seams
   b01 -E01-> b03 -E03-> b04 -E04-> b06 -E06-> b08 -E08-> b09 -LOOP-> b01.
+Script v3 (calm motion) moved only the motion around the boundaries (collapse 0.80 s sine + settle
+0.15 s cubic, expand 0.90 s sine, fade_away instead of the tear): the boundary frames and the exit
+hold are unchanged, so every check below is the same as in v2. Use --against with a capture saved
+before a change to prove the boundary frames did not move.
 A contract error (a timeline beat without BEAT_ENTRY/BEAT_EXIT, exit != entry, stale entries for
 beats that are no longer in the timeline) stops the run before anything renders.
 
@@ -25,6 +29,9 @@ Checks (all lossless, tolerance 0 unless --tol):
   frames  the beat renders exactly round(duration * fps) frames
   hold    the last >= 3 frames at 60 fps are static (the last beat, b09, is excluded: its last
           frame IS the hop onto idx 32 == b01 frame 0); at 30 fps the static count is reported only
+  land    (informational, never a failure) how many pixels of the token box (AC +- 1.1) the last
+          MOVING frame (the end of the settle) differs from the exit frame: small = the token lands
+          calmly and the swap to the canonical state is invisible
 
 Captures go to reel/build/handoffs/<fps>/ (first.png, last0.png = final frame, last1..3.png);
 for every failing comparison a sheet A | B | |A-B| x8 is written next to them.
@@ -49,6 +56,7 @@ sys.path.insert(0, str(REEL))
 PYTHON = os.environ.get("REEL_PYTHON", "/home/user/.venvs/manim/bin/python")
 OUT_ROOT = REEL / "build" / "handoffs"
 N_LAST = 4
+TOKEN_AC = (-0.35, 0.45)                 # motif.AC (the parent never imports manim/motif)
 
 import timeline  # noqa: E402
 
@@ -270,6 +278,16 @@ def main() -> int:
                 ok = False
             print(f"  {flag}  hold    {stem}: {static}{'+' if static == len(last) else ''} static exit frame(s)"
                   f"{' (exempt: the loop hop)' if exempt else '' if need else ' (reported only)'}")
+            if static < len(last) and not exempt:
+                # script v3 calm landing: in the token box (AC +- 1.1 units; the kicker and card
+                # hard-cut at the exit by design, so they are left out) the last MOVING frame (the end
+                # of the settle) should already be (almost) the exit state
+                k = w / 9.0
+                cx, cy, r = (TOKEN_AC[0] + 4.5) * k, (8.0 - TOKEN_AC[1]) * k, 1.1 * k
+                box = (slice(int(cy - r), int(cy + r)), slice(int(cx - r), int(cx + r)))
+                mx, n, _ = _cmp(last[static][box], last[0][box], 0)
+                print(f"  info  land    {stem}: token box, last moving frame -> exit frame: {n} px differ "
+                      f"(max {mx})")
 
         for sa, sb, name in seams:
             pa, pb = out_dir / f"{sa}_last0.png", out_dir / f"{sb}_first.png"

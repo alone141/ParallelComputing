@@ -42,7 +42,7 @@ Contents (details in each docstring):
                      LOOP_KICKER / LOOP_HEADLINE / LOOP_WORKER
   (reel/tools/check_handoffs.py verifies every boundary bit-exactly at 30 and 60 fps.)
 
-Script v2 contract (timeline.py; E0N = exit of b0N = entry of the next beat):
+Script v2 contract, unchanged in v3 (timeline.py; E0N = exit of b0N = entry of the next beat):
   b01 hook --E01 plain CYAN token, no HUD--> b03 CPU --E03 cpu token + '16'--> b04 GPU
   --E04 gpu token + '16,896'--> b06 data center --E06 cluster token + '1,689,600,000+'-->
   b08 twist (fades E06 out: fade_away) --E08 AMBER serial token + '10×'--> b09 ending --LOOP--> b01.
