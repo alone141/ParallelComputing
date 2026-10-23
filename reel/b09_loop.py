@@ -1,13 +1,13 @@
-"""b09 LOOP: why buy 100,000 GPUs? Back to one worker (3.5 s, film 51.5-55.0). Script v2,
-segment 'ending'.
+"""b09 LOOP: why buy 100,000 GPUs? Back to one worker (3.5 s, film 51.5-55.0). Script v3,
+segment 'ending' (calm motion: 0.90 s ease_in_out_sine pull-back ending on f54, the 10× meter
+fades out over 0.30 s).
 
 Frame 0 is E08 (the twist -> ending boundary): the bright serial token (AMBER fill 0.58,
 crisp #FFD27A rim) + the '10×' HUD. On frame 1 the comment question 'Why buy / 100,000 GPUs?'
 ('100,000' CYAN) POPs in and the camera is already pulling back
-(ease_out_quart from 0.00: the grid rushes in at once and decelerates all the way into the
-crawl): the token was cell 0 of the hook grid all along. Drawn on the grid's top layer, it
+(ease_in_out_sine 0.00-0.90, at rest from f54): the token was cell 0 of the hook grid all along. Drawn on the grid's top layer, it
 fills in to the lone solid-amber worker within 0.6 s (rim -> INK, x1.4, its halo growing in
-with the morph), while the HUD drops away in 0.12 s, before the field is dense. The question
+with the morph), while the HUD fades out over 0.30 s. The question
 is fully visible f1 -> 2.40 = 2.38 s (floor 0.3 s x 4 words + 0.8 = 2.0). 'Wrong
 answers only ↓' (the caption's CTA, BG knockout over the still-settling field) joins at 0.43,
 once the question has been read alone for 0.4 s, so the CTA gets its full reading window
@@ -24,12 +24,12 @@ from motif import *
 
 # ---------------------------------------------------------------- timing (local s)
 F = 1 / 60
-T_HUD_OUT = 0.12                # HUD fades out + drops 0.3 (ease_out_quad): gone before the grid is dense
+T_HUD_OUT = 0.30                # the 10× meter fades out 0.00-0.30 (opacity only, fade_at clock)
 T_Q_IN = F                      # 'Why buy / 100,000 GPUs?' POPs on story frame 1
 T_CB_IN = 26 * F                # 0.4333 'Wrong answers only ↓' CARD_IN (BG knockout over the settling grid);
                                 # fully in 0.683 -> T_CUT 2.40 = 1.717 s (reading floor 1.70)
-T_ZOOM0 = 0.0                   # reverse zoom (ease_out_quart) from the cut ...
-T_ZOOM1 = 113 * F               # ... lands exactly on f113 (1.8833)
+T_ZOOM0 = 0.0                   # smooth pull-back (CALM_EASE = ease_in_out_sine) from the cut ...
+T_ZOOM1 = 54 * F                # ... lands on f54 (0.90), before the locked f84 count-in
 T_FILL1 = 0.60                  # token fill 0.58 -> 1.0 (the worker's solid amber) by 0.6 s
 T_MORPH1 = 0.90                 # rim #FFD27A w6 -> INK w2, corner, own scale 1.0 -> 1.4, halo 0 -> 1
 GRID_A0, GRID_A1 = 0.06, 0.32   # grid opacity ramp over zoom progress e (token alone for ~2 frames)
@@ -82,7 +82,7 @@ class B09Loop(BeatScene):
     def beat(self):
         st = enter(self)                         # E08: amber token + '10×' HUD (exact)
         hud = st.hud
-        hud.fade_to(0.0, T_HUD_OUT, 1.0, 0.0, ORIGIN, DOWN * 0.3, ease_out_quad)
+        hud.fade_out(0.0, T_HUD_OUT)
 
         # ---------------------------------------------------------------- grid
         grid = HookGrid()
@@ -96,7 +96,7 @@ class B09Loop(BeatScene):
                 return
             now = self.now
             m.worker_idx = None
-            e = ease_out_quart(ramp(now, T_ZOOM0, T_ZOOM1))
+            e = CALM_EASE(ramp(now, T_ZOOM0, T_ZOOM1))
             k, b = expand_cam(_SLOT, HOOK_CELL, e)
             mf = ease_out_cubic(ramp(now, 0.0, T_FILL1))
             mo = ease_out_cubic(ramp(now, 0.0, T_MORPH1))
@@ -148,7 +148,7 @@ class B09Loop(BeatScene):
 
         # ---------------------------------------------------------------- audio
         self.cue("pop", dt=0.0, gain=0.5)        # the cut + the question POP
-        self.cue("whoosh", dt=0.35, dur=0.70, direction="down")   # the fast half of the pull-back
+        self.cue("whoosh", dt=0.45, dur=0.80, direction="down")   # the smooth 0.90 s pull-back
         self.cue("tick", dt=T_CB_IN, gain=0.4)   # CTA in
         for t in COUNT_IN:                       # count-in: two low ticks, then the crawl's 3800 Hz
             self.cue("tick", dt=t, gain=0.45, freq=2400, pan=0, note="count-in pulse")

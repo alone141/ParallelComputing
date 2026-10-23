@@ -1,4 +1,4 @@
-"""b01 HOOK: one at a time vs all at once (5.0 s, film 0.0-5.0). Script v2, segment 'hook'.
+"""b01 HOOK: one at a time vs all at once (5.0 s, film 0.0-5.0). Script v3, segment 'hook'.
 
 Frame 0 is handoff_state('LOOP') (== b09's last frame): the x1.4 amber worker with its soft
 halo is mid-crawl on idx 32 (10-cell bright trail, #2E3445 idle field), under the
@@ -6,22 +6,23 @@ halo is mid-crawl on idx 32 (10-cell bright trail, #2E3445 idle field), under th
 screen from frame 0 with no fade-in, it stays to the cut. The worker crawls on the integer
 frame clock to idx 49 while the camera creeps in about it (1.0 -> 1.035, ease_in_quad) and,
 with the audio riser (0.45), the idle field charges (outlines DIM -> CYAN 0.45). Both stop
-dead on the 8-frame micro-freeze (headline jitter, silence); at 1.00 s every other cell
+dead on the 8-frame micro-freeze (the headline holds still, silence); at 1.00 s every other cell
 lights up in a radial INK->CYAN wave (white radial burst + CYAN shock ring from the worker)
 while the lone worker stays AMBER, drawn on the grid's top layer with its halo (above the
 1.3x flashing neighbours); the halo fades out during the push-in, before the token lands.
 The first second (riser 0.45, freeze f52-f59, hit 1.00) is LOCKED.
 Read-holds: 'All at once.' + '320 WORKERS · 1 STEP' hold over the shimmering field until 2.70
-(f162: exactly the 1.70 s floor of 'All at once.'; the readout leaves at 3.25), then the hook
+(f162: exactly the 1.70 s floor of 'All at once.'; the readout fades out 3.25-3.55), then the hook
 pair hard-swaps to the open-loop card 'It scales… / then stalls.' (AMBER 2nd line, POP, f162)
 on the calm field, read for 1.20 s before the push-in fires (visible 2.70 -> 4.95 = 2.25 s,
 floor 2.0). The swap is the film's card-swap grammar: no 0.20 s CARD_OUT + 0.25 s CARD_IN gap
 eats the reading windows. The camera then never sits still: a slow linear push-in about the
-worker (1.035 -> 1.06, 1.30-3.90) carries straight into the ease_in_out_expo push-in
+worker (1.035 -> 1.06, 1.30-3.90) carries straight into the ease_in_out_sine push-in
 (3.90-4.83, 56 frames), with a second, softer diagonal light pulse on the open-loop card
 (2.70). The worker morphs into the plain cyan E01 token (no HUD: b03 opens it as core T6 and
-its counter first appears there) and settles (cut_times(5.0): land 4.833, settle 0.12 s,
-static E01 f297-f299). The kicker + open-loop card stay fully visible until the token is
+its counter first appears there) and settles (cut_times_v2(5.0): land 4.833, settle 0.12 s on
+settle_scale(), no overshoot, static E01 f297-f299). Script v3 calm motion: no impact shake on
+the hit, no headline jitter in the freeze. The kicker + open-loop card stay fully visible until the token is
 static (hard cut at 4.95), so the cut never shows an empty, text-less frame before b03's
 frame 0.
 
@@ -36,7 +37,7 @@ from motif import *
 F = 1 / 60
 W_IDX = 49                      # where the crawl stops (worker cell)
 W_PT = hook_center(W_IDX)       # (-0.52, 2.32)
-T_FREEZE0 = 52 * F              # f52..f59 micro-freeze (headline jitter)
+T_FREEZE0 = 52 * F              # f52..f59 micro-freeze (worker + camera stop; the headline holds still)
 T_HIT = 1.00                    # f60 the parallel wave
 WAVE_SPAN = 0.35                # flash front reaches the farthest cell 0.35 s after the hit
 FLASH_SETTLE = 0.25             # INK flash -> LIT
@@ -49,15 +50,16 @@ FLASH_SETTLE = 0.25             # INK flash -> LIT
 # 2.25 s (counted from full opacity: SLAM / POP are opaque at once).
 T_SWAP = 162 * F                # 2.70 hook pair cut -> open-loop card POP
 T_CARDS = T_SWAP                # open-loop card in (+ the second light pulse)
-T_RO_OUT = T_CARDS + 0.55       # 3.25 '320 WORKERS · 1 STEP' out (gone 3.45, before the push-in)
+T_RO_OUT = T_CARDS + 0.55       # 3.25 '320 WORKERS · 1 STEP' fades out (0.30 s: gone 3.55, before the push-in)
+RO_FADE = 0.30
 CREEP_S = 1.035                 # camera creeps in about the worker during the crawl (1.0 -> 1.035,
                                 # ease_in_quad from f0, stops dead on the micro-freeze, holds)
 T_CHARGE0 = 0.45                # visual riser (with the audio riser): the idle field charges,
 CHARGE_STROKE = rgba(CYAN, 0.45)   # outline only: DIM 0.35 -> CYAN 0.45 by the freeze (the fill
                                 # stays idle grey: the cyan fill is the hit's reveal)
 SLOT = beat_duration("B01Hook") # 5.0
-_, T_PUSH1, T_SETTLE1 = cut_times(SLOT)  # 4.8333 (f290) lands, 4.95 (f297) settled
-PUSH_DUR = 56 * F               # push-in on the worker (ease_in_out_expo), same 0.933 s as before
+_, T_PUSH1, T_SETTLE1 = cut_times_v2(SLOT)  # 4.8333 (f290) lands, 4.95 (f297) settled (b01's own window)
+PUSH_DUR = 56 * F               # push-in on the worker (CALM_EASE = ease_in_out_sine), 0.933 s
 T_PUSH0 = T_PUSH1 - PUSH_DUR    # 3.90 (f234)
 T_DRIFT0, T_DRIFT1 = 1.30, T_PUSH0   # slow push-in about the worker (linear) under both holds ...
 DRIFT_S = 1.06                  # ... CREEP_S -> 1.06, handing its speed to the push-in
@@ -69,8 +71,6 @@ PULSE_SPAN = 0.26               # second light pulse: front crosses the grid dia
 PULSE_DUR = 0.16                # ... each cell 0 -> peak -> 0 over 0.16 s (whole sweep ~0.42 s)
 PULSE_OP = 0.97                 # LIT opacity at the pulse peak (shimmer 0.62 +- 0.25)
 
-SHAKE_SEED = 1
-JITTER_SEED = 4
 
 # ---------------------------------------------------------------- precomputed grid data
 _NOT_W = np.arange(HOOK_N) != W_IDX
@@ -193,18 +193,17 @@ class B01Hook(BeatScene):
                 stroke[hit] = lerp(_INK1, lit_st, e)
                 sw[hit] = _FLASH_SW
                 size[hit] = lerp(1.3, lit_sz, e[:, 0])
-            jolt = shake(now - T_HIT, 0.06, 0.20, SHAKE_SEED)
             corner = None
             halo = 1.0
 
             if now <= T_PUSH0 + EPS:             # slow push-in about the worker (camera)
                 s = _cam_scale(now)
-                centers = W_PT + s * (HOOK_CENTERS - W_PT) + jolt
+                centers = W_PT + s * (HOOK_CENTERS - W_PT)
                 if s != 1.0:
                     size = size * s              # (the worker keeps its own stroke, as in the push)
                     sw[_NOT_W] *= s
             else:                                # push-in on the worker, from the drift's pose
-                e = ease_in_out_expo(ramp(now, T_PUSH0, T_PUSH1))
+                e = CALM_EASE(ramp(now, T_PUSH0, T_PUSH1))
                 base = DRIFT_S + _V_DRIFT * (now - T_PUSH0)      # the drift keeps its speed ...
                 s = base ** (1.0 - e) * HOOK_PUSH_SCALE ** e      # ... and hands over to the push
                 centers = lerp(W_PT, AC, e) + s * (HOOK_CENTERS - W_PT)
@@ -218,9 +217,8 @@ class B01Hook(BeatScene):
                 stroke[W_IDX] = lerp(HOOK_WORKER_STROKE, rgba(CYAN, 1.0), mo)
                 sw[W_IDX] = lerp(_W_SW, TOKEN_STROKE, mo)
                 k = s * lerp(HOOK_WORKER_SCALE, 1.0, e)
-                if now >= T_PUSH1 - EPS:         # SETTLE 0.94 -> 1.0 about AC
-                    p = ramp(now, T_PUSH1, T_SETTLE1)
-                    k *= lerp(SETTLE_FROM, 1.0, ease_out_back(p)) / SETTLE_FROM
+                if now >= T_PUSH1 - EPS:         # SETTLE 0.94 -> 1.0 about AC (no overshoot)
+                    k *= settle_scale(ramp(now, T_PUSH1, T_SETTLE1))
                 size[W_IDX] = k
                 corner = {W_IDX: lerp(HOOK_CORNER_RATIO, TOKEN_CORNER, mo)}
                 halo = 1.0 - ease_in_out_sine(ramp(now, T_PUSH0, T_MORPH0 + 0.25))
@@ -244,13 +242,7 @@ class B01Hook(BeatScene):
         def head_alpha(now):
             return 1.0 if now < T_HIT - EPS else 0.40
 
-        def head_shift(now):
-            f = story_frame(now)
-            if 52 <= f <= 59:
-                return np.array([jitter(f, 0.03, JITTER_SEED), 0.0, 0.0])
-            return ORIGIN
-
-        tr.on(head, 0.0, T_SWAP, enter="cut", exit="cut", alpha=head_alpha, shift=head_shift)
+        tr.on(head, 0.0, T_SWAP, enter="cut", exit="cut", alpha=head_alpha)   # holds still (no jitter)
         # 'All at once.' shares line 1's H96 scale (a matched pair, card()'s baseline pitch): it
         # sits 0.75 above the grid and its SLAM can run at full strength inside the safe zone.
         pair = card([("One at a time.", "H96", INK), ("All at once.", "H96", CYAN)])
@@ -273,12 +265,12 @@ class B01Hook(BeatScene):
         def ro_str(now):
             if now < T_HIT - EPS:
                 return step_str(b01_worker_idx(sframe(self)))
-            if now < T_RO_OUT + 0.20 - EPS:
+            if now < T_RO_OUT + RO_FADE - EPS:
                 return par
             return None
 
-        def ro_out(now):
-            return smooth(clip01((now - T_RO_OUT) / 0.20)) if now >= T_RO_OUT - EPS else 0.0
+        def ro_out(now):                         # 0 -> 1 over the 0.30 s fade (fade_at clock)
+            return 1.0 - fade_at(now, T_RO_OUT, T_RO_OUT + RO_FADE)
 
         ro = LiveText(ro_str, lambda s: step_readout_tmpl(s, CYAN if s == par else AMBER),
                       scene=self,

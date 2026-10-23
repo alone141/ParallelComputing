@@ -1,53 +1,42 @@
-"""b06 - LEVEL 3/3 - DATA CENTER (12.5 s, script v2 'datacenter'): many boxes with no shared
-memory pass messages; then the hall, 100,000+ GPUs training one AI.
+"""b06 - LEVEL 3/3 - DATA CENTER (12.5 s, script v3 'datacenter', calm motion): every server has
+its own GPUs and memory, so they swap data (messages) to sync; then the hall, 100,000+ GPUs
+training one AI, each on its own slice.
 
 Entry E04 (the gpu token + HUD '16,896' / CORES WORKING AT ONCE) is box (c3, r3) of one pod
-(8 racks x 8 boxes, 5.36 units wide). The camera pulls back (EXPAND 0.00-0.50; the hero outline
-INK-flashes on story frames 1-2, its 8 x 8 gpu glyph fades out by e 0.35). 'Many boxes. / No
-shared memory.' POPs on the cut (headline story frame 1, sub-line frame 2) over a calm, DIM pod:
-only the hero is lit (it keeps computing on its own clock, a lone worker among dark boxes), the
-other 63 boxes, the rack lines and the ToR/spine switches are dim and the network breathes
-faintly. Once the card has been read (1.50) the pod powers on rack by rack
-in a CYAN wave (one rising tick per rack), and every box computes on its own data (out-of-sync
-CYAN flashes); nothing travels between boxes yet.
+(8 racks x 8 boxes, 5.36 units wide). The camera pulls back (EXPAND 0.00-0.90, ease_in_out_sine;
+the hero outline INK-flashes on story frames 1-2, its 8 x 8 gpu glyph fades out by e 0.35).
+'Server farm. / Each server has its own / GPUs and memory.' POPs on story frame 1 over a calm,
+DIM pod: only the hero is lit (it computes on its own clock), the other 63 boxes, the rack lines
+and the ToR/spine switches are dim and the network breathes faintly. 1.45-2.65 the pod powers on
+rack by rack in a slow CYAN wave (one rising tick per rack), and every box computes on its own
+data (out-of-sync CYAN flashes); nothing travels between boxes.
 
-'So they pass / messages.' hard-swaps in at 2.60 over a calm stage (the boxes hum, the network
-brightens faintly) and is read for 1.0 s. Then SYNC: 16 MAGENTA messages hop like letters, up
-the sender's rack line into its top-of-rack switch, over an uplink into a spine, down into a
+'Messages. / They swap data to sync.' hard-swaps in at 4.30 over a calm stage (the boxes hum,
+the network brightens faintly). 5.50-6.50 SYNC, one cycle: 16 MAGENTA messages hop like letters,
+up the sender's rack line into its top-of-rack switch, over an uplink into a spine, down into a
 DIFFERENT rack's ToR and down to a box there (each switch flashes as a message passes, the
-receiver flashes INK); at 4.50 every box applies the same update (LIME flash + pop). A faster
-second cycle runs 4.65-5.25.
+receiver flashes INK); at 6.40 every box applies the same update (LIME flash). 6.80-7.70 a smooth
+pull-back shrinks the pod into the 16 squares of a hall that overfills its window on every side
+(a representative 66 x 56 squares seen through a soft 6.9 x 5.5 window; 2 x 2 boxes land on one
+square); the HUD HOLDS at 16,896. The hall rests 7.70-8.10 and the bed dips to a hush 8.00-8.10.
 
-'Go bigger.' hard-swaps in at 5.40; the pod holds calm under a slow push-in (1.0 -> 1.025) for
-the 1.0 s read. At 6.40 the second pull-back shrinks the pod into the 16 squares of a hall that
-overfills its window on every side (a representative 66 x 56 squares seen through a soft
-6.9 x 5.5 window; 2 x 2 boxes land on one square), while the HUD log-rolls up from 16,896,
-accelerating toward 1,689,600,000. At 7.300 everything stops dead: 80 ms freeze + true silence
-(5 story frames; 'Go bigger.' hard-cuts out, the HUD is frozen mid-roll at ~260,000,000), then
-THE BIGGEST DROP of the film at 7.383 (film 33.88 s): the HUD SLAMs 1,689,600,000+ with the
-LIME line '100,000+ GPUs × 16,896' in the label slot (7.383-9.183), the card '100,000+' SLAMs
-in (INK on its first two story frames, then CYAN; start scale capped to the safe zone) and
-'GPUs. One AI.' POPs 2 story frames later. The punch lives on the stage: the hall flashes
-INK -> CYAN, a radial INK burst, a CYAN shock ring and a 0.16 impact shake, and messages race
-along the trunks. 8.40-9.60 runs one all-reduce: a MAGENTA gather into the hall centre, the
-reduced result glows LIME there (cover frame ~9.0), then a LIME broadcast sweeps back out and
-the network grid overlay (trunk lines + 48 junction switches) draws on behind its front. Then
-the SCREENSHOT HOLD under a slow push-in (1.0 -> 1.012).
-
-'More GPUs…' hard-swaps in at 10.30 over a riser that climbs into the seam and never resolves
-(riser_to_cut: it stops dead on the cut, b08's record scratch cuts it). The camera eases back
-over the humming hall (1.012 -> 0.90: fresh squares stream in through every edge of the window),
-the hall's energy and the message traffic build with the riser; at 11.30 a last gather pulls
-into the centre while an outline draws on around the hall window (11.45-11.75), which COLLAPSEs
-(cut_times(12.5): 11.933 / 12.333 / 12.45) into handoff_token('cluster') (E06) with the HUD
-riding the cut at 1,689,600,000+ / CORES WORKING AT ONCE. The kicker and the card hold through
-the collapse and HARD-CUT at the exit (12.45, never a fade); only the 3 static E06 frames are
-text-less.
+THE BIGGEST DROP at 8.10 (film 34.60 s): the HUD SLAMs 1,689,600,000+ with the LIME line
+'100,000+ GPUs × 16,896' in the label slot (8.10-9.90), '100,000+' SLAMs in (INK on its first two
+story frames, then CYAN; start scale capped to the safe zone) and 'GPUs train one AI. / Each
+works on a slice.' POPs 2 story frames later. The hall flashes INK -> CYAN with a radial burst and
+a CYAN shock ring (no shake), and messages glide along the trunks. 9.35-10.55 one all-reduce: a
+MAGENTA gather into the hall centre, the reduced result glows LIME there, then a LIME broadcast
+sweeps back out and the network grid overlay (trunk lines + 48 junction switches) draws on behind
+its front. Then the SCREENSHOT HOLD under a slow push-in; an outline draws on around the hall
+window (11.00-11.50), which COLLAPSEs (cut_times(12.5): 11.50 / 12.30 / 12.45, 0.80 s sine) into
+handoff_token('cluster') (E06) with the HUD riding the cut at 1,689,600,000+ / CORES WORKING AT
+ONCE. The riser (riser_to_cut) crests on the seam; b08's soft swell carries it over the cut. The
+kicker and the card hold through the collapse and HARD-CUT at the exit (12.45); only the 3 static
+E06 frames are text-less.
 
 Everything that moves is a pure function of self.now (one driver). The hall and the junction
 switches are motif.Fields with fixed quantisation (temporally stable colours); off-window
-squares are skipped. No dead holds: the stage (never text or HUD) always has life (network
-breathing, box hum, push-ins, hall hum, trunk traffic).
+squares are skipped.
 """
 
 from style import *
@@ -121,69 +110,60 @@ TRUNK_DIM, TRUNK_HI = 0.16, 0.55                         # trunk opacity: after 
 R_PULSE = 4.6                                            # gather / broadcast radius (window corner 4.41)
 
 # --------------------------------------------------------------------------
-# Timeline (beat-local seconds), script v2. The 12.5 s slot is filled by SEQUENCING (card lands
-# -> read on a calm stage -> the motion it describes -> payoff hold), never by slowing: the
-# EXPAND (0.50), power wave (0.57), SYNC cycles (0.90 / 0.60), zoom-out (0.90), roll, freeze
-# (80 ms), slam, pulses (0.40 / 0.60 / 0.45), outline (0.30) and collapse keep snappy durations;
-# the time sits BETWEEN them. Card windows (fully visible -> cut; floor 0.3 s/word + 0.8 s):
-#   0.00-0.50  EXPAND; 'Many boxes. / No shared memory.' POPs on story frames 1-2
-#              (fully visible 0.033 -> 2.60 = 2.57 s >= 2.30); calm dim pod, read 1.47 s
-#   1.50-2.07  power-on wave rack by rack; async CYAN compute flashes from each box's power-on
-#   2.60       'So they pass / messages.' hard swap (2.60 -> 5.40 = 2.80 s >= 2.00); calm hum 1.0 s
-#   3.60-4.50  SYNC 1: compute flash, 16 messages hop, LIME update 4.50
-#   4.65-5.25  SYNC 2 (faster hops), LIME update 5.25
-#   5.40       'Go bigger.' hard swap (5.40 -> 7.30 = 1.90 s >= 1.40); push-in 1.0 -> 1.025
-#   6.40-7.30  zoom-out 2 (pod -> hall) + HUD log-roll from 16,896 (cut at the freeze)
-#   7.30-7.383 80 ms freeze + true silence; 'Go bigger.' cuts out
-#   7.383      DROP: '100,000+' SLAM + 'GPUs. One AI.' POP 7.417 (-> 10.30 = 2.88 s >= 2.00);
-#              1,689,600,000+ SLAM + LIME '100,000+ GPUs × 16,896' (hold 1.8: 7.383 -> 9.183)
-#   8.40-9.60  all-reduce: gather 8.40-8.80, LIME result 8.80-9.00, broadcast 9.00-9.60 with the
-#              network grid overlay drawing on behind its front
-#   9.60-10.30 SCREENSHOT HOLD (hall push-in 1.0 -> 1.012, hum, trunk traffic)
-#   10.30      'More GPUs…' hard swap (10.30 -> 12.45 = 2.15 s >= 1.40); riser to the seam;
-#              camera eases back 1.012 -> 0.90, energy and traffic build
-#   11.30-11.75 the last gather; outline draws on 11.45-11.75
-#   11.933-12.45 collapse + settle under the held card; 12.45-12.50 static E06 (3 frames)
+# Timeline (beat-local seconds), script v3 (calm motion). Card lands -> read on a calm stage ->
+# the motion it describes -> payoff hold. Card windows (fully visible -> cut; floor 0.3 s/word +
+# 0.8 s):
+#   0.00-0.90  EXPAND (ease_in_out_sine); 'Server farm. / Each server has its own / GPUs and
+#              memory.' POPs on story frame 1 (0.017 -> 4.30 = 4.28 s >= 3.80); calm dim pod,
+#              only the hero computes, read 1.43 s
+#   1.45-2.65  power-on wave rack by rack (slow); async CYAN compute flashes, busy hum to 4.30
+#   4.30       'Messages. / They swap data to sync.' hard swap (4.30 -> 8.10 = 3.80 s >= 2.60)
+#   5.50-6.50  SYNC (one cycle): compute flash, 16 messages hop, LIME update 6.40
+#   6.80-7.70  smooth pull-back pod -> hall (0.90 s, CALM_EASE); the HUD HOLDS at 16,896
+#   7.70-8.10  the hall rests; the bed dips to a hush 8.00-8.10 (no hard freeze)
+#   8.10       DROP: '100,000+' SLAM (INK 2 frames) + 'GPUs train one AI. / Each works on a
+#              slice.' POP 8.133 (-> 12.45 = 4.32 s >= 3.80); 1,689,600,000+ SLAM + LIME
+#              '100,000+ GPUs × 16,896' (hold 1.8: 8.10 -> 9.90); flash, burst, ring (no shake)
+#   9.35-10.55 one all-reduce: gather 9.35-9.75, LIME result 9.73-9.95, broadcast 9.95-10.55 with
+#              the network grid overlay drawing on behind its front
+#   10.55-11.50 SCREENSHOT HOLD under a slow push-in; the outline draws on 11.00-11.50
+#   11.50-12.45 collapse (0.80 s sine) + settle (0.15 s) under the held card; 12.45-12.50 static E06
 # --------------------------------------------------------------------------
 BEAT_SLOT = 12.5                                         # timeline.py slot (asserted in beat())
-T_EXP = EXPAND_TIME                                      # 0.50
-T_C1_SUB = 2 / 60                                        # 'No shared memory.' POPs 1 story frame after the headline
-T_POWER = 1.50                                           # the pod powers on, rack by rack
-T_CARD2 = 2.60                                           # 'So they pass / messages.' hard swap
-# SYNC cycles: (compute flash c0, send offset, hop-duration factor, LIME update)
-SYNC = ((3.60, 0.12, 1.00, 4.50), (4.65, 0.03, 0.72, 5.25))
-T_CARD3 = 5.40                                           # 'Go bigger.' hard swap
-T_Z0 = 6.40                                              # zoom-out 2 starts (0.90 s, ends ON the freeze)
-T_FREEZE = 438 / 60                                      # 7.300: 80 ms freeze + silence (5 story frames)
-T_DROP = 443 / 60                                        # 7.383: the biggest drop of the film
-T_Z1 = T_FREEZE
-T_ROLL0 = T_Z0                                           # HUD roll 16,896 -> 1,689,600,000 (cut at the freeze)
-T_C4_SUB = T_DROP + 2 / 60                               # 'GPUs. One AI.' POPs after the 2 INK frames
-LINE_HOLD = 1.80                                         # LIME line 7.383 -> 9.183 (floor 1.5)
-T_CARD5 = 10.30                                          # 'More GPUs…' hard swap + the riser
-T_COL, T_SET, T_EXIT = cut_times(BEAT_SLOT)              # 11.933 / 12.333 / 12.45
-PULSES = (("gather", 8.40, 8.80), ("bcast", 9.00, 9.60), ("gather", 11.30, 11.75))
-T_HOT = (8.78, 9.00)                                     # the reduced result glows LIME in the centre
-T_OUT0, T_OUT1 = 11.45, 11.75                            # outline draws on around the hall window
+T_EXP = EXPAND_TIME                                      # 0.90
+T_POWER = 1.45                                           # the pod powers on, rack by rack (slow wave)
+RACK_DT = 0.15                                           # wave step per rack (1.45 -> ~2.65 with the spines)
+T_CARD2 = 4.30                                           # 'Messages. / They swap data to sync.' hard swap
+# SYNC cycle: (compute flash c0, send offset, hop-duration factor, LIME update)
+SYNC = ((5.50, 0.05, 1.15, 6.40),)
+T_Z0 = 6.80                                              # pull-back pod -> hall ...
+T_Z1 = T_Z0 + EXPAND_TIME                                # ... 7.70 (0.90 s, CALM_EASE)
+T_HUSH = 8.00                                            # the bed dips to a hush before the drop
+T_DROP = 486 / 60                                        # 8.10: the biggest drop of the film
+T_C4_SUB = T_DROP + 2 / 60                               # the sub-lines POP after the 2 INK frames
+LINE_HOLD = 1.80                                         # LIME line 8.10 -> 9.90 (floor 1.5)
+T_COL, T_SET, T_EXIT = cut_times(BEAT_SLOT)              # 11.50 / 12.30 / 12.45
+PULSES = (("gather", 9.35, 9.75), ("bcast", 9.95, 10.55))
+T_HOT = (9.73, 9.95)                                     # the reduced result glows LIME in the centre
+T_OUT0, T_OUT1 = 11.00, 11.50                            # outline draws on around the hall window
+T_RISER = 10.80                                          # riser_to_cut: crests on the seam
 T_TEXT_OUT = T_EXIT                                      # kicker + card hold to the exit, then hard-cut
 # ambient camera life (stage only, never text or HUD): p -> piv + k (p - piv)
-LIFE_A, LIFE_PIV_A = 1.025, np.array([X_C, 0.95, 0.0])   # pod push-in under 'Go bigger.'
+LIFE_PIV_A = np.array([X_C, 0.95, 0.0])                  # (the pod itself holds still)
 IDLE_AMP, IDLE_PER = 0.16, 1.6                           # pod network breathing: glow level, period
-IDLE_CALM = 0.24                                         # ... brighter under 'So they pass messages.'
-LIFE_B, LIFE_END = 1.012, 0.90                           # hall: push-in to the screenshot hold, ease back
+IDLE_CALM = 0.24                                         # ... brighter under 'Messages.'
+LIFE_B = 1.02                                            # hall: slow push-in from the drop into the collapse
 HUM_BOX = 0.40                                           # async compute amplitude while the boxes 'hum'
-MORE_GAIN = 0.12                                         # hall brightness build under 'More GPUs…'
-MSG_V0, MSG_V1 = 3.6, 7.0                                # trunk message speed: at the drop / at the collapse
+MSG_V0 = 3.0                                             # trunk messages glide at a constant speed
 SLAM_BOX = Box(SAFE_LEFT + 0.05, SAFE_RIGHT - 0.05, SAFE_BOTTOM, SAFE_TOP)   # '100,000+' slam stays in here
 SLAM_INK = 2 / 60                                        # the slammed card is INK for 2 story frames
-DROP_SHAKE = (0.16, 0.30)                                # hall impact shake: amplitude, duration
 
 # --------------------------------------------------------------------------
 # Per-box schedule (k = r * 8 + c): power-on wave rack by rack (bottom to top inside a rack),
 # then each box computes on its own clock (out-of-sync CYAN flashes).
 # --------------------------------------------------------------------------
 BOX_R, BOX_COL = np.arange(64) // 8, np.arange(64) % 8
-T_ON = T_POWER + 0.07 * BOX_COL + 0.012 * (7 - BOX_R)
+T_ON = T_POWER + RACK_DT * BOX_COL + 0.012 * (7 - BOX_R)
 T_ON[HERO] = T_EXP                                        # the hero is lit from the cut: it computes alone
 _brng = np.random.default_rng(616)
 ASYNC_P = 0.55 + 0.40 * _brng.random(64)                  # compute period per box
@@ -191,8 +171,8 @@ ASYNC_PH = 0.08 + _brng.random(64) * ASYNC_P              # first flash after it
 ASYNC_W = 0.20                                            # flash length
 POWER_FL = 0.30                                           # power-on flash decay
 NOT_HERO = np.arange(64) != HERO
-T_TOR_ON = T_POWER + 0.07 * np.arange(8) + 0.096           # a rack's ToR powers when the wave tops it
-T_SPINE_ON = T_POWER + 0.07 * 7 + 0.14                     # then the spine tier (2.13)
+T_TOR_ON = T_POWER + RACK_DT * np.arange(8) + 0.096       # a rack's ToR powers when the wave tops it
+T_SPINE_ON = T_POWER + RACK_DT * 7 + 0.14                  # then the spine tier (2.64)
 
 # --------------------------------------------------------------------------
 # Stage-A messages: 16 per SYNC cycle, each hops box -> ToR -> spine -> ToR' -> box' in a
@@ -272,16 +252,8 @@ MSG_PHASE = _mrng.random(N_MSG) * EDGE                    # start partway along 
 
 
 def msg_dist(now: float) -> float:
-    """Distance every trunk message has travelled since the drop: MSG_V0, then accelerating
-    linearly to MSG_V1 over 'More GPUs…' (T_CARD5 -> T_COL), constant after."""
-    ta, tb = T_CARD5, T_COL
-    if now <= ta:
-        extra = 0.0
-    elif now < tb:
-        extra = (now - ta) ** 2 / (2 * (tb - ta))
-    else:
-        extra = (tb - ta) / 2 + (now - tb)
-    return MSG_V0 * (now - T_DROP) + (MSG_V1 - MSG_V0) * extra
+    """Distance every trunk message has travelled since the drop (a constant, calm glide)."""
+    return MSG_V0 * (now - T_DROP)
 
 
 assert (msg_dist(BEAT_SLOT) + EDGE) / EDGE < WALK.shape[1] - 1          # the walks never run out
@@ -319,9 +291,9 @@ def win(d: float, a: float, b: float, tail: float) -> float:
 
 def async_amp(now: float) -> float:
     """Amplitude of the out-of-sync compute flashes: full while every box computes alone
-    (power-on -> 'So they pass messages.'), a hum under the card's read, off through the two
-    SYNC cycles (bulk synchronous), a hum again under 'Go bigger.'."""
-    c0, tl = SYNC[0][0], SYNC[1][3]
+    (power-on -> 'Messages.'), a hum under the card's read, off through the SYNC cycle (bulk
+    synchronous), a hum again under the pull-back."""
+    c0, tl = SYNC[0][0], SYNC[-1][3]
     if now < T_CARD2:
         return 1.0
     if now < c0 - 0.15:
@@ -334,7 +306,7 @@ def async_amp(now: float) -> float:
 
 
 def idle_amp(now: float) -> float:
-    """Pod network breathing level: faint, a little brighter under 'So they pass messages.'."""
+    """Pod network breathing level: faint, a little brighter under 'Messages.'."""
     c0 = SYNC[0][0]
     up = ramp(now, T_CARD2, T_CARD2 + 0.30) * (1.0 - ramp(now, c0, c0 + 0.20))
     return lerp(IDLE_AMP, IDLE_CALM, ease_in_out_sine(up))
@@ -423,46 +395,40 @@ class B06DataCenter(BeatScene):
         # the kicker arrives on the cut (frame 0 stays the exact E04) and holds through the
         # collapse; every card swap and the final exit are hard cuts (never a crossfade)
         track.on(kick("LEVEL 3/3 · DATA CENTER"), 0.0, T_TEXT_OUT, exit="cut")
-        c1 = card([("Many boxes.", "H96", INK), ("No shared memory.", "S56", INK)])
-        c2 = card([("So they pass", "H84"), ("messages.", "H84", MAGENTA)])
-        c3 = card([("Go bigger.", "H96", INK)])
-        c4 = card([("100,000+", "H96", CYAN), ("GPUs. One AI.", "S56", INK)])
-        c5 = card([("More GPUs…", "H96", INK)])
-        self.cards = (c1, c2, c3, c4, c5)
-        # the switch tier keeps 0.3 of air under the pod's cards, also at the top of the push-in
-        spine_top = LIFE_PIV_A[1] + (SPINE_Y + SPINE_H / 2 - LIFE_PIV_A[1]) * LIFE_A
-        assert spine_top < min(c.get_bottom()[1] for c in (c1, c2, c3)) - 0.3, spine_top
-        assert LIFE_PIV_A[1] + (RACK_BOT - LIFE_PIV_A[1]) * LIFE_A > -2.37      # racks stay in the stage window
-        assert WIN_HI < min(c.get_bottom()[1] for c in (c4, c5)) - 0.3         # the hall window clears the cards
-        # the hall overfills its window on every side, also at the end of the ease-back
-        assert HALL_HALF_X * LIFE_END > WIN_X1 - AC[0] + 0.05 and HALL_HALF_Y * LIFE_END > WIN_HI - AC[1] + 0.05
-        # card 1 POPs on the cut (headline story frame 1, sub-line frame 2): its reading floor starts at once
-        track.on(c1[0], 1 / 60, T_CARD2, enter="pop", exit="cut")
-        track.on(c1[1], T_C1_SUB, T_CARD2, enter="pop", exit="cut")
-        track.on(c2[0], T_CARD2, T_CARD3, enter="pop", exit="cut")
-        track.on(c2[1], T_CARD2, T_CARD3, enter="pop", exit="cut")
-        track.on(c3[0], T_CARD3, T_FREEZE, enter="pop", exit="cut")        # the freeze blanks it
+        c1 = card([("Server farm.", "H84", INK), ("Each server has its own", "S56", INK),
+                   ("GPUs and memory.", "S56", INK, {"memory.": MAGENTA})], leading=0.94)
+        c2 = card([("Messages.", "H96", MAGENTA), ("They swap data to sync.", "S56", INK)])
+        c4 = card([("100,000+", "H84", CYAN), ("GPUs train one AI.", "S56", INK),
+                   ("Each works on a slice.", "S56", INK)])
+        self.cards = (c1, c2, c4)
+        # the switch tier keeps air under the pod's cards (the 3-line 'Server farm.' card reaches
+        # down to 3.41; the spines top out at 3.12)
+        spine_top = SPINE_Y + SPINE_H / 2
+        assert spine_top < min(c.get_bottom()[1] for c in (c1, c2)) - 0.25, spine_top
+        assert RACK_BOT > -2.37                                                # racks stay in the stage window
+        assert WIN_HI < c4.get_bottom()[1] - 0.15                              # the hall window clears the card
+        # the hall overfills its window on every side (the hall camera only ever pushes in)
+        assert HALL_HALF_X > WIN_X1 - AC[0] + 0.05 and HALL_HALF_Y > WIN_HI - AC[1] + 0.05
+        # card 1 POPs on the cut (story frame 1): its reading floor starts at once
+        track.on(c1, 1 / 60, T_CARD2, enter="pop", exit="cut")
+        track.on(c2, T_CARD2, T_DROP, enter="pop", exit="cut")
         # '100,000+' SLAMs (grows down from its top edge, clear of the kicker) with the start
         # scale capped to the safe zone; an INK twin carries the first 2 story frames (hit flash)
         about = np.array([X_C, CARD_TOP, 0.0])
         s_slam = fit_scale(c4[0], 1.3, about, SLAM_BOX)
         c4_ink = c4[0].copy().set_color(INK)
         track.on(c4_ink, T_DROP, T_DROP + SLAM_INK, enter="slam", exit="cut", about=about, scale=s_slam)
-        track.on(c4[0], T_DROP, T_CARD5, enter="slam", exit="cut", about=about, scale=s_slam,
+        track.on(c4[0], T_DROP, T_TEXT_OUT, enter="slam", exit="cut", about=about, scale=s_slam,
                  alpha=lambda now: 0.0 if now < T_DROP + SLAM_INK - EPS else 1.0)
-        track.on(c4[1], T_C4_SUB, T_CARD5, enter="pop", exit="cut")
+        track.on(VGroup(c4[1], c4[2]), T_C4_SUB, T_TEXT_OUT, enter="pop", exit="cut")
         lo = (c4[0].get_left() - about) * s_slam + about
         hi = (c4[0].get_right() - about) * s_slam + about
         assert SAFE_LEFT <= lo[0] and hi[0] <= SAFE_RIGHT, (lo, hi)
-        track.on(c5[0], T_CARD5, T_TEXT_OUT, enter="pop", exit="cut")
 
         # ---------------- HUD ----------------
-        # 16,896 holds while the pod visibly computes (undercount, never overclaim); the roll
-        # starts with the zoom-out, aims at 1,689,600,000 by the hit but is CUT at the freeze
-        # (~260,000,000): the destination first appears ON the drop frame, a 6x jump with the hit.
-        hud.roll(T_ROLL0, T_DROP, 16896, 1689600000, ease=ease_in_quad)
-        self.v_freeze = hud.number_at(T_FREEZE - 1e-4)[0]
-        hud.cut(T_FREEZE, self.v_freeze)
+        # 16,896 HOLDS while the pod computes, through the messages and the pull-back (an honest
+        # undercount; no roll, so the climb is never read as caused by the messages), then SLAMs
+        # straight to 1,689,600,000+ on the drop.
         hud.slam(T_DROP, "1,689,600,000+")                  # start scale auto-capped (1.058, safe zone)
         hud.mult(T_DROP, COUNTER_LINES["B06DataCenter"], hold=LINE_HOLD)
         # the plural label (CORES WORKING AT ONCE) is back by 9.30 and rides the cut into E06
@@ -483,16 +449,16 @@ class B06DataCenter(BeatScene):
         def cue_at(t, kind, **kw):
             self.cue(kind, dt=round(t - self.t, 4), **kw)
 
-        # 0.00 the match-cut: pull-back into the dim pod, 'Many boxes.' read on a calm stage
+        # 0.00 the match-cut: pull-back into the dim pod, 'Server farm.' read on a calm stage
         cue_at(0.0, "hit", gain=0.8, note="match-cut and ring")
-        cue_at(0.25, "whoosh", dur=0.50, direction="up", note="pod pull-back (peaks mid-way: 0.00-0.50)")
+        cue_at(T_EXP / 2, "whoosh", dur=0.80, direction="up", note="pod pull-back (0.00-0.90)")
         self.hold_until(T_POWER)
-        # 1.50 the pod powers on rack by rack: one rising tick per rack
+        # 1.45 the pod powers on rack by rack: one rising tick per rack
         for c in range(8):
-            cue_at(T_POWER + 0.07 * c, "tick", gain=round(0.35 + 0.06 * c, 3), freq=2400 + 300 * c,
+            cue_at(T_POWER + RACK_DT * c, "tick", gain=round(0.35 + 0.06 * c, 3), freq=2400 + 300 * c,
                    pan=round(-0.6 + 0.17 * c, 3), note="rack powers on")
         self.hold_until(SYNC[0][0])
-        # 3.60 / 4.65 SYNC: messages up to the spines, down into other racks, the same update
+        # 5.50 SYNC: messages up to the spines, down into other racks, the same update
         for c0, off, fac, tl in SYNC:
             up0, up1 = c0 + off, c0 + off + 0.10 + HOP_EDGE[3] * fac
             cue_at(up0, "ticks_burst", dur=round(up1 - up0, 4), rate0=18, rate1=30,
@@ -500,18 +466,12 @@ class B06DataCenter(BeatScene):
             cue_at(up1, "ticks_burst", dur=round((HOP_EDGE[-1] - HOP_EDGE[3]) * fac, 4), rate0=30, rate1=18,
                    note="messages down to other racks")
             cue_at(tl, "pop", note="same update everywhere")
-        self.hold_until(T_CARD3)
-        # 5.40 'Go bigger.'
-        cue_at(T_CARD3, "tick", gain=0.6, note="card swap")
         self.hold_until(T_Z0)
-        # 6.40 zoom-out 2 + the accelerating odometer, a steep riser into the gap
-        cue_at(T_Z0 + 0.45, "whoosh", dur=0.90, direction="up", note="hall zoom-out (6.40-7.30)")
-        cue_at(T_ROLL0, "ticks_burst", dur=round(T_FREEZE - T_ROLL0, 4), rate0=6, rate1=40,
-               note="odometer accelerating")
-        cue_at(6.80, "riser", dur=round(T_FREEZE - 6.80, 4), note="steep, ends at the gap")
-        self.hold_until(T_FREEZE)
-        # 7.300 the 80 ms freeze: true silence
-        cue_at(T_FREEZE, "silence", dur=round(T_DROP - T_FREEZE, 4), note="the gap before the drop")
+        # 6.80 the smooth pull-back pod -> hall, a gentle riser into the hush before the drop
+        cue_at((T_Z0 + T_Z1) / 2, "whoosh", dur=0.90, direction="up", note="hall pull-back (6.80-7.70)")
+        cue_at(7.30, "riser", dur=round(T_HUSH - 7.30, 4), gain=0.7, note="into the hush")
+        # 8.00 the bed dips to a hush (no hard freeze)
+        cue_at(T_HUSH, "silence", dur=round(T_DROP - T_HUSH, 4), depth=0.3, note="hush before the drop")
         self.hold_until(T_DROP)
         # stage A has cross-faded into the hall: drop it (and its messages) from the scene
         self.stage_a_on = False
@@ -522,15 +482,12 @@ class B06DataCenter(BeatScene):
         cue_at(T_DROP, "pad_swell", dur=1.6, note="euphoric lift")
         cue_at(PULSES[0][1], "tick", gain=0.5, note="all-reduce: gather")
         cue_at(PULSES[1][1], "tick", gain=0.5, note="all-reduce: broadcast")
-        self.hold_until(T_CARD5)
-        # 10.30 'More GPUs…': a riser that peaks and stops dead ON the seam (never resolves;
-        # b08's record scratch cuts it), the last gather, the collapse (no resolving hit)
-        riser_to_cut(self)
-        cue_at(PULSES[2][1], "tick", gain=0.45, note="last gather")
-        cue_at((T_COL + T_SET) / 2, "whoosh", gain=0.5, dur=0.40, direction="up", note="collapse")
+        # 10.80 a riser that crests ON the seam; b08's soft swell carries it over the cut and lets
+        # it decay into the twist's drone (no scratch, no collapse whoosh)
+        riser_to_cut(self, T_RISER)
         hold_floor(self, T_EXIT)
         exit_to(self)                         # canonical E06, static to 12.50
-        print(f"[b06] frozen roll value {self.v_freeze}; hall buckets used (max): {self.hall.max_used}, "
+        print(f"[b06] hall buckets used (max): {self.hall.max_used}, "
               f"overflow frames: {self.hall.overflow}; switch buckets (max): {self.nodes.max_used}, "
               f"overflow: {self.nodes.overflow}")
 
@@ -544,20 +501,12 @@ class B06DataCenter(BeatScene):
     # ---------------- camera life (holds are never dead) ----------------
     def _life(self, now: float) -> tuple[float, np.ndarray]:
         """(k, piv): the stage's slow ambient camera p -> piv + k (p - piv), applied on top of the
-        pod / hall cameras (never text or HUD). Identity until 'Go bigger.' (frame 0 = E04), the
-        pod push-in under 'Go bigger.' is handed back during the zoom-out (the same k on the pod
-        and the hall keeps the 2 x 2 groups on their squares), identity through the freeze; the
-        hall's push-in (screenshot hold) and ease-back ('More GPUs…') fold into the collapse
-        (which scales the contents about AC from wherever they are)."""
-        if now < T_CARD3 - EPS:
-            return 1.0, LIFE_PIV_A
-        if now < T_Z0 - EPS:
-            return lerp(1.0, LIFE_A, ease_in_out_sine(ramp(now, T_CARD3, T_Z0))), LIFE_PIV_A
+        pod / hall cameras (never text or HUD). Identity until the drop (frame 0 = E04); then the
+        hall's slow push-in (through the all-reduce and the screenshot hold) folds into the
+        collapse (which scales the contents about AC from wherever they are)."""
         if now < T_DROP - EPS:
-            return lerp(LIFE_A, 1.0, self._zoom2(now)), LIFE_PIV_A
-        if now < T_CARD5 - EPS:
-            return lerp(1.0, LIFE_B, ease_in_out_sine(ramp(now, T_DROP + 0.25, T_CARD5))), AC
-        return lerp(LIFE_B, LIFE_END, ease_in_out_sine(ramp(now, T_CARD5, T_COL))), AC
+            return 1.0, LIFE_PIV_A
+        return lerp(1.0, LIFE_B, ease_in_out_sine(ramp(now, T_DROP + 0.25, T_COL))), AC
 
     @staticmethod
     def _lf(P: np.ndarray, life) -> np.ndarray:
@@ -566,9 +515,7 @@ class B06DataCenter(BeatScene):
 
     # ---------------- stage A ----------------
     def _zoom2(self, now: float) -> float:
-        if now >= T_FREEZE - EPS:
-            return 1.0
-        return ease_in_out_cubic(ramp(now, T_Z0, T_Z1))
+        return CALM_EASE(ramp(now, T_Z0, T_Z1))
 
     def _hop_s(self, t: float):
         """Arc length of every stage-A message along its path at time t, and its phase
@@ -596,7 +543,7 @@ class B06DataCenter(BeatScene):
     def _draw_stage_a(self, now: float) -> None:
         rig = self.rig
         if now < T_EXP - EPS:
-            EXPAND(self.world, SLOT, SRV_U, ease_out_expo(now / T_EXP),
+            EXPAND(self.world, SLOT, SRV_U, expand_e(now),
                    ink=1.0 if flash_frames(now, 1 / 60, 2) else 0.0)
             # stage window on everything but the hero (which is the token at e = 0): rack lines
             # are clipped, every other member fades as an edge leaves the window
@@ -737,19 +684,19 @@ class B06DataCenter(BeatScene):
 
     # ---------------- stage B ----------------
     def _hall_cam(self, now: float):
-        """(k, piv, shake, e2): camera-space point = piv + k*(q - AC) + shake for hall-world q."""
+        """(k, piv, e2): camera-space point = piv + k*(q - AC) for hall-world q (no shake)."""
         e2 = self._zoom2(now)
         k = ZX ** (1 - e2)
         piv = lerp(PIVOT_A, AC, e2)
-        sh = shake(now - T_DROP, *DROP_SHAKE, seed=6)
-        return k, piv, sh, e2
+        return k, piv, e2
 
     def _collapse_state(self, now: float):
-        """(sc, a_col): the contents' scale about AC and opacity during the COLLAPSE."""
+        """(sc, a_col): the contents' scale about AC and opacity during the COLLAPSE, on the
+        Collapse's own curve (so the hall and the outline stay in step)."""
         if now < T_COL - EPS:
             return 1.0, 1.0
-        ec = 1.0 if now >= T_SET - EPS else ease_in_out_expo(ramp(now, T_COL, T_SET))
-        return self.collapse.s1 ** ec, 1.0 - ramp(ec, *self.collapse.contents_fade)
+        ec = self.collapse.e_at(now, T_COL, T_SET)
+        return self.collapse.s1 ** ec, self.collapse.contents_alpha(ec)
 
     def _clear_hall(self) -> None:
         self.hall.clear()
@@ -768,12 +715,12 @@ class B06DataCenter(BeatScene):
         if now < T_Z0 - EPS or a_col <= 0:
             self._clear_hall()
             return
-        k, piv, sh, e2 = self._hall_cam(now)
+        k, piv, e2 = self._hall_cam(now)
         life = self._life(now)                    # ambient camera life, inside the (fixed) hall window
         kl = life[0]
 
         def cam(P):                               # hall world -> camera space
-            return self._lf(piv + k * (P - AC) + sh, life)
+            return self._lf(piv + k * (P - AC), life)
 
         def col(P):                               # camera space -> screen (collapse about AC)
             return P if sc == 1.0 else (P - AC) * sc + AC
@@ -813,9 +760,8 @@ class B06DataCenter(BeatScene):
             hot = ramp(now, T_HOT[0], T_HOT[0] + 0.04) * (1.0 - ramp(now, T_HOT[1], T_HOT[1] + 0.15))
             if hot > 0:
                 lime = np.maximum(lime, hot * np.clip((0.95 - HALL_D) / 0.45, 0, 1))
-            # the hall hums (never static) and builds under 'More GPUs…'
+            # the hall hums (never static)
             hum = 1.0 + HUM_AMP * ramp(now, T_DROP + 0.40, T_DROP + 0.90) * np.sin(TAU * HUM_F * now + HUM_PH)
-            base = base + MORE_GAIN * ease_in_sine(ramp(now, T_CARD5, T_COL))
             rgb = mix(mix(mix(RGB_CYAN, RGB_MAG, mag), RGB_LIME, lime), RGB_INK, ink)
             a = np.maximum(base * hum, np.maximum(mag * 0.95, np.maximum(lime * 0.95, ink))) * HALL_VAR
             a = np.maximum(a, ink)                       # flashes read at full strength
@@ -861,13 +807,12 @@ class B06DataCenter(BeatScene):
         else:
             self.nodes.clear()
 
-        # ---- messages race along the trunks from the drop, faster and faster under 'More GPUs…'
+        # ---- messages glide along the trunks from the drop (constant speed)
         env = ramp(now, T_DROP, T_DROP + 0.10) * a_col
         if env > 0:
-            v = MSG_V0 + (MSG_V1 - MSG_V0) * ramp(now, T_CARD5, T_COL)
             s = msg_dist(now) + MSG_PHASE
             head = self._walk_pos(s)
-            tail = self._walk_pos(np.maximum(s - MSG_TAIL * v / MSG_V0, MSG_PHASE))
+            tail = self._walk_pos(np.maximum(s - MSG_TAIL, MSG_PHASE))
             H = cam(np.concatenate([head, np.zeros((N_MSG, 1))], axis=1))
             T = cam(np.concatenate([tail, np.zeros((N_MSG, 1))], axis=1))
             self.msgs.points = seg_points(col(T), col(H))

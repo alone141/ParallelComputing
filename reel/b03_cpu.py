@@ -1,34 +1,36 @@
-"""b03 - LEVEL 1/3 - ONE CPU (script v2 segment 'cpu', 9.5 s): that worker is one CPU core; 16
-cores run 16 different jobs and share one memory.
+"""b03 - LEVEL 1/3 - ONE CPU (script v3 segment 'cpu', 9.5 s): that worker is one CPU core; 16
+cores each run their own task and all read and write one shared memory.
 
 Entry E01 (the hook's plain CYAN token, no HUD): the token is core T6 (HERO = 5) of a 4x4 grid
-of 16 plain cores (no SIMD lane glyphs). EXPAND pulls back 0.00-0.50 (with the cut's INK charge
-and the entry ring); 'That worker? / One CPU core.' POPs on story frame 1 and the counter makes
-its first appearance (core_hud: '1' / CORE WORKING AT ONCE, POP at 0.10). While it is read the
-other 15 cores ripple in DIM outward from T6 and the SHARED MEMORY bar settles in dim below.
+of 16 plain cores (no SIMD lane glyphs). EXPAND pulls back 0.00-0.90 (ease_in_out_sine, with the
+cut's INK charge and the entry ring); 'That worker? / It's one CPU core.' POPs on story frame 1
+and the counter makes its first appearance (core_hud: '1' / CORE WORKING AT ONCE, fading in
+0.30-0.60). While it is read the other 15 cores ripple in DIM outward from T6 and the SHARED
+MEMORY bar settles in dim below.
 
-  1.00-2.60  T6 runs ONE job alone, twice (and keeps humming after): FETCH (a MAGENTA packet
-             with a comet trail leaves the bar, which flashes where it leaves), COMPUTE (INK
-             outline kick + pop, the progress fill rises), DONE (LIME flash), WRITE BACK (a LIME
-             packet returns; the bar flashes where it lands). The other 15 stay dark.
-  2.70       hard swap: '16 cores. / 16 different jobs.' on a calm stage; T1-T16 fade in dim.
-  3.70       POWER-ON: every core flashes INK -> CYAN behind a CYAN shock ring from the grid
-             centre, each core pops as the ring passes and then starts its OWN job on its own
-             clock (own period, own job lengths, own phase). HUD SLAM 1 -> 16 (plural label) +
-             LIME '16-CORE RYZEN 9 9950X' 3.70-5.50. Payoff hold 1.8 s.
-  5.50       hard swap: 'They share / one memory.'; traffic eases to a low hum, the bar brightens,
-             the T labels step back to 0.5. Calm read 1.0 s.
-  6.50       traffic doubles: packets stream both ways, jobs of different lengths finish at their
-             own moments (out-of-sync LIME flashes), under the slow stage drift.
-  7.90       hard swap: 'Need more?'. 8.10: no new jobs (every job in flight finishes and writes
-             back by 8.70), the CPU package outline draws on, labels leave. COLLAPSE 8.933 ->
-             handoff_token('cpu'), settle 9.333, canonical E03 (token + HUD '16' / CORES WORKING
-             AT ONCE) static from 9.45; kicker + card hard-cut there.
+  1.30-2.50  T6 runs ONE task, once (then hums): FETCH (a MAGENTA packet with a comet trail
+             leaves the bar, which flashes where it leaves), COMPUTE (INK outline kick + pop, the
+             progress fill rises), DONE (LIME flash), WRITE BACK (a LIME packet returns; the bar
+             flashes where it lands). The other 15 stay dark.
+  3.05       hard swap: '16 cores. / Each runs its own task.' on a calm stage; T1-T16 fade in dim
+             3.15-3.55.
+  4.25       POWER-ON: every core flashes INK -> CYAN behind a CYAN shock ring from the grid
+             centre, each core swells as the ring passes and then starts its OWN task on its own
+             clock (own period, own task lengths, own phase). HUD SLAM 1 -> 16 (plural label) +
+             LIME '16-CORE RYZEN 9 9950X' 4.25-6.05.
+  6.10       hard swap: 'One memory. / All 16 read and write it.'; traffic eases to a low hum, the
+             bar brightens, the T labels step back to 0.5. Calm read 1.0 s.
+  7.10       traffic streams both ways through the one bar; tasks of different lengths finish at
+             their own moments (out-of-sync LIME flashes), under the slow stage drift.
+  8.05       no new tasks (every task in flight has written back by 8.30), the CPU package outline
+             draws on (done 8.50), labels leave. COLLAPSE 8.50 -> 9.30 (0.80 s ease_in_out_sine)
+             into handoff_token('cpu'), settle 9.30-9.45 (no overshoot), canonical E03 (token +
+             HUD '16' / CORES WORKING AT ONCE) static from 9.45; kicker + card hard-cut there.
 
-Every job is a pure function of time: each core has a work clock (T6: real time from 1.00; all
-cores after the power-on: the shared load clock W(t), whose rate eases 1 -> 0.45 -> 2.0) and
-precomputed job boundaries on it; one driver updater draws everything from self.now, the stage
-drift composes on top.
+Every task is a pure function of time: each core has a work clock (T6: real time for its solo
+task, then it holds until its own first post-power-on task; every core after the power-on: the
+shared load clock W(t), whose rate eases 1 -> 0.45 -> 2.0) and precomputed task boundaries on it;
+one driver updater draws everything from self.now, the stage drift composes on top.
 """
 
 from style import *
@@ -67,29 +69,30 @@ FILL_W = CORE_U - 2 * FILL_IN
 FILL_R = TOKEN_CORNER * CORE_U - FILL_IN
 
 # --------------------------------------------------------------------------
-# Timeline (beat-local seconds; script v2 'cpu'). Motion keeps its snappy durations; the slot
-# is filled by calm reads BETWEEN the moves.
+# Timeline (beat-local seconds; script v3 'cpu', calm motion). Every card lands on a calm stage
+# and is read before the animation it describes.
 # --------------------------------------------------------------------------
-T_EXPAND = EXPAND_TIME                      # 0.50 pull-back
-T_HUD = 0.10                                # the counter's first appearance ('1', singular)
-T_SOLO = 1.00                               # T6's first job ...
-SOLO_PER = 0.80                             # ... one at a time: 1.00-1.80, 1.80-2.60, 2.60-3.40, 3.40-
-T_CORES = 2.70                              # '16 cores. / 16 different jobs.' (read 1.0 s)
-T_POWER = 3.70                              # power-on: SLAM 1 -> 16 + LIME line
-T_SHARE = 5.50                              # 'They share / one memory.' (read 1.0 s)
-T_BUSY = 6.50                               # traffic doubles
-T_MORE = 7.90                               # 'Need more?'
-T_DRAIN = 8.10                              # no new jobs; package outline draws on
-T_CLEAR = 8.70                              # every job started before the drain has written back
-T_COL, T_SET, T_EXIT = cut_times(SLOT)      # 8.933 / 9.333 / 9.45
-T_PKG0, T_PKG1 = T_DRAIN, T_DRAIN + 0.45    # package outline Create
-LINE_HOLD = T_SHARE - T_POWER               # 1.80: the LIME line holds the whole payoff
-T_RISE = T_POWER - 0.50                     # riser 3.20 -> 3.70
+T_EXPAND = EXPAND_TIME                      # 0.90 pull-back (ease_in_out_sine)
+HUD_FADE = (0.30, 0.60)                     # the counter's first appearance ('1', singular): fades in
+T_SOLO = 1.30                               # T6 runs ONE task, once ...
+SOLO_PER = 1.20                             # ... 1.30-2.50, then hums until the power-on
+T_CORES = 3.05                              # '16 cores. / Each runs its own task.' (read 1.20 s)
+T_LAB0, LAB_FADE = 3.15, 0.25               # T1-T16 labels fade in dim 3.15-3.55
+T_POWER = 4.25                              # power-on: SLAM 1 -> 16 + LIME line (4.25-6.05)
+T_SHARE = 6.10                              # 'One memory. / All 16 read and write it.' (read 1.00 s)
+T_BUSY = 7.10                               # traffic streams both ways through the one bar
+T_DRAIN = 8.05                              # no new jobs; package outline draws on
+T_CLEAR = 8.30                              # every job started before the drain has written back
+T_COL, T_SET, T_EXIT = cut_times(SLOT)      # 8.50 / 9.30 / 9.45 (0.80 s sine collapse, 0.15 s settle)
+T_PKG0, T_PKG1 = T_DRAIN, T_COL             # package outline draws on 8.05-8.50 (done before the collapse)
+LINE_HOLD = 1.80                            # the LIME line 4.25 -> 6.05
+T_RISE = T_POWER - 0.50                     # riser 3.75 -> 4.25
+T_RISE2 = 7.70                              # gentle riser 7.70 -> 8.50 into the collapse
 DRIFT_S1 = 0.975                            # stage eases back 1.0 -> 0.975 about AC by the collapse
 
 # the dim stage while T6 works alone: the other 15 ripple in outward from T6, then the bar
-REV0, REV_K, REV_DUR = 0.12, 0.42, 0.30     # core k: from REV0 + REV_K * d_k (d in 0..1) over REV_DUR
-MEM_REV = (0.55, 0.90)                      # bar + bus lanes + SHARED MEMORY settle in (dim)
+REV0, REV_K, REV_DUR = 0.15, 0.45, 0.30     # core k: from REV0 + REV_K * d_k (d in 0..1) over REV_DUR
+MEM_REV = (0.50, 0.90)                      # bar + bus lanes + SHARED MEMORY settle in (dim)
 
 # job cycle, as fractions of a job: fetch | compute | write back | idle
 S_FETCH, S_DONE, S_WB = 0.30, 0.68, 0.96
@@ -104,7 +107,6 @@ RATE_KEYS = ((T_POWER, 1.0), (T_SHARE, 1.0), (T_SHARE + 0.30, 0.45),     # payof
 _TG = np.arange(T_POWER, SLOT + 1.0 + 1e-9, 1 / 1200)
 _RG = np.interp(_TG, [k[0] for k in RATE_KEYS], [k[1] for k in RATE_KEYS])
 _WG = np.concatenate([[0.0], np.cumsum((_RG[1:] + _RG[:-1]) / 2 * np.diff(_TG))])
-SOLO_W = T_POWER - T_SOLO                   # 2.70: T6's own clock at the power-on (rate 1 both sides)
 
 
 def work(t: float) -> float:
@@ -116,16 +118,19 @@ def work_inv(w: float) -> float:
     return float(np.interp(w, _WG, _TG))
 
 
-def clock(i: int, t: float) -> float:
-    """Work clock of core i (T6 runs on real time from T_SOLO until it joins W at the power-on)."""
-    if i == HERO:
-        return t - T_SOLO if t < T_POWER else SOLO_W + work(t)
-    return work(t)
+def hero_clock(t: float, w_all: float) -> float:
+    """T6's work clock: real time from T_SOLO for its one solo task (SOLO_PER), then it holds
+    (T6 hums) until its first post-power-on task starts at T_HERO_GO, from where it runs on W."""
+    if t < T_SOLO + SOLO_PER:
+        return t - T_SOLO
+    if t < T_HERO_GO:
+        return SOLO_PER
+    return SOLO_PER + w_all - W_HERO_GO
 
 
 def clock_inv(i: int, w: float) -> float:
     if i == HERO:
-        return T_SOLO + w if w < SOLO_W else work_inv(w - SOLO_W)
+        return T_SOLO + w if w < SOLO_PER else work_inv(w - SOLO_PER + W_HERO_GO)
     return work_inv(w)
 
 
@@ -151,10 +156,13 @@ U = _rng.random(N_CORES)
 V = _rng.random(N_CORES)
 PER = 0.85 + 0.35 * U
 JOB = 0.70 + 0.65 * _rng.random((N_CORES, MAX_CYC))
+# T6 starts its first post-power-on task on its own phase, like every other core
+W_HERO_GO = POP_DELAY[HERO] + 0.55 * V[HERO]
+T_HERO_GO = work_inv(W_HERO_GO)
 BOUND = np.zeros((N_CORES, MAX_CYC + 1))    # job boundaries on each core's work clock
 for _i in range(N_CORES):
     if _i == HERO:
-        _L = np.concatenate([np.full(4, SOLO_PER), PER[_i] * JOB[_i, 4:]])
+        _L = np.concatenate([[SOLO_PER], PER[_i] * JOB[_i, 1:]])
         _b0 = 0.0
     else:
         _L = PER[_i] * JOB[_i]
@@ -168,7 +176,8 @@ _ok = (EVT[:, :, 0] < T_DRAIN - EPS) & (EVT[:, :, 3] < T_CLEAR - EPS)
 N_ALIVE = np.array([int(np.argmin(r)) if not r.all() else MAX_CYC for r in _ok])
 assert all(_ok[i, :N_ALIVE[i]].all() and not _ok[i, N_ALIVE[i]:].any() for i in range(N_CORES))
 assert N_ALIVE.max() < MAX_CYC
-assert EVT[HERO, 0, 0] == T_SOLO and abs(EVT[HERO, 1, 0] - (T_SOLO + SOLO_PER)) < 1e-9
+assert EVT[HERO, 0, 0] == T_SOLO and abs(EVT[HERO, 1, 0] - T_HERO_GO) < 1e-9
+assert EVT[HERO, 0, 3] < T_CORES - 0.4      # the solo task has written back well before '16 cores.'
 
 # looks
 DIM_FILL, DIM_STROKE = 0.10, 0.85           # unpowered cores: DIM outline, faint DIM fill
@@ -176,7 +185,7 @@ FILL_REST, FILL_REST_ON = 0.15, 0.25        # CYAN unit fill: T6 before / every 
 PROG_A = 0.55                               # progress fill opacity (CYAN)
 DONE_A, DONE_A_ON = 0.85, 0.60              # LIME completion flash peak before / after the power-on
 LAB_DIM, LAB_ON, LAB_BACK = 0.40, 0.90, 0.50   # T label opacity: '16 cores.' / powered / 'They share'
-LAB_STAG = 0.025                            # T1 -> T16 fade-in stagger at 2.70
+LAB_STAG = 0.010                            # T1 -> T16 fade-in stagger (3.15 -> 3.55)
 MEM_FILL, MEM_FILL_SHARE = 0.10, 0.24       # bar fill at rest / once 'They share one memory.'
 MEM_DIM = 0.50                              # bar + label opacity factor before the power-on
 LANE_A = 0.8                                # bus lane stub opacity
@@ -184,11 +193,11 @@ LANE_A = 0.8                                # bus lane stub opacity
 
 def label_alpha(i: int, now: float) -> float:
     """T label opacity factor of core i (0 until '16 cores.')."""
-    a = LAB_DIM * ease_out_cubic(ramp(now, T_CORES + LAB_STAG * i, T_CORES + LAB_STAG * i + 0.25))
+    a = LAB_DIM * ease_out_cubic(ramp(now, T_LAB0 + LAB_STAG * i, T_LAB0 + LAB_STAG * i + LAB_FADE))
     tp = T_POWER + POP_DELAY[i]
     a = lerp(a, LAB_ON, ease_out_cubic(ramp(now, tp, tp + 0.15)))
     a = lerp(a, LAB_BACK, ease_out_cubic(ramp(now, T_SHARE, T_SHARE + 0.40)))
-    return a * (1.0 - ease_in_out_sine(ramp(now, T_DRAIN, T_DRAIN + 0.50)))
+    return a * (1.0 - ease_in_out_sine(ramp(now, T_DRAIN, T_COL)))
 
 
 def thread_label(i: int) -> MarkupText:
@@ -356,21 +365,21 @@ class B03Cpu(BeatScene):
         track = TextTrack(self)
         # kicker on the cut ('in' at 0.0 is invisible on frame 0), hard-cut by the E03 swap
         track.on(kick("LEVEL 1/3 · ONE CPU"), 0.0, T_EXIT, exit="cut")
-        cards = (
-            (card([("That worker?", "H84", INK), ("One CPU core.", "H84", INK, {"CPU core.": CYAN})]),
+        cards = (   # script v3: headline + one plain explanation line (user decision: 'That worker?')
+            (card([("That worker?", "H96", INK), ("It's one CPU core.", "S56", INK, {"CPU core.": CYAN})]),
              1 / 60, T_CORES),                                  # POP on story frame 1 (frame 0 = E01)
-            (card([("16 cores.", "H96", INK, {"16": CYAN}), ("16 different jobs.", "S56", INK)]),
+            (card([("16 cores.", "H96", INK, {"16": CYAN}), ("Each runs its own task.", "S56", INK)]),
              T_CORES, T_SHARE),
-            (card([("They share", "H84", INK), ("one memory.", "H84", INK, {"memory.": MAGENTA})]),
-             T_SHARE, T_MORE),
-            (card([("Need more?", "H96", INK)]), T_MORE, T_EXIT),
+            (card([("One memory.", "H96", INK, {"memory.": MAGENTA}),
+                   ("All 16 read and write it.", "S56", INK)]),
+             T_SHARE, T_EXIT),
         )
         for c, t_in, t_out in cards:
             for line in c:
                 track.on(line, t_in, t_out, enter="pop", exit="cut")
 
         # ---------------- HUD: the counter's first appearance ----------------
-        hud = core_hud("1", scene=self, pop_at=T_HUD)       # zero pixels until 0.10, then POP
+        hud = core_hud("1", scene=self, fade_in=HUD_FADE)   # zero pixels until 0.30, fades in by 0.60
         hud.slam(T_POWER, "16")
         hud.label(T_POWER, core_label(16))                   # plural from here (under the line)
         hud.mult(T_POWER, COUNTER_LINES["B03Cpu"], hold=LINE_HOLD)
@@ -398,9 +407,9 @@ class B03Cpu(BeatScene):
         # ---------------- run (audio cues sit next to the moment they belong to) ----------------
         trng = np.random.default_rng(17)
         self.cue("hit", gain=0.8, note="match-cut: the worker is core T6")
-        self.cue("whoosh", dt=0.20, dur=0.50, direction="up", note="camera pull-back")
+        self.cue("whoosh", dt=0.45, dur=0.80, direction="up", note="camera pull-back (0.00-0.90)")
 
-        self.hold_until(T_SOLO)                # T6 alone: a soft tick on each fetch and each done
+        self.hold_until(T_SOLO)                # T6 alone, one task: a soft tick on its fetch and its done
         for k, f, what in ((0, 3000, "fetch"), (2, 4400, "done")):
             for t, i in job_events(k, T_SOLO, T_POWER):
                 self.cue("tick", dt=round(t - self.t, 4), gain=0.30, freq=f, pan=round(col_pan(i, trng), 3),
@@ -418,12 +427,12 @@ class B03Cpu(BeatScene):
                      pan=round(col_pan(i, trng), 3), note=f"T{i + 1} compute")
 
         self.hold_until(T_SHARE)
-        self.cue("tick", gain=0.5, freq=4200, pan=0, note="'They share / one memory.'")
+        self.cue("tick", gain=0.5, freq=4200, pan=0, note="'One memory. / All 16 read and write it.'")
         for t, i in job_events(1, T_SHARE, T_BUSY):            # the low hum
             self.cue("tick", dt=round(t - self.t, 4), gain=0.16, freq=int(trng.uniform(2600, 4200)),
                      pan=round(col_pan(i, trng), 3), note=f"T{i + 1} compute (hum)")
 
-        self.hold_until(T_BUSY)                # traffic doubles: busy panned blips + arrival ticks
+        self.hold_until(T_BUSY)                # traffic streams: busy panned blips + arrival ticks
         for t, i in job_events(1, T_BUSY, T_CLEAR):
             self.cue("tick", dt=round(t - self.t, 4), gain=0.24, freq=int(trng.uniform(1700, 2600)),
                      pan=round(col_pan(i, trng), 3), note=f"T{i + 1} blip")
@@ -431,8 +440,8 @@ class B03Cpu(BeatScene):
             self.cue("tick", dt=round(t - self.t, 4), gain=0.14, freq=int(trng.uniform(5200, 6400)),
                      pan=round(col_pan(i, trng), 3), note=f"T{i + 1} result lands")
 
-        self.hold_until(T_DRAIN)
-        self.cue("riser", dur=round(T_COL - T_DRAIN, 4), note="drain + package into the collapse")
+        self.cue("riser", dt=round(T_RISE2 - self.t, 4), dur=round(T_COL - T_RISE2, 4), gain=0.7,
+                 note="gentle riser: drain + package into the collapse")
 
         self.hold_until(T_COL)
         # draw the fully drained state first, so no packet / trail / flash hangs over the collapse,
@@ -443,8 +452,8 @@ class B03Cpu(BeatScene):
         self.drift.release()
         self.collapse = COLLAPSE(self.pkg, self.world, "cpu")
         self.add(self.collapse.glyph)
-        self.cue("whoosh", dt=round((T_COL + T_SET) / 2 - self.t, 4), dur=0.45, direction="down",
-                 note="collapse")
+        self.cue("whoosh", dt=round((T_COL + T_SET) / 2 - self.t, 4), dur=COLLAPSE_TIME, direction="down",
+                 note="collapse (soft whoosh down)")
         self.cue("tick", dt=round(T_SET - self.t, 4), gain=0.5, note="settle")
         hold_floor(self, T_EXIT)
         exit_to(self)                          # canonical E03, static to 9.50
@@ -455,7 +464,7 @@ class B03Cpu(BeatScene):
             self.collapse.render(now, T_COL, T_SET, T_EXIT)
             return
         if now < T_EXPAND + 0.1:               # (from T_EXPAND on: e = 1 exactly, i.e. the rest layout)
-            EXPAND(self.world, CORE_C[HERO], CORE_U, ease_out_expo(ramp(now, 0.0, T_EXPAND)),
+            EXPAND(self.world, CORE_C[HERO], CORE_U, expand_e(now),
                    ink=1.0 if flash_frames(now, 1 / 60, 2) else 0.0)
             self._alpha_key.clear()            # EXPAND rewrote every style
         self._draw_world(now)
@@ -487,7 +496,7 @@ class B03Cpu(BeatScene):
         # ---- the dim stage: the 15 cores ripple in outward from T6, then bar + lanes + label
         a_mem = ease_out_cubic(ramp(now, *MEM_REV))
         self._set_alpha_cached("stubs", self._stub_rest, a_mem, "stroke_rgbas")
-        drain_lab = 1.0 - ease_in_out_sine(ramp(now, T_DRAIN, T_DRAIN + 0.50))
+        drain_lab = 1.0 - ease_in_out_sine(ramp(now, T_DRAIN, T_COL))
         powered = now >= T_POWER - EPS
         share = ease_out_cubic(ramp(now, T_SHARE, T_SHARE + 0.35))
         ml = a_mem * (lerp(0.85, 1.0, share) if powered else 0.60) * drain_lab
@@ -540,7 +549,7 @@ class B03Cpu(BeatScene):
             core = self.cores[i]
             on = powered or i == HERO
             # ---- this core's job state
-            w = (now - T_SOLO if now < T_POWER else SOLO_W + w_all) if i == HERO else w_all
+            w = hero_clock(now, w_all) if i == HERO else w_all
             B = BOUND[i]
             n = int(np.searchsorted(B, w, side="right")) - 1
             if 0 <= n < MAX_CYC:
