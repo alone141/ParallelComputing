@@ -321,6 +321,8 @@ class BeatScene(Scene):
     def setup(self):
         self._cues: list[dict] = []
         self._frames = 0
+        self._in_play = False
+        self._play_t0 = 0.0
         # The background is flat BG here; build.py lifts it with a radial
         # gradient (bg PNG, "lighten" blend) in the grade, which is cheaper
         # than compositing an ImageMobject on every frame.
@@ -334,7 +336,12 @@ class BeatScene(Scene):
         return len(np.arange(0, run_time, 1 / config.frame_rate))
 
     def play(self, *args, **kwargs):
-        super().play(*args, **kwargs)
+        self._play_t0 = self.time
+        self._in_play = True
+        try:
+            super().play(*args, **kwargs)
+        finally:
+            self._in_play = False
         self._frames += self._frames_for(self.duration)
 
     @property
@@ -342,9 +349,18 @@ class BeatScene(Scene):
         """Frame-exact local time (seconds) at the end of what has been played."""
         return self._frames / config.frame_rate
 
+    @property
+    def now(self) -> float:
+        """Frame-exact local time of the frame being drawn. Use this inside
+        updaters (frame 0 of the beat is now == 0). For 60 fps frame logic use
+        f = round(self.now * 60); it stays correct in 30 fps previews."""
+        if getattr(self, "_in_play", False):
+            return self._frames / config.frame_rate + (self.time - self._play_t0)
+        return self._frames / config.frame_rate
+
     def film_time(self) -> float:
         """Film-absolute time of the frame being drawn (used by DustField)."""
-        return beat_start(type(self).__name__) + self.time
+        return beat_start(type(self).__name__) + self.now
 
     def cue(self, kind: str, dt: float = 0.0, gain: float = 1.0, note: str = "", **params) -> None:
         self._cues.append({

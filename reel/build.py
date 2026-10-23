@@ -6,6 +6,7 @@
   python reel/build.py frames  b03_cpu 0.5 1.25 3.0       # preview + single frames at local times
   python reel/build.py handoff b03_cpu b04_gpu            # last frame of A next to first frame of B
   python reel/build.py film    [--final]                  # all beats -> concat -> grade -> audio -> out/
+  python reel/build.py --reuse contact b03_cpu            # inspect the last preview without re-rendering
 
 Beats are listed in timeline.py. Preview = 540x960 @ 30 fps, final = 1080x1920 @ 60 fps.
 Run with the venv that has manim (default: /home/user/.venvs/manim/bin/python).
@@ -64,17 +65,24 @@ def run(cmd: list[str], **kw) -> None:
         raise SystemExit(f"command failed ({res.returncode}): {cmd[0]} ... (see output above)")
 
 
+REUSE = False  # set by --reuse: skip rendering when the preview video already exists
+
+
 def render(key: str, quality: str = "preview") -> Path:
     cls, mod, _ = beat_lookup(key)
     q = QUALITY[quality]
     w, h = q["res"]
+    out = MEDIA / "videos" / Path(mod).stem / f"{h}p{q['fps']}" / f"{cls}.mp4"
+    if REUSE and out.exists():
+        return out
     env = dict(os.environ, PYTHONPATH=str(REEL))
+    # Caching off: manim's cache key ignores updater code, so it can serve stale clips.
     run([MANIM, "render", str(REEL / mod), cls, "-r", f"{w},{h}", "--fps", str(q["fps"]),
-         "--media_dir", str(MEDIA), "-v", "WARNING", "--progress_bar", "none"], env=env)
-    found = sorted((MEDIA / "videos" / Path(mod).stem).glob(f"{h}p{q['fps']}/{cls}.mp4"))
-    if not found:
-        raise SystemExit(f"render output for {cls} not found")
-    return found[0]
+         "--media_dir", str(MEDIA), "--disable_caching", "-v", "WARNING", "--progress_bar", "none"],
+        env=env)
+    if not out.exists():
+        raise SystemExit(f"render output for {cls} not found at {out}")
+    return out
 
 
 def probe_duration(path: Path) -> float:
@@ -193,7 +201,11 @@ def main() -> None:
     f = sub.add_parser("frames"); f.add_argument("beat"); f.add_argument("times", nargs="+", type=float)
     h = sub.add_parser("handoff"); h.add_argument("a"); h.add_argument("b")
     fm = sub.add_parser("film"); fm.add_argument("--final", action="store_true")
+    ap.add_argument("--reuse", action="store_true",
+                    help="inspect existing preview videos instead of re-rendering")
     a = ap.parse_args()
+    global REUSE
+    REUSE = a.reuse
     if a.cmd == "render":
         for b in a.beats:
             print(render(b, "final" if a.final else "preview"))

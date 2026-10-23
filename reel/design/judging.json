@@ -1,0 +1,287 @@
+{
+ "tally": {
+  "A": 22.299999999999997,
+  "B": 21,
+  "C": 22.299999999999997
+ },
+ "judged": [
+  {
+   "scores": [
+    {
+     "storyboard": "A",
+     "score_0_to_10": 8.2,
+     "strengths": [
+      "Best mid-film retention device: the open loop 'It scales. Until it doesn't.' at 2.75s is paid off by 'But there's a catch.' at 36s, which carries viewers through the middle.",
+      "A strong hook mechanic: a kinetic frame 0, then a 0.15s freeze with caption jitter and silence, then a 768-tile SLAM with a shockwave and shake.",
+      "The twist inverts the device the viewer has been watching. A live speedup readout races, slows and falls silent at 19.x while 'GPUs: 1 \u2192 1,000,000 \u2192 \u221e' keeps spinning, then the curve flattens onto a dashed 'THE WALL: 20\u00d7' line. It is the most screenshot-able and self-explanatory frame across all three boards.",
+      "Biggest drop (100,000+ GPUs) is placed at about 58% of runtime, behind an 80ms silence, which is where retention usually sags.",
+      "An explicit comment-bait question ('So why build 100,000-GPU clusters?') plus a suggested pinned Gustafson hint.",
+      "A frame-exact, mid-motion loop. One crawl clock and a continuous 1/14s tick cadence run across the seam, so the replay is invisible.",
+      "Spectacle at the large scales: the CPU cores shatter into 3,072 GPU cells, there is a 2,156-dot hall flash and a 1,030-device globe. The token changes colour per scale, so the cuts don't feel samey.",
+      "Rewatch Easter eggs: \u03c0 and e digits in the SIMD lanes and a real 'vaddps zmm0, zmm1, zmm2' instruction."
+     ],
+     "weaknesses": [
+      "The payoff lands at 1.45s, right at the edge of the 1.5s window. The freeze delays the reward that B and C deliver at 1.0s.",
+      "Frame 0 is cluttered: kicker, counter, unit word, caption and grid. Body captions are only 64pt and sit at the bottom, while the HUD unit text is at the 34pt minimum. Big, confident typography is missing.",
+      "The counter resets to '1' at every scale and goes up and down (768 \u2192 16 \u2192 1 \u2192 24 \u2192 21,760 \u2192 1 \u2192 8). Unit relabels help, but muted scanners read it as drops, and it loses the hypnotic always-climbing feel.",
+      "Fact errors will draw 'wrong!' comments that undercut shares: 24 cores paired with 16 AVX-512 lanes, '21,760 CORES', the unverified '1,000,000+ DEVICES', and an RTX 5090 mixed with H100 NVLink 900 GB/s.",
+      "A long 12.5s tail after the planet (8.5s twist plus 4s loop beat with a 2.1s static-ish comment card) risks drop-off before the loop seam.",
+      "Two caption cards per 4.5-6s scale, plus kicker and unit swaps, make the text dense for slow readers."
+     ]
+    },
+    {
+     "storyboard": "B",
+     "score_0_to_10": 6.6,
+     "strengths": [
+      "A monotonic counter in one consistent unit (calculations at once), with a LIME 'xN' chip on each jump that explains the leap to muted viewers. It avoids the drop pitfall.",
+      "Big two-line headlines (84pt HEAVY) at the top of frame, colour-matched to the element they describe.",
+      "The clearest mechanisms: a scalar fire, then all 16 lanes; out-of-phase threads with fetch and result packets; a single warp row stepping in lockstep before all warps sweep.",
+      "Internally consistent numbers: 16 cores \u00d7 16 lanes, then H100 16,896 with HGX H100 8 GPUs at 900 GB/s.",
+      "The 10^18 digits overflow the line and the type shrinks, a nice 'too big to fit' visual.",
+      "The twist uses a doubling animation (lanes split at N=2/4/8/16 with 1.9\u00d7/3.5\u00d7/5.9\u00d7/9.1\u00d7), which has satisfying rhythm."
+     ],
+     "weaknesses": [
+      "There is no open loop or teaser of the twist, so nothing pulls the viewer through the 30s of middle.",
+      "The spectacle shrinks exactly where virality lives: 196 cells stand for 100,000 GPUs and the planet has only 150 dots. The climax scales look smaller than the GPU scale.",
+      "The same cyan token at every cut, plus headlines that sit unchanged for about 4s per beat, make the pacing monotonous.",
+      "The twist shows 'THE CATCH \u00b7 AMDAHL'S LAW' at the same moment as 'But there's a catch.', which spoils the suspense. A bar chart with a sliding finish line is less iconic than a curve hitting a wall.",
+      "A weaker loop seam. The card fades in by opacity (telegraphing the end), there is about a 0.2s hold, and the worker restarts at tile 0, so there is no mid-motion continuity.",
+      "The metric switch from 'at once' to 'per second', plus the present-tense headline 'Faster than any supercomputer', matches a listed pitfall and invites credibility-damaging corrections.",
+      "Hook cards run 1.0s and 1.05s, and the title then occupies 2.05-3.7s of prime early real estate."
+     ]
+    },
+    {
+     "storyboard": "C",
+     "score_0_to_10": 8.6,
+     "strengths": [
+      "Earliest and cleanest hook. Frame 0 has one huge headline, 'One at a time.', over a mid-crawl worker ticking at 20 steps/s. At 1.0s a radial white-to-cyan wave, shock ring and full-frame flash land with a hard cut to 'All at once.'",
+      "Visual foreshadowing: the lone amber worker stays amber among 319 cyan cells, which plants the serial bottleneck without any words.",
+      "The odometer climbs monotonically (16 \u2192 256 \u2192 16,896 \u2192 135,168 \u2192 1,689,600,000), overflows into randomized digits labelled 'AND COUNTING', then becomes \u221e. 'So\u2026 infinite speed?' (music drops out), then 'No.' as \u221e shatters into '20\u00d7 MAX SPEEDUP'. This is the most shareable and comment-baity beat across all three boards.",
+      "Punchy, viral-grade copy: 'Shrink the core. Copy it. A lot.', 'Compute. Sync. Repeat.', 'No.'",
+      "A narrative text loop, 'The bottleneck?' \u2192 'One at a time.' \u2192 'All at once.', plus a frame-exact mid-crawl seam with an identical tick cadence. It rewards rewatching.",
+      "Strong spectacle at every large scale: 3,072 GPU pixels with a warp sweep and orbiting light, a 3,136-square data-center floor with gather/broadcast rings, and a 900-point globe with 140 volunteers.",
+      "Typographic restraint: at most 2 text lines, a 96pt top headline and a 96pt bottom odometer. Numbered kickers 01-07 promise progression. Facts are mostly safe (16 cores, consistent H100 numbers, 'Folding@home, 2020: 1 exaFLOP')."
+     ],
+     "weaknesses": [
+      "There is no verbal open loop after the title, so nothing explicitly promises a twist during the 30s middle.",
+      "There is no explicit end-of-film comment question. 'The bottleneck?' is weaker comment bait than 'So why build 100,000-GPU clusters?'",
+      "The twist's four bar rows are clear but less iconic than a curve flattening onto a wall. The speedup values appear statically per row instead of racing and stalling.",
+      "The hook step readout 'STEP 042 / 320' is DIM 44pt, low contrast for the line that carries 'slow' to muted viewers.",
+      "Several 46pt sub-lines break the reading rule ('Volunteer PCs, over the internet' 1.5s, 'Warps: 32 threads in lockstep' 1.5s, 'Each runs its own thread.' 1.55s). The '100,000+ GPUs.' headline also sits static for 4.45s.",
+      "Colour grammar is muddled. The AMBER (serial) token becomes the SIMD core, and MAGENTA means both communication and 'the catch'. The faked glow() halos stack on top of the real post-process bloom.",
+      "The \u221e odometer and 'Shrink the core. Copy it.' (which implies CUDA cores are CPU-like cores) will draw pedantic comments. That is fine for engagement, but it needs careful labelling."
+     ]
+    }
+   ],
+   "winner": "C",
+   "grafts": [
+    "From A: an open-loop line in the hook, right after or instead of the 'At every scale.' sub-line (e.g. 'It scales\u2026 until it doesn't.' at about 2.4-4.0s, AMBER on 'until it doesn't'). Pay it off explicitly with 'So\u2026 infinite speed?' / 'No.' in b08.",
+    "From A: a 0.12-0.15s micro-freeze just before C's 1.0s parallel wave. The worker stops, the headline jitters \u00b10.03 per frame and the audio drops to silence, which makes the slam hit harder without delaying it past 1.0s.",
+    "From A: in b08, keep the \u221e \u2192 20\u00d7 slam but add A's live racing speedup readout (1.0\u00d7 \u2192 19.x, ticks slowing and falling silent) while a 'CORES: 1 \u2192 1,000,000 \u2192 \u221e' readout keeps spinning. Add A's log-x speedup curve flattening onto a dashed AMBER 'THE WALL: 20\u00d7' line as the screenshot frame. This can replace the static row readouts on rows 2-4.",
+    "From A/B: an explicit comment-bait card 'So why build 100,000 GPUs?' in b08 (e.g. 6.2-7.0s, before 'The bottleneck?'), plus the pinned creator comment 'Hint: Gustafson's law (1988)'.",
+    "From A: change C's '01 \u00b7 \u2026' kickers to a fraction, 'SCALE 1/6' \u2026 'SCALE 6/6' and then 'THE CATCH', so viewers know the total and feel a completion drive.",
+    "From A: a shockwave ring and hit on every match-cut entry, plus an 80ms audio gap and message micro-freeze right before the b06 counter lands on 1,689,600,000, so the biggest drop sits near 55-60% of runtime.",
+    "From A: Easter eggs for rewatches and comments. Use \u03c0 and e digits as the SIMD lane operands, and a small 'vaddps zmm0, zmm1, zmm2' label under the ADD chip.",
+    "From B: a LIME 'xN' multiplier chip on every odometer jump (x16, x16, x66, x8, x12,500), briefly replacing the 'IN PARALLEL' label, so muted viewers see why the number leapt.",
+    "From B: in b02, fire lane 0 alone once (counter shows 1), then fire all 16 lanes together (counter slams to 16). This gives an instant 1-vs-16 contrast.",
+    "From B: in b08, a doubling rhythm before the wall. Each parallel bar splits in two at N=2, 4, 8, 16 on the beat (1.9\u00d7, 3.5\u00d7, 5.9\u00d7, 9.1\u00d7), then the bar ramps to the stall.",
+    "From B: morph the hook worker AMBER \u2192 CYAN as it zooms into the first token, so AMBER stays reserved for serial and the b08 amber block reads unambiguously as the same lone worker.",
+    "Callback idea (from the hook_amdahl_callback fact pattern): tie the twist to the hook's own numbers. With 5% serial, the 320-cell job takes about 17 steps, not 1. Show it as the lone amber worker doing 16 cells alone while 304 cyan workers wait."
+   ],
+   "must_fix": [
+    "CPU count must match 16-lane AVX-512: use 16 cores (Ryzen 9 9950X class) for the '16 cores \u00d7 16 lanes' math. Never pair 16 SIMD lanes with a 24-core Intel chip (A's error).",
+    "Never label CUDA cores as plain 'CORES' like CPU cores. Use 'CUDA CORES', 'tiny math lanes' or the neutral 'IN PARALLEL' unit. If 'Shrink the core. Copy it.' stays, add a sub-line such as 'Thousands of tiny math lanes'.",
+    "Replace 'Every pixel at once.' with 'Every pixel, every frame.' or 'Every pixel, in parallel.' A GPU works in waves of warps, not in one instant.",
+    "Use one GPU generation throughout. Either H100 (16,896 / HGX H100 8 GPUs / 900 GB/s per GPU) or RTX 5090 + B200 (21,760 / 1.8 TB/s per GPU, bidirectional). Do not mix a consumer RTX 5090 with H100 NVLink numbers.",
+    "Planet scale: no unverified '1,000,000+ devices' (use 'hundreds of thousands of home PCs'). No present-tense 'faster than any supercomputer'. Always date it 2020 and call Folding@home an exaflop system, never an exascale supercomputer.",
+    "Counter integrity: it must read as monotonic, or relabel the unit at every step with no unlabeled drops. If the \u221e odometer stays, its randomized digits must never settle on a real-looking number. '20\u00d7 MAX SPEEDUP' must share the screen with '5% serial' so the cap is never stated without its assumption.",
+    "Reading time: the frame-0 headline should be about 4 words or fewer at 96pt or larger. Every card must meet roughly 0.25s/word + 0.6s. Shorten offending sub-lines to 2-3 words (e.g. 'Home PCs. Worldwide.', 'Warps of 32. Lockstep.') or extend them. Keep everything at 34pt or larger after fit_width.",
+    "Raise the contrast of the hook's step readout: AMBER or WHITE, 44pt or larger, not DIM. It is the muted viewer's only cue that one-at-a-time is slow.",
+    "Add an explicit on-screen comment question before the loop (the winner lacks one), and keep the 'catch' label hidden until after the setup line so the twist isn't spoiled.",
+    "Drop or minimize the faked glow() halo layers, since the post-process already adds bloom. Verify that headlines and thin strokes stay legible after bloom, vignette and grain.",
+    "Loop seam: PNG-diff b09's last frame against b01's frame 0. Trim the duplicated frame at every cut. Keep the worker crawl and tick cadence continuous across the seam, with a 50ms audio crossfade. No opacity fade-in of the opening text that telegraphs the restart.",
+    "No dead frames over 0.5s. Every hold (twist setup duck, post-wall tension, title card) needs visible motion (shimmer, pulse, push-in). Keep the post-planet tail (twist + loop) to about 11.5s or less.",
+    "Safe zone and glyphs: all key text inside x[-4.0, 3.3], y[-4.3, 6.3], with fit_width on long numbers (1,689,600,000). Test-render \u221e \u00d7 \u2026 \u2192 \u00f7 in JetBrains Mono and Inter Display, and use the identical font call on both sides of every handoff."
+   ]
+  },
+  {
+   "scores": [
+    {
+     "storyboard": "A",
+     "score_0_to_10": 6.5,
+     "strengths": [
+      "Every scale has a visible mechanism. SIMD bars stack in lockstep and all land on the same frame. CPU cores flash out of sync while packets ride a shared-memory bus. Warp blocks flash as 32-cell units. 8 GPUs exchange through a spine. Hall messages and all-reduce pulse waves cross the data center. On the globe, work units go out from a hub and results come back.",
+      "'vaddps zmm0, zmm1, zmm2' is a real AVX-512 instruction that adds 16 FP32 values. 'One instruction. 16 numbers.' and 'That's SIMD. / Single Instruction, Multiple Data' match the safe phrasing and spell out the acronym.",
+      "The warp lockstep shows 8 warps (a whole block-row) flashing at once. That is closer to the truth (many warps issue concurrently) than a one-warp-at-a-time sweep.",
+      "The Amdahl section is mathematically exact: S(n) = 1/(0.05 + 0.95/n), with readouts 1.9x / 3.5x / 5.9x / 9.1x / 16.8x. The curve flattens onto a dashed 20x wall placed at the right y, '5% serial = max 20x faster' keeps the serial fraction on screen, and the persistent 'can't split' / 'can split' labels on the bar define the terms.",
+      "The counter's unit word is relabeled at every step (NUMBERS / CORES / GPUs / DEVICES), and each scale resets to '1' of the next unit. That teaches nesting and follows the pitfall guidance on mixed units.",
+      "Data center ('Servers pass messages over a network', 100,000+ GPUs training one AI) and the comment bait about Gustafson are both consistent with the verified facts."
+     ],
+     "weaknesses": [
+      "The 24-core CPU directly follows the 16-lane AVX-512 core, and the zoom-out says this core is 1 of 24. That is the listed pitfall: the 24-core Core Ultra 9 285K has no AVX-512, and its cores are mixed P and E cores, while the board draws 24 identical ones.",
+      "The counter rolls 24 CORES to 21,760 CORES under the same unit word, which equates CPU cores with CUDA cores (FP32 lanes). A professor would wince at this. 'GPU: thousands of tiny cores' adds to it.",
+      "The RTX 5090 token becomes 1 of 8 GPUs in an NVLink server, but the RTX 5090 has no NVLink. b05's 900 GB/s figure is the H100 one, so the hardware lineage is inconsistent, and the 900 GB/s caption doesn't say 'per GPU'.",
+      "'Every pixel at once.' while all 3,072 cells snap on one frame is the listed pitfall (the GPU works in waves of warps).",
+      "'1,000,000+ DEVICES' is not in the verified facts, which give ~430k GPUs and ~4.6M CPU cores. '2020: the first exaflop computer' is close to the 'first exascale supercomputer' pitfall; it should read 'first to hit 1 exaflop (volunteer network)'.",
+      "The twist screen is overloaded. Around t=6.4 the bar, two bar labels, a graph, 'MORE GPUs', 'THE WALL', the GPU label, the counter, the unit, the kicker and the caption are all visible at once, which is hard to parse muted at feed speed.",
+      "Hook card '768 workers. 1 step.' is up for 1.25 s, under the 1.35 s guideline. Text is split across three zones (top HUD, mid-stage labels, bottom caption)."
+     ]
+    },
+    {
+     "storyboard": "B",
+     "score_0_to_10": 8,
+     "strengths": [
+      "It is the only board with one consistent, honest metric. 'Calculations at once' counts FP32 lanes: 16 to 256 to 16,896 to 135,168 to 1,689,600,000. Each jump has a real multiplier (x16, x16, x66, x8, x12,500), which avoids both the CPU-core vs CUDA-core pitfall and the falling-counter pitfall.",
+      "The hardware lineage is internally consistent. 16 cores x 16 AVX-512 lanes matches a Ryzen 9 9950X. H100 SXM has 16,896 FP32 lanes. An HGX H100 has 8 GPUs at 900 GB/s 'per GPU' (labeled correctly), and the cluster is 100,000+ H100s. The 196 pods x 512 GPUs = 100,352 figure is honest arithmetic.",
+      "SIMD fires lane 0 alone first (counter stays 1), then all 16 lanes on one amber instruction (counter 16). That scalar-vs-vector contrast is the clearest SIMD lesson of the three.",
+      "The multi-core beat shows the real thread mechanism. Each core fetches from shared memory, computes, and writes a LIME result back, on its own out-of-phase period, and has its own program-counter dot. The visual makes 'own instruction stream + shared memory' plain.",
+      "GPU: one row is highlighted as 'WARP = 32 THREADS' and changes 3 times in the same frame (same instruction, 3 steps), then bands sweep the die. The visual shows waves of warps, not one clock.",
+      "The NVSwitch all-reduce (partials in, combined result out, every GPU holds the full answer) and the ToR/spine gradient sync ('Split the data / sync by messages') are textbook-accurate. The no-shared-memory point across nodes is shown, not just stated.",
+      "Amdahl's lanes double (1 to 2 to 4 to 8 to 16) while the amber serial block never changes and the finish line slides left. Readouts are exact (1.9 / 3.5 / 5.9 / 9.1 / 19.6 at 1,024), and the HUD reads 'max = 1 \u00f7 5%'. It ends with 'So why build 100,000 GPUs?' to set up Gustafson.",
+      "Headlines sit in fixed top slots and usually stay up the whole beat (about 4 s), which gives ample reading time. Colors are tied to the elements they describe."
+     ],
+     "weaknesses": [
+      "The planet beat switches the HUD from 'calculations at once' to 'calculations per second' and rolls to 10^18. To a muted viewer this says the planet is a billion times bigger than a 100,000-GPU data center, which is false: a 100k-H100 cluster beats Folding@home's 2020 peak. It also mixes a concurrency count with a FLOPS estimate that isn't HPL.",
+      "'Faster than any / supercomputer' is present tense. That is the listed pitfall, and the small 'FOLDING@HOME \u00b7 2020' chip only partly dates it.",
+      "The GPU card 'Every pixel / at once' is the listed pitfall and contradicts its own, more accurate, wave visual.",
+      "Several cards run short of the reading guideline. Hook card A is up 1.0 s and card B 1.05 s. In the twist, the defining labels '5% serial' / '95% parallel' are visible for only 0.6 s, 'But there's / a catch.' for 1.4 s, and 'Max 20x faster / even with \u221e GPUs' for 2.0 s against 7 words.",
+      "The ramp from 16 to 100,000 GPUs takes 1.0 s, too fast to read checkpoint values. 'SIMD' and 'SIMT' appear in kickers without being spelled out. 'x66' (GPU vs CPU) is a ratio, not containment, and the match-cut must not imply a GPU holds 66 CPUs."
+     ]
+    },
+    {
+     "storyboard": "C",
+     "score_0_to_10": 5.5,
+     "strengths": [
+      "The hook copy is crisp: 'One at a time.' then 'All at once.', with a 'STEP 042 / 320' serial readout flipping to '320 WORKERS \u00b7 1 STEP'. The lone worker stays AMBER inside the cyan wave, which plants the serial part honestly.",
+      "The Amdahl ladder is the most readable static explanation of the three. Four rows (1 / 10 / 100 / \u221e cores) show exact readouts (1x / 6.9x / 16.8x / 20x), the amber block is identical in every row, and 'Some steps can't be split.' and '5% serial \u2192 20\u00d7 max / Amdahl's law' make the point.",
+      "16 cores (AVX-512-consistent), H100 SXM at 16,896, 8 GPUs at 900 GB/s each, 100,000+ GPUs, and 'Folding@home, 2020: 1 exaFLOP' are all accurate and dated.",
+      "'16 cores \u00d7 16 lanes' explicitly explains where 256 comes from. 'T1\u2026T16' labels plus progress bars at different speeds make independent threads concrete. 'Compute. Sync. Repeat.' summarizes the data-center loop well."
+     ],
+     "weaknesses": [
+      "b04 'Shrink the core. Copy it. A lot.' shrinks the token, which at that point stands for the whole 16-core CPU, into one pixel-thread and copies it 3,072 times. That literally teaches that a GPU core is a tiny CPU (the CUDA-core pitfall) and breaks the nesting logic. It is the biggest professor-wince across all three boards.",
+      "The warp sweep issues 96 warps strictly one after another under a single jumping outline, which implies serial warp issue (an H100 issues hundreds of warps per clock). 'Every pixel at once.' with all 3,072 pixels flashing on one frame is the listed pitfall.",
+      "The planet counter gives no real figure. It shows randomized fake-precision digits labeled 'AND COUNTING', then '\u221e', a false 'infinite parallelism' claim. The muted viewer learns nothing quantitative about volunteer computing.",
+      "Many cards are under the reading guideline: 'Shrink the core.' 1.05 s, 'Each runs its own thread.' 1.55 s, 'Warps: 32 threads in lockstep' 1.5 s, 'Volunteer PCs, over the internet' 1.5 s, and the hook lines about 1.0 s.",
+      "The 'IN PARALLEL' label has no noun (in parallel what?), so the unit stays ambiguous until b03's sub-line. Opening the twist with 'So\u2026 infinite speed?' leans on the false \u221e the board itself set up."
+     ]
+    }
+   ],
+   "winner": "B",
+   "grafts": [
+    "From C: the static Amdahl ladder as the twist's end state or checkpoints. Show rows 1 / 10 / 100 / \u221e GPUs with exact readouts 1x / 6.9x / 16.8x / 20x and the same amber block in every row. This fixes B's unreadable 1.0 s ramp from 16 to 100,000.",
+    "From C: in the hook, keep the lone worker AMBER inside the parallel wave so the serial part is planted at 1.0 s. Add the 'STEP n / 432' serial readout so viewers feel the count.",
+    "From C: add 'T1\u2026T16' thread labels inside the b03 cores. Add an explicit sub-line '16 cores \u00d7 16 lanes = 256' so the x16 multiplier is explained, not just flashed.",
+    "From C: the copy 'Compute. Sync. Repeat.' for the data-center sync cycle (it fits B's 15-character line limit if split into 2 lines).",
+    "From A: the real instruction 'vaddps zmm0, zmm1, zmm2' as a small mono label under B's ADD chip (an accurate easter egg for CS students). Pair it with the spelled-out label 'Single Instruction, Multiple Data' after the SIMD fire, since B's kicker uses 'SIMD' without explaining it.",
+    "From A: keep the 'can't split' (AMBER) / 'can split' (CYAN) labels on B's twist bar for the whole chart, instead of B's 0.6 s '5% serial' / '95% parallel' flash.",
+    "From A: the GPU warp wave where a whole block-row of several warps flashes together. In B's all-warps sweep, light several rows (warps) at the same instant rather than staggering every row by 12.5 ms, so many concurrent warps read clearly.",
+    "From A: the open-loop line 'It scales. Until it doesn't.' in the hook, paid off by 'But there's a catch.'. Add an explicit 'Tell me in the comments.' under 'So why build 100,000 GPUs?' to bait the Gustafson replies.",
+    "From A: at planet scale, relabel the HUD to an honest count unit instead of switching to FLOPS. Use 'volunteer GPUs' or 'volunteer devices' with a verified figure (~430,000 GPUs + ~4.6M CPU cores in 2020), and put the exaflop as a separate dated chip.",
+    "From A: the 'SCALE n/6' progress kicker format, so viewers can see how far through the scales they are."
+   ],
+   "must_fix": [
+    "Never pair 16-lane AVX-512 with a 24-core Intel CPU (the 285K has no AVX-512 and mixes P and E cores). Use 16 identical cores (Ryzen 9 9950X class) so 16 x 16 = 256 is consistent.",
+    "Never equate CUDA cores with CPU cores. Do not show 24 CORES rolling to 21,760 CORES under one unit word, and do not shrink a CPU or CPU core into one GPU pixel-thread ('Shrink the core. Copy it.'). Either count FP32 lanes consistently ('calculations at once') or label them 'CUDA cores (math lanes)'. The CPU-to-GPU handoff should read as a replacement or ratio, not containment.",
+    "Replace 'Every pixel at once' with 'Every pixel, in parallel' or 'Millions of pixels, in parallel'. Visually, show many warps running at the same time in waves: not all 3,072 pixels on one frame, and not one warp at a time.",
+    "Keep the GPU lineage consistent across the GPU, server and cluster beats. If the next scale is an 8-GPU NVLink server, the GPU must be a data-center part: H100 SXM, 16,896 FP32 lanes, 900 GB/s per GPU. The RTX 5090 has no NVLink. Every NVLink figure must say 'per GPU' (bidirectional total).",
+    "Planet scale: no present-tense 'faster than any supercomputer'. Date it ('In 2020, volunteers beat every supercomputer' / '2020: home PCs hit 1 exaflop first'). Never call Folding@home the first exascale supercomputer.",
+    "Do not continue the climbing counter from a concurrency count into FLOPS (1.69 billion 'at once' to 10^18 'per second'). It falsely implies the planet is a billion times bigger than a 100,000-GPU cluster. Also no randomized fake digits and no '\u221e' as a planet figure. Use a verified count with an explicit unit relabel, or freeze the HUD and show the dated exaflop as its own chip.",
+    "Do not put '1,000,000+ devices' on screen unless it is sourced. The verified 2020 figures are ~400,000-430,000 GPUs and ~4.6M CPU cores. 'Hundreds of thousands of home PCs' is safe.",
+    "Every text card must meet 0.25 s per word + 0.6 s. In B that means: hook cards (1.0 s / 1.05 s, extend the serial phase to about 1.3 s), the twist's serial/parallel labels (0.6 s), 'But there's a catch.' (1.4 s, needs 1.6 s), and 'Max 20x faster / even with \u221e GPUs' (2.0 s for 7 words, needs about 2.35 s).",
+    "Whenever the 20x cap is shown, show the serial fraction with it ('5% serial'). At 100,000 GPUs the speedup is 19.996x: display '\u224820x' or '\u2192 20x' so the viewer reads 20x as the limit, not a value that is reached.",
+    "The hook's '1 step' is the ideal case with no overhead. Keep it, but make sure the twist explicitly pays it off, so the hook never reads as a real-world claim.",
+    "Keep 'warp = 32' in an NVIDIA/H100 context (AMD CDNA uses 64-thread wavefronts). Keep cross-node GPUs shown as message-passing, never shared memory. Do not name the No. 1 supercomputer or present Colossus 1M+ GPU claims as fact."
+   ]
+  },
+  {
+   "scores": [
+    {
+     "storyboard": "C",
+     "score_0_to_10": 8.2,
+     "strengths": [
+      "Has the most consistent premium look. One shared layout (AC, KICKER/HEAD/SUB/COUNTER positions), one transition grammar (token flash \u2192 unfold \u2192 light wave \u2192 converge \u2192 settle) and the token changes colour each scale (AMBER\u2192LIME\u2192CYAN\u2192INK\u2192dot\u2192CYAN\u2192AMBER), so the progression reads without words.",
+      "Its typography holds back the most. There is one headline line at the top and one number at the bottom, and every Text goes through fit_width(6.9). Measured: headlines at 96 HEAVY land at about 49-76 effective (e.g. 'One at a time.' is 8.67 units wide, fitted to about 76), the largest readable type of the three. Kickers are 4.5-5.6 units wide, so none overflows.",
+      "Its copy sounds like a keynote and survives being shared muted: 'Shrink the core. Copy it. A lot.', 'Compute. Sync. Repeat.', 'So\u2026 infinite speed?' \u2192 'No.', and the text loop 'The bottleneck?' \u2192 'One at a time.'",
+      "The geometry checks out exactly. The serpentine idx 42=(0.45,3.10) and idx 62=(-2.43,2.78), b03 core slot (-0.97,0.93), b04 pixel (32,24)=(-0.30,0.85), b09 cell 0=(-2.75,3.74), and the \u00d74.8 zoom that maps 0.25\u21921.2 all match. The loop uses integer frames: b09 reaches idx 42 on frame 209, and b01 frame 0 is that worker's second frame on 42, so the 3-frames-per-step crawl continues through the seam.",
+      "It builds on the repo foundation that already exists (style.token/glow/glow_dot/kicker/chip/fit_width/assert_safe, DustField, BeatScene frame-exact timing, build.py handoff). Independent programmers start from shared code.",
+      "It has one 'everything lights up' light wave per scale, synced to a hit, which is exactly the satisfying beat the brief asks for. The two dense fields (3,072 and 3,136 squares) stay under 5k mobjects with numpy-driven colours.",
+      "The hook pays off at 1.0 s with a radial wave, shock ring and screen flash. The lone amber worker stays amber among the cyan, which plants the twist."
+     ],
+     "weaknesses": [
+      "Vertical spacing collides. 'No.' at HEAVY 130 is 1.33 tall at y=5.25 and reaches down to 4.585, overlapping SUB at 4.35 (top about 4.65). '20\u00d7' at mono 130 is 1.35 tall at y=-3.2 and reaches -3.875, overlapping the 'MAX SPEEDUP' label (top -3.825). HEAD 96 (up to 1.26 tall) and SUB 46 sit only 0.9 apart, which leaves about 0 gap when the headline has descenders.",
+      "Two sub-lines fall below the 34 minimum after fit: 'Volunteer PCs, over the internet' is 9.70 wide at 46 (about 32.7 effective) and 'Folding@home, 2020: 1 exaFLOP' is 9.96 wide (about 31.9). The 25-character odometer at mono 96 is 19.8 wide (about 33 effective).",
+      "It wraps every token in glow(), which stacks 5 stroke layers on top of the post-process bloom. That risks a double, mushy halo, and Transforming a glow VGroup into a box or core morphs the halo layers awkwardly.",
+      "'Every pixel at once.' is a listed pitfall. The '\u221e IN PARALLEL / AND COUNTING' odometer is hyperbole: it works as setup for 'No.', but the random digits must never settle.",
+      "Its comment bait is weak. The film ends on a question it answers itself, and only the caption asks viewers to comment.",
+      "b04 says 'Shrink the core' while the incoming token stands for the whole CPU. The b06\u2192b07 handoff is a glow_dot, not a token, which breaks the motif once (deliberately)."
+     ]
+    },
+    {
+     "storyboard": "A",
+     "score_0_to_10": 7.6,
+     "strengths": [
+      "Its motion design is the richest and most varied: a 0.15 s freeze with silence, then the 768-tile slam at 1.45 s; the b03\u2192b04 SHATTER, where each CPU core bursts into its own neighbourhood of GPU cells; a ray-traced 64\u00d748 sphere whose light sweeps every frame; RGB-split glitch-out to a 0.25 s black beat; and the Amdahl curve flattening onto a dashed 20\u00d7 WALL while 'GPUs' keeps spinning to \u221e and the ticks fall silent.",
+      "Its maths is exceptionally precise and checks out. Stage-A servers at pitch 0.684 scaled by 0.19 give pitch 0.13 and land exactly on hall cells j=20..28, i=18..25. The Amdahl graph maps S=20 exactly to y=0.6 (the wall). The crawl clock col=9+floor(14\u03c4+0.5) gives col 0 at t=3.3214 and col 9 on both b09's last frame and b01 frame 0, with a 1/14 s tick cadence across the seam.",
+      "It has the best set of conventions for a team: POP/SLAM/GLITCH-SNAP/FLASH/SHOCKWAVE/IMPACT SHAKE, generic ZOOM-OUT REVEAL and COLLAPSE TO TOKEN, and a COUNTER_FS computed once (measured: '1,000,000+' is 6.25 wide at fs 76.8, so it fits).",
+      "Its easter eggs reward rewatches and comments: \u03c0/e digits as the SIMD bars and a real 'vaddps zmm0, zmm1, zmm2' instruction.",
+      "It has the strongest comment bait ('So why build 100,000-GPU clusters?') and an open loop ('Until it doesn't.') that pays off at 36 s.",
+      "The audio cue design is the most thorough: silences before drops, lockstep vs organic ticks, and the pad matched across the loop."
+     ],
+     "weaknesses": [
+      "Text runs outside the safe zone with no width guard. On FRAME 0, the kicker 'HOW PARALLEL COMPUTING WORKS' at Inter Display Bold 34 is 8.32 wide, so x[-4.51,3.81]. 'SCALE 1/6 \u00b7 INSIDE ONE CPU CORE' is 7.62 wide, 'SCALE 6/6 \u00b7 THE WHOLE PLANET' 7.34, the twist card 'But there's' at 110 is 7.49, and 'Single Instruction, Multiple Data' at 34 is 7.32.",
+      "The caption system isn't big or confident. Bottom captions at nominal 64 are long single lines that scale_to_fit(7.1) crushes: 'One instruction. 16 numbers.' is 11.6 wide (about 39 effective), '2020: the first exaflop computer.' is 13.4 wide (about 34), and '8 GPUs, wired together.' is about 47. With a 3-line top HUD (kicker, counter, unit) plus a bottom caption, 4-5 text blocks are on screen at once.",
+      "Its solid-fill tokens (fill opacity 1 + white stroke 4) bloom into flat app-icon blocks. They look less refined than an outline/glass token, and they depart from the repo's style.token defaults.",
+      "The counter resets to '1' at every collapse, so it repeatedly drops (768\u21921, 16\u21921, 21,760\u21921). The relabelling solves the unit pitfall, but the 'climb' is chopped up.",
+      "Its facts carry the most pitfalls: 16 AVX-512 lanes paired with 24 Intel cores (the 285K has no AVX-512); 21,760 labelled 'CORES' instead of CUDA cores/lanes; '1,000,000+ DEVICES', which the verified facts don't support; 'the first exaflop computer'; 'Every pixel at once.'; and an RTX 5090 mixed with H100 NVLink.",
+      "The b03\u2192b04 handoff is a full static chip layout, not a token. It is fully specified, but it needs a shared builder to avoid drift (none is named)."
+     ]
+    },
+    {
+     "storyboard": "B",
+     "score_0_to_10": 6.4,
+     "strengths": [
+      "It has the most robust handoffs: at 7 of the 8 internal boundaries the frame is just the identical H token (1.6, CYAN, fill 0.18) plus the HUD, and every pair is checked with the existing build.py handoff.",
+      "Its EXPAND is a true Powers-of-Ten camera pull: the layout starts scaled by k0 = 1.6/unit_size about the slot unit, so at e=0 that unit is exactly H. COLLAPSE is equally rigorous. It is the most mathematically coherent zoom of the three.",
+      "It shows each mechanism most clearly: async fetch/compute/write packets per core against a shared memory, warp rows in lockstep, a ToR/spine fat-tree all-reduce that then zooms out to 196 pods \u00d7 512 = 100,352 GPUs, 'work unit'/'result' labels riding the first packet, and Amdahl lanes doubling 1\u21922\u21924\u21928\u219216 while the serial block never shrinks.",
+      "Its hardware is internally consistent (H100 16,896 / 8-GPU HGX / 900 GB/s / 16-core AVX-512). The counter keeps one unit ('calculations at once') and rises monotonically through 1,689,600,000.",
+      "It is the lightest to render (at most about 1,024 recoloured squares)."
+     ],
+     "weaknesses": [
+      "Its typography system has real collisions. H1 and H2 at HEAVY 84 sit only 0.80 apart, but unshrunk lines are 0.88-1.09 tall, so short lines overlap. Long lines get fitted independently (e.g. '1 shared memory' is 9.58 wide, about 60 effective), so the two lines of one card end up different sizes. The HUD number (1.05 tall with commas) at -3.30 overlaps the label at -3.95.",
+      "Several items break the minimum-size or safe-zone limits. '1,000,000,000,000,000,000+' at mono 84 is 18.0 wide, so fit gives about 32 effective (the board claims 44). The kicker 'HOW PARALLEL COMPUTING WORKS' at tracking 150 is 8.81 wide (about 26.6 effective), and 'SCALE 6 \u00b7 PLANET \u00b7 INTERNET' is about 32. The chip 'NVLINK \u00b7 900 GB/s per GPU' is 7.46 wide, outside both the safe zone and the 6.6 chassis.",
+      "b02 is a busy spreadsheet of 16 rows \u00d7 4 mono-34 numbers. Each digit is 0.34 tall inside a capsule only 0.30 tall at 0.345 pitch, so it reads as a diagram rather than motion design.",
+      "Its globe has only 150 dots, the weakest spectacle at the planet scale. b09 is a 2.4 s landing rather than continuous motion through the seam.",
+      "It types 'x' instead of '\u00d7' ('x16', '20x'), although the fonts include '\u00d7'. 'Faster than any supercomputer' is in the present tense, and 'Every pixel at once' is a listed pitfall. Switching the counter to per-second at the planet compares unlike units."
+     ]
+    }
+   ],
+   "winner": "C",
+   "grafts": [
+    "From A, hook: add a 0.12-0.15 s freeze-frame with total silence (worker stops, headline jitters \u00b10.03) just before C's 1.00 s parallel wave, plus a SLAM on 'All at once.' (scale 1.35\u21921.0 ease_out_back). It makes the scroll-stop payoff hit harder.",
+    "From A, twist: inside C's b08, after the '\u221e CORES' row, add a live readout that keeps climbing ('CORES: 1,000 \u2192 100,000 \u2192 \u221e') while the speedup readout ticks 16.8\u00d7 \u2192 19.x \u2192 stalls and turns AMBER. Let the ticks fall silent as the speedup stalls, and add a dashed MAGENTA 20\u00d7 wall line that the readout 'hits'.",
+    "From A: replace C's random 1-4 SIMD digits with the digits of \u03c0 in the A cells and the digits of e in the B cells. Show the real instruction as an easter egg, either a 'VADDPS' chip or a small mono 34 label 'vaddps zmm0, zmm1, zmm2' (6.47 wide, fits inside the 6.7 core box without chip padding).",
+    "From A: before b08's 'So\u2026 infinite speed?', end the planet beat with a 0.2 s RGB-split glitch and a 0.25 s silent beat (pattern interrupt), instead of only glitching the counter.",
+    "From A or B, comment bait: after 'The bottleneck?' / the loop answer, add a short card or pinned caption line, 'So why build 100,000-GPU clusters?', and plan the pinned reply 'Hint: Gustafson's law (1988)'.",
+    "From A: make the crawl a pure function of film time/frame index, shared by b01 and b09, and keep the tick audio cadence running through the seam. Compute counter font size once from a fixed digit height so the number never jumps between beats, and cache Text objects per string.",
+    "From A, b06: use exact scale-landing maths so the incoming node token lands on one specific field square at the end of the zoom-out (A's 0.684 \u00d7 0.19 = 0.13 pitch trick), making the Powers-of-Ten zoom literal.",
+    "From B: use EXPAND with k0 = token_size/unit_size about the slot unit, so the entry frame of every beat is exactly the token and the zoom-out is geometrically continuous. Use the same rule for COLLAPSE.",
+    "From B: flash a LIME multiplier chip ('\u00d716', '\u00d766', '\u00d78', '\u00d712,500') in the counter-label slot for 1 s on every counter jump, so muted viewers see the counter is multiplication.",
+    "From B, planet beat: labels 'work unit' (MAGENTA) and 'result' (LIME) ride the first outbound and return packets, so the volunteer-computing mechanism reads at a glance.",
+    "From B: 'no glow() wrapper, let the post-process bloom do it'. Keep C's tokens as plain style.token so Transforms between token and system outline stay clean."
+   ],
+   "must_fix": [
+    "Replace 'Every pixel at once.' (all three boards) with 'Every pixel, in parallel.' or 'Millions of pixels, in parallel'. GPUs shade in waves of warps, not all in one instant.",
+    "Lay out text stacks from measured bounding boxes (next_to with buff \u2265 0.2), not fixed centres. Measured collisions: 'No.' at HEAVY 130 (1.33 tall at y 5.25) overlaps SUB at 4.35. '20\u00d7' at mono 130 (1.35 tall at -3.2) overlaps the counter label at -4.0. HEAD 96 / SUB 46 sit only 0.9 apart. B's H1/H2 at 84 sit 0.80 apart. B's HUD number at -3.30 overlaps its label at -3.95.",
+    "Every Text, MarkupText and chip must pass fit_width(6.9) and assert_safe, kickers and cards included. Measured overflows: A's frame-0 kicker 'HOW PARALLEL COMPUTING WORKS' is 8.32 wide; 'SCALE 1/6 \u00b7 INSIDE ONE CPU CORE' 7.62; 'SCALE 6/6 \u00b7 THE WHOLE PLANET' 7.34; 'But there's' at 110 is 7.49; B's chip 'NVLINK \u00b7 900 GB/s per GPU' is 7.46.",
+    "No line may drop below effective font size 34 after fitting. Shorten instead of shrinking: 'Volunteer PCs, over the internet' (about 32.7) \u2192 'Volunteer PCs worldwide'. 'Folding@home, 2020: 1 exaFLOP' (about 31.9) \u2192 '2020: home PCs hit 1 exaflop'. Long single-line captions like '2020: the first exaflop computer.' (about 34) and 18-26-character HUD numbers (about 32-33) also need cutting. Fit both lines of a multi-line card with ONE common scale so the lines match in size.",
+    "Hardware consistency: show 16 SIMD lanes alongside a 16-core AVX-512 CPU (Ryzen 9 9950X), never the 24-core Core Ultra 9 285K. Label GPU counts as 'CUDA CORES' or lanes, not plain 'CORES'. Keep one GPU generation per film (H100: 16,896 / 8-GPU HGX / 900 GB/s), or switch every value to Blackwell together.",
+    "Folding@home copy must be past tense and dated: no present-tense 'faster than any supercomputer', and no 'first exaflop computer' or 'first exascale supercomputer'. Use '2020: home PCs hit 1 exaflop first'. Do not show '1,000,000+ devices' (unverified); use '400,000+ GPUs' or 'hundreds of thousands of home PCs'.",
+    "Use the real '\u00d7' glyph (installed in JetBrains Mono and Inter Display), never 'x'. Build '\u221e', '\u00d7', '\u2192', '\u2026' and '\u00b7' with the same font call on both sides of any cut.",
+    "Avoid double glow: either drop the glow() halo layers (the post-process already blooms) or Transform only the core token while crossfading the halo. Never morph a 5-layer halo VGroup into a box.",
+    "Decide once how concat handles the duplicated exit/entry frame at each cut (keep it, or drop frame 0 of beats 2-9) and apply it to the loop seam too. C's crawl seam assumes idx 42 shows for exactly 3 frames across the wrap.",
+    "Every object that crosses a cut (token, counter, label, hook grid) comes from ONE shared builder module imported by both beats. Verify each pair with build.py handoff (the difference image must be black apart from dust) before the final render.",
+    "Heavy shots (about 3,072 and 3,136 squares recoloured per frame) must use one vectorised numpy updater with no always_redraw. Rebuild the counter Text only when its string changes, and check preview fps before the 60 fps final render."
+   ]
+  }
+ ]
+}
