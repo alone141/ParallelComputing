@@ -1,11 +1,15 @@
-"""b03 - SCALE 2/6 - ONE CPU: 16 cores, 16 separate threads, one shared memory.
+"""b03 - SCALE 2/6 - ONE CPU: 16 cores, each running its own thread, one shared memory.
 
-The core token (E02) is core T6 of a 16-core CPU: the camera pulls back (EXPAND). Each
-core runs its own thread on its own clock: fetch (MAGENTA packet from shared memory),
-compute (its 16 lanes light), write back (LIME packet + flash on the memory bar), idle;
-visibly out of phase, irregular ticks. At 2.20 the power-on light wave lights all 256
-lanes (HUD 16 -> 256, x16) and traffic doubles. At 3.80 traffic drains, the CPU package
-outline draws on and the chip collapses into handoff_token('cpu') (E03).
+The core token (E02) is core T6 of a 16-core CPU: the camera pulls back (EXPAND, with the
+cut's INK charge). Each core runs its own thread on its own clock, visibly out of phase
+(the opposite of b02's lockstep): FETCH (a MAGENTA packet with a comet trail leaves the
+shared-memory bar, which flashes where it leaves), COMPUTE (INK outline kick + pop, the
+core's progress fill rises at the core's own rate while its 16 lanes light), DONE (the
+full core flashes LIME), WRITE BACK (a LIME packet returns; the bar flashes on arrival).
+At 2.20 the power-on light wave: every core flashes INK -> CYAN, all 256 lanes light, a
+CYAN shock ring runs out from the grid centre and the cores pop as it passes, the memory
+bar flashes, HUD 16 -> 256 (x16); traffic doubles. At 3.80 traffic drains, the CPU package
+outline draws on and the chip collapses (cut_times) into handoff_token('cpu') (E03).
 
 Everything that moves is a pure function of self.now (one driver updater).
 """
@@ -15,111 +19,186 @@ from motif import *
 import math
 
 # --------------------------------------------------------------------------
-# World layout (storyboard b03 visuals)
+# World layout: a 5.6-wide grid of 1.10 cores (the storyboard's 0.95 / 1.20 pitch used
+# half the frame width). Vertical budget: grid top 3.31 (under the text zone), memory bar
+# bottom -2.07, i.e. 0.45 clear of the HUD number's top (-2.52).
 # --------------------------------------------------------------------------
-CORE_XS = (-2.15, -0.95, 0.25, 1.45)
-CORE_YS = (2.75, 1.55, 0.35, -0.85)
-CORE_U = 0.95
+CORE_XS = (-2.60, -1.10, 0.40, 1.90)
+CORE_YS = (2.76, 1.52, 0.28, -0.96)
+CORE_U = 1.10
 N_CORES = 16
 CORE_C = np.array([[CORE_XS[i % 4], CORE_YS[i // 4], 0.0] for i in range(N_CORES)])
 COL_X = np.array([CORE_XS[i % 4] for i in range(N_CORES)])
-HERO = 5                                    # T6 at (-0.95, 1.55)
-MEM_C = np.array([X_C, -1.95, 0.0])
-MEM_TOP = -1.70
-PKT = 0.12
+HERO = 5                                    # T6 at (-1.10, 1.52)
+GRID_C = np.array([X_C, (CORE_YS[0] + CORE_YS[-1]) / 2, 0.0])
+CORE_BOTTOM = CORE_YS[-1] - CORE_U / 2      # -1.51
+MEM_W, MEM_H = 6.6, 0.44
+MEM_C = np.array([X_C, -1.85, 0.0])
+MEM_TOP = MEM_C[1] + MEM_H / 2              # -1.63
+PKT = 0.22                                  # packet (rounded square)
+PKT_R = 0.05
+TRAIL = 0.40                                # comet trail length
+# Traffic rides BUS LANES in the gutters between the core columns (on black, not over the
+# cores): a fetch climbs the gutter left of its core and turns in, a result leaves to the right
+# and drops down that gutter. Every gutter carries MAGENTA up and LIME down.
+GUT = 0.75                                  # gutter centre offset from a column centre
+BUS_X = tuple(sorted({round(x + d, 6) for x in CORE_XS for d in (-GUT, GUT)}))   # 5 lanes
+PORT_IN = 0.22                              # a packet ends / starts this far inside its core
+LAB_DY = 0.235                              # T label centre above the core centre
+FILL_IN = 0.07                              # progress fill inset from the core edge
+FILL_W = CORE_U - 2 * FILL_IN
+FILL_R = TOKEN_CORNER * CORE_U - FILL_IN
 
 # --------------------------------------------------------------------------
 # Timeline (beat-local seconds)
 # --------------------------------------------------------------------------
-T_EXPAND = 0.70
-T_THREADS = 0.75
+T_EXPAND = EXPAND_TIME                      # 0.50 pull-back
+T_THREADS = T_EXPAND
 T_POWER = 2.20
-T_DRAIN = 3.80                              # no new fetches; in-flight work fades by 3.92
-T_DRAINED = 235 / 60                        # 3.917: on the 60-fps grid (the collapse capture frame)
-T_PKG = 3.80                                # package outline Create 3.80 -> 3.92
-T_COLLAPSE = T_DRAINED
-T_SETTLE = 4.31                             # collapse 3.92 -> 4.31, settle 4.31 -> 4.45
-T_EXIT = 4.45                               # canonical E03: 3 static 60-fps frames
+T_DRAIN = 3.80                              # no new fetches; in-flight work fades by T_COL
+T_PKG = 3.80                                # package outline Create 3.80 -> T_COL
+T_COL, T_SET, T_EXIT = cut_times(4.5)       # 3.933 / 4.333 / 4.45
+T_TEXT_OUT = T_EXIT - 0.20                  # kicker + headline leave during the settle
 
-# per-core thread clocks (storyboard: P = 0.85 + 0.35u, o = 0.7v, u, v from default_rng(3))
+# thread cycle, as fractions of a period: fetch | compute | write back | idle
+S_FETCH, S_DONE, S_WB = 0.30, 0.68, 0.96
+DONE_FLASH = 0.16                           # LIME completion flash (s)
+WRITE_FLASH = 0.25                          # arrival flash on the bar (s)
+LEAVE_FLASH = 0.18                          # departure flash on the bar (s)
+
+# per-core thread clocks (storyboard: P = 0.85 + 0.35u from default_rng(3); offsets 0.5v so
+# every core is busy within half a second of the pull-back)
 _rng = np.random.default_rng(3)
 U = _rng.random(N_CORES)
 V = _rng.random(N_CORES)
 PER = 0.85 + 0.35 * U
-OFF = 0.70 * V
-C22 = (T_POWER - T_THREADS - OFF) / PER     # cycles completed at the power-on (rate doubles after)
+OFF = 0.50 * V
+C_POW = (T_POWER - T_THREADS - OFF) / PER   # cycles completed at the power-on (rate doubles after)
 MAX_CYC = 24
-_drng = np.random.default_rng(31)
-D_FETCH = _drng.uniform(-0.35, 0.35, (N_CORES, MAX_CYC))   # bar point a fetch leaves from
-D_WRITE = _drng.uniform(-0.35, 0.35, (N_CORES, MAX_CYC))   # bar point a result lands on
 
 GLYPH_IDLE = 0.35
 GLYPH_ON = 0.90
-FILL_REST = 0.15
-FILL_HOT = 0.45
+FILL_REST, FILL_REST_ON = 0.15, 0.25        # unit fill before / after the power-on
+PROG_A = 0.55                               # progress fill opacity (CYAN)
+MEM_FILL = 0.10
+
+# power-on light wave: a CYAN ring from the grid centre; each core pops as it passes
+RING = dict(r0=0.5, r1=4.5, w0=10.0, op0=0.9, dur=0.45)
+
+
+def ring_time(d: float) -> float:
+    """Seconds after the power-on at which the ring's radius reaches d (ease_out_cubic)."""
+    p = clip01((d - RING["r0"]) / (RING["r1"] - RING["r0"]))
+    return RING["dur"] * (1.0 - (1.0 - p) ** (1.0 / 3.0))
+
+
+POP_DELAY = np.array([ring_time(float(np.hypot(*(CORE_C[i, :2] - GRID_C[:2])))) for i in range(N_CORES)])
 
 
 def cycles_at(t: float) -> np.ndarray:
     """Cumulative thread cycles per core at time t (rate doubles after the power-on);
     negative = not started yet."""
-    tau = t - T_THREADS - OFF
     if t < T_POWER:
-        return tau / PER
-    return C22 + 2.0 * (t - T_POWER) / PER
+        return (t - T_THREADS - OFF) / PER
+    return C_POW + 2.0 * (t - T_POWER) / PER
 
 
 def time_of(i: int, c: float) -> float:
     """Inverse of cycles_at for core i."""
-    if c <= C22[i]:
+    if c <= C_POW[i]:
         return T_THREADS + OFF[i] + c * PER[i]
-    return T_POWER + (c - C22[i]) * PER[i] / 2.0
+    return T_POWER + (c - C_POW[i]) * PER[i] / 2.0
+
+
+def alive(i: int, n: int) -> bool:
+    """Cycle n of core i exists (started before the drain)."""
+    return 0 <= n < MAX_CYC and time_of(i, n) < T_DRAIN - EPS
+
+
+def last_event(i: int, ci: float, s_ev: float):
+    """(cycle, time) of the latest phase-s_ev event of core i at or before cycle count ci."""
+    n = int(math.floor(ci - s_ev + 1e-9))
+    if not alive(i, n):
+        return None
+    return n, time_of(i, n + s_ev)
 
 
 def compute_starts() -> list[tuple[float, int]]:
-    """(time, core) of every COMPUTE start before the drain, sorted."""
+    """(time, core) of every visible COMPUTE start (before the drain), sorted."""
     out = []
     for i in range(N_CORES):
         for n in range(MAX_CYC):
-            if time_of(i, n) >= T_DRAIN - EPS:
+            if not alive(i, n):
                 break
-            t = time_of(i, n + 0.30)
-            if t < T_DRAIN - EPS:
+            t = time_of(i, n + S_FETCH)
+            if t < T_DRAIN - EPS:                 # (later starts are drawn already drained)
                 out.append((t, i))
     return sorted(out)
 
 
 def thread_label(i: int) -> MarkupText:
-    """'T{i+1}' in JetBrains Mono BOLD 34, INK op 0.9; tracking -700 (1/1024 pt) so 'T16'
-    is 0.74 wide instead of 0.80 and keeps clear of the 0.95 core's walls."""
-    m = MarkupText(f'<span letter_spacing="-700">T{i + 1}</span>', font=FONT_MONO, font_size=34,
+    """'T{i+1}' in JetBrains Mono BOLD 38, INK op 0.9; tracking -700 (1/1024 pt) so 'T16'
+    stays clear of the 1.10 core's rounded corners."""
+    m = MarkupText(f'<span letter_spacing="-700">T{i + 1}</span>', font=FONT_MONO, font_size=38,
                    color=INK, weight=BOLD)
     return m.set_opacity(0.9)
 
 
-def square_pts(side: float) -> np.ndarray:
-    return Square(side_length=side).points.copy()
+def fill_pts(cx: float, y0: float, w: float, h: float, r: float, top: float) -> np.ndarray:
+    """Progress fill: the bottom part (height h) of a w x top rounded rect whose bottom edge is
+    y0; the top corners round in only as the level reaches the rect's own top corners."""
+    hw = w / 2
+    rb = min(r, hw, h / 2 if h < 2 * r else r)
+    rt = r * clip01((h - (top - r)) / r) if h > top - r else 0.0
+    rt = min(rt, max(h - rb, 0.0))
+    k_b, k_t = 0.5522847498307936 * rb, 0.5522847498307936 * rt
+    y1 = y0 + h
+    x0, x1 = cx - hw, cx + hw
+    P = [
+        (x1, y1 - rt), (x1, y1 - rt + k_t), (x1 - rt + k_t, y1), (x1 - rt, y1),        # arc TR
+        (x1 - rt, y1), (x1 - rt, y1), (x0 + rt, y1), (x0 + rt, y1),                    # top
+        (x0 + rt, y1), (x0 + rt - k_t, y1), (x0, y1 - rt + k_t), (x0, y1 - rt),        # arc TL
+        (x0, y1 - rt), (x0, y1 - rt), (x0, y0 + rb), (x0, y0 + rb),                    # left
+        (x0, y0 + rb), (x0, y0 + rb - k_b), (x0 + rb - k_b, y0), (x0 + rb, y0),        # arc BL
+        (x0 + rb, y0), (x0 + rb, y0), (x1 - rb, y0), (x1 - rb, y0),                    # bottom
+        (x1 - rb, y0), (x1 - rb + k_b, y0), (x1, y0 + rb - k_b), (x1, y0 + rb),        # arc BR
+        (x1, y0 + rb), (x1, y0 + rb), (x1, y1 - rt), (x1, y1 - rt),                    # right
+    ]
+    out = np.zeros((32, 3))
+    out[:, :2] = P
+    return out
 
 
-def ellipse_pts() -> np.ndarray:
-    return Ellipse(width=0.5, height=0.2).points.copy()
+class Route:
+    """A packet's path: bar port -> up the gutter -> into the core (fetch), or the reverse
+    (write back), parametrised by arc length u in [0, L]."""
+
+    def __init__(self, pts):
+        self.p = np.array([[x, y, 0.0] for x, y in pts], float)
+        seglen = np.hypot(*np.diff(self.p[:, :2], axis=0).T)
+        self.cum = np.concatenate([[0.0], np.cumsum(seglen)])
+        self.L = float(self.cum[-1])
+
+    def at(self, u: float) -> np.ndarray:
+        u = min(max(u, 0.0), self.L)
+        j = min(int(np.searchsorted(self.cum, u, side="right")) - 1, len(self.p) - 2)
+        t = (u - self.cum[j]) / max(self.cum[j + 1] - self.cum[j], 1e-9)
+        return lerp(self.p[j], self.p[j + 1], t)
+
+    def poly(self, u0: float, u1: float) -> np.ndarray:
+        """Cubic points of the stretch [u0, u1] (keeps the corner)."""
+        inner = [self.p[j] for j in range(1, len(self.p) - 1) if u0 < self.cum[j] < u1]
+        return polyline([self.at(u0), *inner, self.at(u1)])
 
 
-def hold_floor(scene, t: float) -> None:
-    """hold until the last frame at or before t (60 fps: exactly t; 30-fps previews round
-    down, so the static exit hold is never a single too-short wait)."""
-    n = int(math.floor(t * config.frame_rate + 1e-6)) - scene._frames
-    if n > 0:
-        scene.wait((n - 0.5) / config.frame_rate)
+def fetch_route(i: int) -> Route:
+    cx, cy = CORE_C[i, 0], CORE_C[i, 1]
+    return Route([(cx - GUT, MEM_TOP), (cx - GUT, cy), (cx - CORE_U / 2 + PORT_IN, cy)])
 
 
-def tail_pts(pos, prev, w: float) -> np.ndarray:
-    """Triangle (as closed corner path) from the packet's back edge to `prev`."""
-    d = pos - prev
-    L = float(np.hypot(d[0], d[1]))
-    if L < 1e-4:
-        return None
-    nrm = np.array([-d[1], d[0], 0.0]) / L * (w / 2)
-    return [pos + nrm, pos - nrm, prev, pos + nrm]
+def write_route(i: int) -> Route:
+    cx, cy = CORE_C[i, 0], CORE_C[i, 1]
+    return Route([(cx + CORE_U / 2 - PORT_IN, cy), (cx + GUT, cy), (cx + GUT, MEM_TOP)])
 
 
 class B03Cpu(BeatScene):
@@ -133,95 +212,116 @@ class B03Cpu(BeatScene):
         self.labels = VGroup()
         for i in range(N_CORES):
             self.cores.add(unit_with_glyph("core", CORE_U, CORE_C[i], glyph_fill=GLYPH_IDLE))
-            lab = thread_label(i).move_to(CORE_C[i] + UP * 0.21)
-            assert lab.width < CORE_U - 0.18
+            lab = thread_label(i).move_to(CORE_C[i] + UP * LAB_DY)
+            assert_safe(lab)
+            assert lab.width < CORE_U - 0.20
+            assert lab.get_bottom()[1] > self.cores[i].glyph.get_top()[1] + 0.03
             self.labels.add(lab)
-        self.mem = RoundedRectangle(width=6.4, height=0.50, corner_radius=0.12, stroke_color=MAGENTA,
-                                    stroke_width=3, fill_color=MAGENTA, fill_opacity=0.10).move_to(MEM_C)
+        # progress fills (empty at rest: not part of the EXPAND capture), under the cores so the
+        # unit stroke, lanes and label stay on top
+        self.pfills = VGroup(*[VMobject(stroke_width=0, fill_color=CYAN, fill_opacity=0) for _ in range(N_CORES)])
+        self.plines = VGroup(*[VMobject(stroke_color=INK, stroke_width=3, stroke_opacity=0, fill_opacity=0)
+                               for _ in range(N_CORES)])        # the progress level (a bright edge)
+        for m in [*self.pfills, *self.plines]:
+            m.points = EMPTY.copy()
+        self.mem = RoundedRectangle(width=MEM_W, height=MEM_H, corner_radius=0.12, stroke_color=MAGENTA,
+                                    stroke_width=3, fill_color=MAGENTA, fill_opacity=MEM_FILL).move_to(MEM_C)
         mem_lab = kick("SHARED MEMORY", MAGENTA)
         b, t = cap_box(mem_lab)
         mem_lab.shift([X_C - mem_lab.get_center()[0], MEM_C[1] - (b + t) / 2, 0])
         assert_safe(mem_lab)
+        assert mem_lab.get_top()[1] < MEM_TOP and mem_lab.get_bottom()[1] > MEM_C[1] - MEM_H / 2
+        assert self.mem.get_bottom()[1] - hud_number_tmpl("256").get_top()[1] >= 0.44
         self.mem_lab = mem_lab
-        self.stubs = VGroup(*[Line([x, -1.325, 0], [x, MEM_TOP, 0], stroke_color=DIM, stroke_width=2)
-                              for x in CORE_XS])
-        self.world = VGroup(self.stubs, self.mem, self.mem_lab, self.cores, self.labels)
+        # bus lanes: from the bar up each gutter to the top row's centre line
+        self.stubs = VGroup(*[Line([x, MEM_TOP, 0], [x, CORE_YS[0], 0], stroke_color=DIM, stroke_width=2,
+                                   stroke_opacity=0.8) for x in BUS_X])
+        assert min(BUS_X) > STAGE.x0 and max(BUS_X) < STAGE.x1
+        assert all(self.mem.get_left()[0] < x < self.mem.get_right()[0] for x in BUS_X)
+        self.world = VGroup(self.stubs, self.mem, self.mem_lab, self.pfills, self.plines, self.cores, self.labels)
+        assert self.cores.get_top()[1] < TTZ_BOTTOM
         hero = self.cores[HERO]
-        # the memory bar/stubs/label come in late (e 0.80 -> 0.97, i.e. by ~0.35 s): earlier they
-        # would sweep across the HUD number while the camera is still pulling back
-        EXPAND(self.world, CORE_C[HERO], CORE_U, 0.0, hero=hero, token="core",
-               fades={self.labels: (0.3, 0.8), self.mem: (0.8, 0.97), self.mem_lab: (0.8, 0.97),
-                      self.stubs: (0.8, 0.97)})          # captures the rest layout, draws e = 0
+        # the memory bar/stubs/label come in late (e 0.80 -> 0.97): earlier they would sweep
+        # across the HUD number while the camera is still pulling back
+        rig = EXPAND(self.world, CORE_C[HERO], CORE_U, 0.0, hero=hero, token="core",
+                     fades={self.labels: (0.3, 0.8), self.mem: (0.8, 0.97), self.mem_lab: (0.8, 0.97),
+                            self.stubs: (0.8, 0.97)})          # captures the rest layout, draws e = 0
 
         # rest copies for the thread updater (taken at rest, before any camera move)
-        rig = self.world._motif_expand
         self._core_rest = []
         for i, core in enumerate(self.cores):
             mems = [core.unit] + list(core.glyph.submobjects) + list(self.labels[i].family_members_with_points())
             self._core_rest.append([(m, rig.rest[rig.index[id(m)]].p.copy()) for m in mems])
         self._lab_rest = [(m, rig.rest[rig.index[id(m)]].fr.copy())
                           for m in self.labels.family_members_with_points() + self.mem_lab.family_members_with_points()]
+        self._unit_sw = rig.rest[rig.index[id(self.cores[0].unit)]].sw
 
-        # ---------------- pooled packets + write flashes (above the cores) ----------------
-        self._sq = square_pts(PKT)
-        self._el = ellipse_pts()
-        self.packets = VGroup(*[Square(side_length=PKT, stroke_width=0, fill_color=MAGENTA if k < 16 else LIME,
-                                       fill_opacity=0) for k in range(32)])
-        self.flashes = VGroup(*[Ellipse(width=0.5, height=0.2, stroke_width=0, fill_color=LIME, fill_opacity=0)
-                                for _ in range(N_CORES)])
-        # comet tails: one triangle per packet, pointing back along its path
-        self.tails = VGroup(*[VMobject(stroke_width=0, fill_color=MAGENTA if k < 16 else LIME, fill_opacity=0)
-                              .set_points_as_corners([ORIGIN, RIGHT * 0.01, UP * 0.01, ORIGIN]) for k in range(32)])
-        self.fx = VGroup(self.flashes, self.tails, self.packets)
+        # ---------------- pooled packets, trails, bar flashes (above the cores) ----------------
+        self._pkt = rrect_c(ORIGIN, PKT, PKT, PKT_R)
+        self._el = Ellipse(width=1.0, height=1.0).points.copy()
+        self.packets = VGroup(*[VMobject(stroke_width=0, fill_color=MAGENTA if k < 16 else LIME, fill_opacity=0)
+                                for k in range(32)])
+        self.trails = VGroup(*[streak_mob(MAGENTA if k < 32 else LIME, 8) for k in range(64)])   # 2 layers / packet
+        self._routes = {"f": [fetch_route(i) for i in range(N_CORES)], "w": [write_route(i) for i in range(N_CORES)]}
+        self.wflash = VGroup(*[VMobject(stroke_width=0, fill_color=LIME, fill_opacity=0) for _ in range(N_CORES)])
+        self.fflash = VGroup(*[VMobject(stroke_width=0, fill_color=MAGENTA, fill_opacity=0) for _ in range(N_CORES)])
+        for m in [*self.packets, *self.trails, *self.wflash, *self.fflash]:
+            m.points = EMPTY.copy()
+        self.fx = VGroup(self.fflash, self.wflash, self.trails, self.packets)
 
         # ---------------- package outline (drawn on at 3.80) ----------------
-        self.pkg_full = RoundedRectangle(width=6.9, height=5.6, corner_radius=0.35, stroke_color=CYAN,
-                                         stroke_width=3, fill_color=CYAN, fill_opacity=0).move_to([X_C, 0.50, 0])
+        self.pkg_full = RoundedRectangle(width=6.9, height=5.56, corner_radius=0.35, stroke_color=CYAN,
+                                         stroke_width=3, fill_color=CYAN, fill_opacity=0).move_to([X_C, 0.62, 0])
         self.pkg = self.pkg_full.copy().set_stroke(opacity=0)
 
         # ---------------- text ----------------
         track = TextTrack(self)
-        track.on(kick("SCALE 2/6 · ONE CPU"), 0.20, T_DRAIN)
-        c_a = card([("16 cores.", "H96", INK, {"16": CYAN}), ("16 separate threads.", "S56", INK)])
+        # kicker + headline arrive on the cut (frame 0 stays the exact E02: 'in' at 0.0 is
+        # invisible on frame 0, the POP starts on story frame 1) and stay through the collapse
+        track.on(kick("SCALE 2/6 · ONE CPU"), 0.0, T_TEXT_OUT)
+        c_a = card([("16 cores.", "H96", INK, {"16": CYAN}), ("Each runs its own thread.", "S56", INK)])
         c_b = card([("16 cores.", "H96", INK, {"16": CYAN}), ("× 16 lanes each", "S56", CYAN)])
-        track.on(c_a[0], 0.30, T_DRAIN)
-        # 'separate threads' lifts off 2.15 -> 2.20 so the power-on hard cut lands on a clean line
-        track.on(c_a[1], 0.40, 2.15, exit_dur=0.05)
-        track.on(c_b[1], T_POWER, T_DRAIN, enter="pop")
+        track.on(c_a[0], 1 / 60, T_TEXT_OUT, enter="pop")
+        # the thread line lifts off 2.15 -> 2.20 so the power-on hard cut lands on a clean line
+        track.on(c_a[1], 0.12, 2.15, exit_dur=0.05)
+        track.on(c_b[1], T_POWER, T_TEXT_OUT, enter="pop")
 
         # ---------------- HUD ----------------
         hud.slam(T_POWER, "256", mult="×16")
 
-        # ---------------- z-order: dust, ring, world, fx, package, text, HUD ----------------
+        # ---------------- z-order: dust, rings, world, fx, package, text, HUD ----------------
         self.remove(st.token)                  # the hero core now draws the token
         add_behind(self, self.world, self.fx, self.pkg)
+        ring = ShockRing(self, T_POWER, GRID_C, RING["r0"], RING["r1"], RING["w0"], RING["op0"], RING["dur"], CYAN)
+        add_behind(self, ring)                 # the power-on ring runs behind the cores
         entry_ring(self)
         self.add(track)
         self.remove(hud)
         self.add(hud)                          # HUD stays on top
         self.collapse = None
         self._draw(0.0)
-        driver = Mobject()
-        driver.add_updater(lambda m, dt: self._draw(self.now))
-        self.add(driver)
+        drive(self, self._draw)
 
         # ---------------- audio ----------------
         self.cue("hit", gain=0.8, note="match-cut and ring")
-        self.cue("whoosh", dt=0.35, dur=0.7, direction="up", note="camera pull-back")
+        self.cue("whoosh", dt=0.20, dur=0.50, direction="up", note="camera pull-back")
         trng = np.random.default_rng(17)
         for t, i in compute_starts():
-            pan = float(np.clip((COL_X[i] - X_C) / 1.8 * 0.55 + trng.uniform(-0.15, 0.15), -0.8, 0.8))
+            pan = float(np.clip((COL_X[i] - X_C) / 2.25 * 0.55 + trng.uniform(-0.15, 0.15), -0.8, 0.8))
             self.cue("tick", dt=round(t, 4), gain=0.3, freq=int(trng.uniform(2600, 5400)), pan=round(pan, 3),
                      note=f"T{i + 1} compute")
         self.cue("riser", dt=1.70, dur=0.50, note="into the power-on")
         self.cue("hit", dt=T_POWER, note="256 lanes light")
         self.cue("sub_drop", dt=T_POWER, dur=0.6)
         self.cue("shimmer", dt=T_POWER, dur=1.0)
-        self.cue("whoosh", dt=4.12, dur=0.45, direction="down", note="collapse")
-        self.cue("tick", dt=T_SETTLE, gain=0.5, note="settle")
+        self.cue("whoosh", dt=round((T_COL + T_SET) / 2, 4), dur=0.45, direction="down", note="collapse")
+        self.cue("tick", dt=round(T_SET, 4), gain=0.5, note="settle")
 
         # ---------------- run ----------------
-        self.hold_until(T_COLLAPSE)
+        self.hold_until(T_COL)
+        # draw the fully drained state first, so no packet / trail / flash hangs over the collapse
+        self._draw_threads(T_COL)
+        self._draw_package(T_COL)
         self.collapse = COLLAPSE(self.pkg, self.world, "cpu")
         self.add(self.collapse.glyph)
         hold_floor(self, T_EXIT)
@@ -230,19 +330,17 @@ class B03Cpu(BeatScene):
     # ------------------------------------------------------------------
     def _draw(self, now: float) -> None:
         if self.collapse is not None:
-            if now < T_SETTLE - EPS:
-                self.collapse.at(ease_in_out_expo(ramp(now, T_COLLAPSE, T_SETTLE)))
-            else:
-                self.collapse.settle(ramp(now, T_SETTLE, T_EXIT))
+            self.collapse.render(now, T_COL, T_SET, T_EXIT)
             return
-        if now < T_THREADS - EPS:
-            EXPAND(self.world, CORE_C[HERO], CORE_U, ease_out_expo(ramp(now, 0.0, T_EXPAND)))
-        else:
+        if now < T_THREADS + 0.1:              # (from T_THREADS on: e = 1 exactly, i.e. the rest layout)
+            EXPAND(self.world, CORE_C[HERO], CORE_U, ease_out_expo(ramp(now, 0.0, T_EXPAND)),
+                   ink=1.0 if flash_frames(now, 1 / 60, 2) else 0.0)
+        if now >= T_THREADS - EPS:
             self._draw_threads(now)
         self._draw_package(now)
 
     def _draw_package(self, now: float) -> None:
-        a = ease_out_cubic(ramp(now, T_PKG, T_COLLAPSE))
+        a = ease_out_cubic(ramp(now, T_PKG, T_COL))
         if a <= 0:
             self.pkg.set_stroke(opacity=0)
         elif a >= 1:
@@ -253,94 +351,146 @@ class B03Cpu(BeatScene):
             self.pkg.set_stroke(CYAN, width=3, opacity=1)
 
     def _draw_threads(self, now: float) -> None:
-        drain = 1.0 - ramp(now, T_DRAIN, T_DRAINED)          # in-flight work fades 3.80 -> 3.92
+        drain = 1.0 - ramp(now, T_DRAIN, T_COL)               # in-flight work fades 3.80 -> 3.93
         c = cycles_at(now)
         powered = now >= T_POWER - EPS
-        ink_flash = powered and story_frame(now) - story_frame(T_POWER) < 2
-        # lane bars at rest: idle .35 before the power-on; after: CYAN 1.0 settling to .9
+        ink_flash = powered and flash_frames(now, T_POWER, 2)
+        # power-on light wave (pw: 1 on the hit's 2 frames, then cools over 0.35 s)
+        pw = flash_decay = 0.0
         if powered:
-            g_rest = lerp(1.0, GLYPH_ON, ease_out_cubic(ramp(now, T_POWER + 2 / 60, T_POWER + 0.35)))
-        else:
-            g_rest = GLYPH_IDLE
-        pop = pop_scale(now - T_POWER, 1.06, 0.20) if powered else 1.0
-        # light wave: every core flashes (fill .45, INK stroke) on the hit, cooling over 0.3 s
-        pw = 0.0
-        if powered:
-            pw = 1.0 if ink_flash else 1.0 - ease_out_cubic(ramp(now, T_POWER + 2 / 60, T_POWER + 0.32))
+            pw = 1.0 if ink_flash else 1.0 - ease_out_cubic(ramp(now, T_POWER + 2 / 60, T_POWER + 0.35))
+            flash_decay = pw
+        # lanes at rest: idle 0.35 before the power-on; after: CYAN 1.0 settling to 0.9
+        g_rest = (lerp(1.0, GLYPH_ON, ease_out_cubic(ramp(now, T_POWER + 2 / 60, T_POWER + 0.35)))
+                  if powered else GLYPH_IDLE)
+        fill_rest = FILL_REST_ON if powered else FILL_REST
+        mem_busy = 0.0
 
         for i in range(N_CORES):
             ci = c[i]
             n = int(math.floor(ci)) if ci >= 0 else -1
             s = ci - n if n >= 0 else -1.0
-            alive = n >= 0 and n < MAX_CYC and time_of(i, n) < T_DRAIN - EPS
-            # ---- compute glow (s in [0.30, 0.50))
-            hot = 0.0
-            if alive and 0.30 <= s < 0.50:
-                sc = (s - 0.30) / 0.20
-                hot = 1.0 if sc < 0.6 else 1.0 - ease_in_out_sine((sc - 0.6) / 0.4)
-            hot *= drain
-            fill_k = 0.0
-            if alive and 0.30 <= s < 0.50:
-                fill_k = (1.0 - ease_out_quad((s - 0.30) / 0.20)) * drain
-            core = self.cores[i]
-            fk = max(fill_k, pw)
-            core.unit.fill_rgbas = rgba(CYAN, lerp(FILL_REST, FILL_HOT, fk)).reshape(1, 4)
-            core.unit.stroke_rgbas = rgba(interpolate_color(CYAN, INK, max(0.5 * fill_k, 0.85 * pw)), 1.0).reshape(1, 4)
-            if ink_flash:
-                grow = rgba(INK, 1.0)
-            else:
-                grow = rgba(CYAN, lerp(g_rest, 1.0, hot))
-            for bar in core.glyph.submobjects:
-                bar.fill_rgbas = grow.reshape(1, 4).copy()
-            # ---- power-on pop (whole core + label, about its centre)
+            live = alive(i, n)
             ctr = CORE_C[i]
+            core = self.cores[i]
+
+            # ---- compute: INK outline kick + pop at the start, progress fill at the core's own rate
+            comp = live and S_FETCH <= s < S_DONE
+            kick_ink = 0.0
+            pop = 1.0
+            ev = last_event(i, ci, S_FETCH)
+            if ev is not None:
+                t_s = ev[1]
+                kick_ink = 1.0 if flash_frames(now, t_s, 2) else 0.0
+                pop = pop_scale(now - t_s, 1.08, 0.20)
+            if powered:
+                pop *= pop_scale(now - T_POWER - POP_DELAY[i], 1.12, 0.25)
+            # ---- unit: fill + stroke (power-on: INK 0.9 -> CYAN 0.6 -> rest 0.25)
+            if ink_flash:
+                ufill = rgba(INK, 0.9)
+            elif powered and pw > 0:
+                ufill = rgba(CYAN, lerp(fill_rest, 0.6, pw))
+            else:
+                ufill = rgba(CYAN, fill_rest)
+            core.unit.fill_rgbas = ufill.reshape(1, 4)
+            core.unit.stroke_rgbas = rgba(interpolate_color(CYAN, INK, max(kick_ink * drain, 0.85 * pw)),
+                                          1.0).reshape(1, 4)
+            core.unit.stroke_width = self._unit_sw * (1.0 + 0.6 * max(kick_ink * drain, pw))
+            # ---- lanes (all 16 at once: SIMD inside every core)
+            if ink_flash:
+                lane = rgba(INK, 1.0)
+            elif comp:
+                lane = rgba(interpolate_color(CYAN, INK, 0.45 if powered else 0.0),
+                            lerp(g_rest, 1.0, drain))
+            else:
+                lane = rgba(CYAN, g_rest)
+            for bar in core.glyph.submobjects:
+                bar.fill_rgbas = lane.reshape(1, 4).copy()
+            # ---- pop (whole core + label, about its centre)
             for m, p in self._core_rest[i]:
                 m.points = p.copy() if pop == 1.0 else (p - ctr) * pop + ctr
+            # ---- progress fill / LIME completion flash
+            pf = self.pfills[i]
+            h_full = FILL_W
+            y0 = ctr[1] - h_full / 2
+            prog, pcol, pa = 0.0, CYAN, 0.0
+            if comp:
+                prog = (s - S_FETCH) / (S_DONE - S_FETCH)
+                pa = PROG_A * drain
+            else:
+                ev = last_event(i, ci, S_DONE)
+                if ev is not None and 0.0 <= now - ev[1] < DONE_FLASH:
+                    prog, pcol = 1.0, LIME
+                    pa = 0.85 * (1.0 - ease_in_quad((now - ev[1]) / DONE_FLASH)) * drain
+            pl = self.plines[i]
+            if pa > 0.004 and prog > 0.004:
+                pts = fill_pts(ctr[0], y0, FILL_W, h_full * prog, FILL_R, h_full)
+                pf.points = (pts - ctr) * pop + ctr if pop != 1.0 else pts
+                pf.fill_rgbas = rgba(pcol, pa).reshape(1, 4)
+                if comp and prog < 0.97:          # the rising level: a bright INK edge
+                    ly = y0 + h_full * prog
+                    dy = max(FILL_R - min(h_full * prog, h_full * (1.0 - prog)), 0.0)   # inside a corner arc
+                    inset = 0.02 + FILL_R - math.sqrt(max(FILL_R ** 2 - dy ** 2, 0.0))
+                    a_ = np.array([ctr[0] - FILL_W / 2 + inset, ly, 0.0])
+                    b_ = np.array([ctr[0] + FILL_W / 2 - inset, ly, 0.0])
+                    pl.points = (seg(a_, b_) - ctr) * pop + ctr
+                    pl.stroke_rgbas = rgba(INK, 0.85 * drain).reshape(1, 4)
+                elif len(pl.points):
+                    pl.points = EMPTY.copy()
+            else:
+                for m in (pf, pl):
+                    if len(m.points):
+                        m.points = EMPTY.copy()
 
-            # ---- packets: fetch (s in [0, .30)), write-back (s in [.50, .80))
-            fetch, write = self.packets[i], self.packets[16 + i]
-            ftail, wtail = self.tails[i], self.tails[16 + i]
-            fa = wa = fta = wta = 0.0
-            if alive and s < 0.30:
-                q = s / 0.30
-                start = np.array([COL_X[i] + D_FETCH[i, n], MEM_TOP, 0.0])
-                pos = lerp(start, ctr, ease_in_out_cubic(q))
-                fetch.points = self._sq * lerp(0.6, 1.0, ramp(q, 0, 0.15)) + pos
-                fa = ramp(q, 0.0, 0.10) * (1 - ramp(q, 0.88, 1.0))
-                tp = tail_pts(pos, lerp(start, ctr, ease_in_out_cubic(max(q - 0.16, 0.0))), PKT * 0.8)
-                if tp is not None:
-                    ftail.set_points_as_corners(tp)
-                    fta = 0.35 * fa
-            if alive and 0.50 <= s < 0.80:
-                q = (s - 0.50) / 0.30
-                end = np.array([COL_X[i] + D_WRITE[i, n], MEM_TOP, 0.0])
-                pos = lerp(ctr, end, ease_in_out_cubic(q))
-                write.points = self._sq * lerp(1.0, 0.7, ramp(q, 0.85, 1.0)) + pos
-                wa = ramp(q, 0.0, 0.12) * (1 - ramp(q, 0.92, 1.0))
-                tp = tail_pts(pos, lerp(ctr, end, ease_in_out_cubic(max(q - 0.16, 0.0))), PKT * 0.8)
-                if tp is not None:
-                    wtail.set_points_as_corners(tp)
-                    wta = 0.35 * wa
-            fetch.fill_rgbas = rgba(MAGENTA, fa * drain).reshape(1, 4)
-            write.fill_rgbas = rgba(LIME, wa * drain).reshape(1, 4)
-            ftail.fill_rgbas = rgba(MAGENTA, fta * drain).reshape(1, 4)
-            wtail.fill_rgbas = rgba(LIME, wta * drain).reshape(1, 4)
+            # ---- packets: fetch (s in [0, S_FETCH)), write-back (s in [S_DONE, S_WB))
+            for kind, s0, s1, slot, col in (("f", 0.0, S_FETCH, i, MAGENTA), ("w", S_DONE, S_WB, 16 + i, LIME)):
+                pk = self.packets[slot]
+                t1, t2 = self.trails[2 * slot], self.trails[2 * slot + 1]
+                if live and s0 <= s < s1:
+                    q = (s - s0) / (s1 - s0)
+                    R = self._routes[kind][i]
+                    u = ease_in_out_cubic(q) * R.L
+                    pos = R.at(u)
+                    sc = lerp(0.6, 1.0, ramp(q, 0, 0.12)) if kind == "f" else lerp(1.0, 0.7, ramp(q, 0.88, 1.0))
+                    al = (ramp(q, 0.0, 0.08) * (1 - ramp(q, 0.90, 1.0)) if kind == "f"
+                          else ramp(q, 0.0, 0.10) * (1 - ramp(q, 0.94, 1.0))) * drain
+                    if kind == "f" and q > 0.80:      # shrinks into the core as it is absorbed
+                        sc *= lerp(1.0, 0.6, ramp(q, 0.80, 1.0))
+                    pk.points = self._pkt * sc + pos
+                    pk.fill_rgbas = rgba(col, al).reshape(1, 4)
+                    for tm, ln, w, ta in ((t1, TRAIL, 9.0, 0.35), (t2, TRAIL * 0.5, 15.0, 0.35)):
+                        u0 = max(u - ln, 0.0)
+                        if u - u0 > 0.02:
+                            tm.points = R.poly(u0, u)
+                            tm.set_stroke(col, width=w * sc, opacity=ta * al)
+                        elif len(tm.points):
+                            tm.points = EMPTY.copy()
+                else:
+                    for m in (pk, t1, t2):
+                        if len(m.points):
+                            m.points = EMPTY.copy()
 
-            # ---- write flash on the memory bar (0.25 s after each arrival)
-            fl = self.flashes[i]
-            fop = 0.0
-            if n >= 0:
-                na = n if s >= 0.80 else n - 1
-                if 0 <= na < MAX_CYC and time_of(i, na) < T_DRAIN - EPS:
-                    ta = time_of(i, na + 0.80)
-                    d = now - ta
-                    if 0 <= d < 0.25:
-                        k = d / 0.25
-                        fop = 0.6 * (1 - ease_out_quad(k)) * drain
-                        sc = lerp(0.6, 1.25, ease_out_cubic(k))
-                        fl.points = self._el * np.array([sc, sc, 1.0]) + np.array(
-                            [COL_X[i] + D_WRITE[i, na], MEM_TOP, 0.0])
-            fl.fill_rgbas = rgba(LIME, fop).reshape(1, 4)
+            # ---- bar flashes: LIME where a result lands, MAGENTA where a fetch leaves
+            for fl, s_ev, dur, w_h, op, port in ((self.wflash[i], S_WB, WRITE_FLASH, (0.9, 0.3), 0.9, CORE_C[i, 0] + GUT),
+                                                 (self.fflash[i], 0.0, LEAVE_FLASH, (0.6, 0.22), 0.7, CORE_C[i, 0] - GUT)):
+                ev = last_event(i, ci, s_ev)
+                if ev is not None and 0.0 <= now - ev[1] < dur:
+                    k = (now - ev[1]) / dur
+                    env = (1.0 - ease_out_quad(k)) * drain
+                    sc = lerp(0.6, 1.25, ease_out_cubic(k))
+                    fl.points = self._el * np.array([w_h[0] * sc, w_h[1] * sc, 1.0]) + np.array([port, MEM_TOP, 0.0])
+                    fl.fill_rgbas = fl.fill_rgbas.copy()
+                    fl.fill_rgbas[:, 3] = op * env
+                    mem_busy += env
+                elif len(fl.points):
+                    fl.points = EMPTY.copy()
+
+        # ---- the shared-memory bar: busy with traffic, flashes MAGENTA on the power-on
+        mf = MEM_FILL + 0.07 * min(mem_busy, 3.0) * drain
+        if powered:
+            mf = max(mf, lerp(MEM_FILL, 0.6, flash_decay))
+        self.mem.fill_rgbas = rgba(MAGENTA, mf).reshape(1, 4)
+        self.mem.stroke_rgbas = rgba(interpolate_color(MAGENTA, INK, 0.7 * (1.0 if ink_flash else 0.0)), 1.0).reshape(1, 4)
 
         # ---- T labels + SHARED MEMORY fade out with the drain
         la = ease_in_out_sine(drain) if now >= T_DRAIN else 1.0

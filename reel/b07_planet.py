@@ -1,46 +1,52 @@
 """b07 - SCALE 6/6 - THE PLANET: volunteer home PCs over the internet (Folding@home, 2020).
 
 The cluster token (E06) shrinks into the hub (project server) at the centre of a spinning
-globe that settles in from 3x (the widest zoom-out). Volunteer PCs pop up across the
-front side; from 1.00 a work unit leaves the hub every 0.10 s (MAGENTA arc + packet),
-the device computes (INK flash + ring) and a LIME result rides back. Job 0 is slowed so
-its 'work unit' / 'result' labels can be read. 1.00: the HUD swaps units like a slot
-machine ('VOLUNTEER GPUs · 2020', counting 0 -> 350,000+; sequenced so digits never
-double-expose, with a 0.15 s HUD glitch under the glitch cue); 2.40 SLAM + a light wave
-(CYAN wavefront ring + point band, devices flash INK as it passes, rim flash) across every
-visible device. 4.45 glitch-out (x-jolts, RGB-split ghosts, opacity drops, slice
+globe (R 2.85, bright points, an atmospheric CYAN rim) that settles in from 3x (the widest
+zoom-out). 'Home PCs. / 350,000+ GPUs, online.' POPs on the cut, so the planet's number sits
+in the SAME unit as b06's '100,000+ GPUs' headline. Volunteer PCs pop up across the front side;
+from 1.00 a work unit leaves the hub every 0.10 s (MAGENTA arc + packet), the device computes
+(INK flash + ring) and a LIME result rides back. Job 0 is slowed and drawn bolder so its
+'work unit' / 'result' labels (Inter Bold 44) tell the request/response story.
+
+HUD: the big counter does not count here: from 1.00 '1,689,600,000+ / CALCULATIONS AT ONCE'
+dims to 0.5 (frozen, never falls to 0, never counts up to a smaller number). 2.40 SLAM + a light
+wave (CYAN wavefront ring + point band, devices flash INK as it passes, rim flash) across every
+visible device: the HUD relabels to the number the card already showed, '350,000+ /
+VOLUNTEER GPUs · 2020' (E07), and the jobs speed up (every 0.04 s) so the planet buzzes.
+1.95 hard swap to '2020: they beat / the top 500 combined.'; 2.60 the kicker becomes the
+source, 'FOLDING@HOME'. 4.45 glitch-out (x-jolts, RGB-split ghosts, opacity drops, slice
 displacement + tear bars), 4.75 hard cut to BG + HUD (E07).
 
-Everything that moves is a pure function of self.now (one driver updater). The 900 globe
-points and 300 devices are drawn as a handful of multi-subpath VMobjects (one per
-quantised colour).
+Everything that moves is a pure function of self.now (one driver). The 900 globe points and
+300 devices are motif.Fields (fixed quantisation: temporally stable colours).
 """
 
 from style import *
 from motif import *
-from motif import _hud_label_tmpl, _hud_number_tmpl   # cached HUD templates (read-only)
 import math
 
 # --------------------------------------------------------------------------
-# World layout (storyboard b07 visuals)
+# World layout
 # --------------------------------------------------------------------------
 G = AC.copy()                                  # globe centre
-R = 2.75
+R = 2.85                                       # y[-2.40, 3.30]: clear of the HUD digits and the cards
 BETA = 0.35                                    # tilt
 SPIN = 0.30                                    # rad/s
 N_PTS = 900
 _k = np.arange(N_PTS)
 PT_PHI = np.arcsin(-1 + 2 * (_k + 0.5) / N_PTS)
 PT_LAM = 2.39996 * _k
-PT_R = 0.022
+PT_R = 0.03
+PT_BASE = 0.25                                 # point opacity: PT_BASE + 0.65 z
+RIM = ((0.04, 0.25), (0.08, 0.12), (0.14, 0.06))   # atmospheric rim: (R + dr, CYAN opacity)
 
 N_DEV = 300
 _drng = np.random.default_rng(7)
 _sinmax = math.sin(math.radians(65))
 DEV_PHI = np.arcsin(_drng.uniform(-_sinmax, _sinmax, N_DEV))
 DEV_LAM = _drng.uniform(0, TAU, N_DEV)
-DEV_PHI[0], DEV_LAM[0] = math.radians(35), 0.52            # job 0's device: (1.30, 1.41) at t = 1.0
-DEV_SQ = 0.05
+DEV_PHI[0], DEV_LAM[0] = math.radians(35), 0.52            # job 0's device: upper right at t = 1.0
+DEV_SQ = 0.085
 HUB_SIZE = 0.40
 
 # --------------------------------------------------------------------------
@@ -50,21 +56,16 @@ T_FORM = 0.80
 T_POP0, T_POP1 = 0.80, 2.40
 POP_DUR = 0.20
 T_JOBS0, T_JOBS1 = 1.00, 4.30
-JOB_DT = 0.10
-T_SWAP = 1.00
-T_COUNT0, T_COUNT1 = 1.25, 2.40
+JOB_DT0, JOB_DT1 = 0.10, 0.04                  # before / after the light wave (the planet buzzes)
+T_DIM0, T_DIM1 = 1.00, 1.30                    # the frozen HUD dims to 0.5: 'not counting here'
+HUD_DIM = 0.5
+T_CARD2 = 1.95                                 # hard card swap
 T_WAVE = 2.40
-T_CHIP0 = 2.20
+T_SRC = 2.60                                   # the kicker becomes the source tag
 T_PUSH0 = 3.50
 T_GLITCH0, T_GLITCH1 = 4.45, 4.75
 T_TEXT_CUT = 4.50
-COUNT_TO = 350000
-SWAP_DUR = 0.25                                # 1.00-1.25 slot-machine unit swap
-SWAP_DIST = 0.35
-SWAP_GLITCH = 0.15                             # HUD x-jitter + RGB split under the glitch cue
-SWAP_SPLIT = (2, 3, 6, 7)                      # story-frame offsets with RGB-split copies
-OLD_NUM, OLD_LAB = "1,689,600,000+", CALC_LABEL
-NEW_LAB = "VOLUNTEER GPUs · 2020"
+NEW_NUM, NEW_LAB = "350,000+", "VOLUNTEER GPUs · 2020"
 WAVE_DUR = 0.30                                # light wave reaches the rim (d = R) after 0.30 s
 N_TEAR = 9                                     # glitch-out tear bars
 
@@ -84,11 +85,6 @@ def sphere_xyz(phi, lam, t):
     return X, Y, Z
 
 
-def dev_pos(i, t):
-    X, Y, Z = sphere_xyz(DEV_PHI[i], DEV_LAM[i], t)
-    return np.array([G[0] + X, G[1] + Y, 0.0]), Z
-
-
 # --------------------------------------------------------------------------
 # Jobs: (t_send, device, t_arrive, t_compute_end, t_back_end)
 # --------------------------------------------------------------------------
@@ -96,13 +92,14 @@ def _schedule():
     rng = np.random.default_rng(17)
     jobs = [(1.00, 0, 1.90, 2.20, 3.00)]       # job 0: slowed so its labels can be read
     recent = [0]
-    n = int(round((T_JOBS1 - T_JOBS0) / JOB_DT)) + 1
-    for j in range(1, n):
-        t = T_JOBS0 + j * JOB_DT
+    ts = [T_JOBS0 + JOB_DT0 * i for i in range(1, 100) if T_JOBS0 + JOB_DT0 * i < T_WAVE - 1e-6]
+    ts += [T_WAVE + JOB_DT1 * i for i in range(0, 1000) if T_WAVE + JOB_DT1 * i <= T_JOBS1 + 1e-6]
+    for t in ts:
+        t = round(float(t), 4)
         _, _, Z = sphere_xyz(DEV_PHI, DEV_LAM, t)
         _, _, Z1 = sphere_xyz(DEV_PHI, DEV_LAM, t + 1.1)
         ok = (Z > 0.35) & (Z1 > 0.15) & (POP_T + POP_DUR <= t)
-        ok[recent[-10:]] = False
+        ok[recent[-30:]] = False               # never two jobs on one device at once
         cand = np.nonzero(ok)[0]
         d = int(cand[rng.integers(0, len(cand))])
         recent.append(d)
@@ -150,95 +147,6 @@ def to_screen(A: np.ndarray, B: np.ndarray, w) -> np.ndarray:
     return np.stack([z.real, z.imag, np.zeros(z.shape)], axis=-1)
 
 
-# --------------------------------------------------------------------------
-# helpers
-# --------------------------------------------------------------------------
-def hold_floor(scene, t: float) -> None:
-    """Hold until the last frame at or before t (exact at 60 fps, rounds down at 30)."""
-    n = int(math.floor(t * config.frame_rate + 1e-6)) - scene._frames
-    if n > 0:
-        scene.wait((n - 0.5) / config.frame_rate)
-
-
-def seg_points(a: np.ndarray, b: np.ndarray, min_len: float = 0.004) -> np.ndarray:
-    """(n,3),(n,3) -> cubic points of n separate straight subpaths a->b (kept open, so round
-    caps draw a dot even when a == b)."""
-    d = b - a
-    L = np.hypot(d[:, 0], d[:, 1])
-    short = L < min_len
-    if np.any(short):
-        b = b.copy()
-        b[short] = a[short] + np.array([min_len, 0.0, 0.0])
-        d = b - a
-    return np.stack([a, a + d / 3, a + 2 * d / 3, b], axis=1).reshape(-1, 3)
-
-
-def streak_mob(color, width: float) -> VMobject:
-    m = VMobject(stroke_color=color, stroke_width=width, fill_opacity=0)
-    m.cap_style = CapStyleType.ROUND
-    m.points = np.zeros((0, 3))
-    return m
-
-
-EMPTY = np.zeros((0, 3))
-
-
-class Field(VGroup):
-    """N same-shape cells drawn as a few multi-subpath VMobjects, one per quantised RGBA
-    (a pool; unused members get no points). Off-frame and transparent cells are skipped."""
-
-    def __init__(self, unit_pts: np.ndarray, pool: int = 96):
-        super().__init__(*[VMobject(stroke_width=0, fill_opacity=0) for _ in range(pool)])
-        for m in self.submobjects:
-            m.points = EMPTY.copy()
-        self.unit = np.asarray(unit_pts, float)
-        self.max_used = 0
-
-    def clear(self) -> None:
-        for m in self.submobjects:
-            if len(m.points):
-                m.points = EMPTY.copy()
-
-    def draw(self, centers: np.ndarray, sizes, rgba: np.ndarray, qc: int = 24, qa: int = 32) -> None:
-        sizes = np.broadcast_to(np.asarray(sizes, float), (len(centers),))
-        half = sizes / 2
-        vis = ((rgba[:, 3] > 0.004) & (sizes > 1e-4) & (np.abs(centers[:, 0]) < FRAME_W / 2 + half)
-               & (np.abs(centers[:, 1]) < FRAME_H / 2 + half))
-        idx = np.nonzero(vis)[0]
-        used = 0
-        pool = len(self.submobjects)
-        if len(idx):
-            col = rgba[idx]
-            while True:
-                Q = np.rint(col * [qc, qc, qc, qa]).astype(np.int64)
-                keys = ((Q[:, 0] * (qc + 1) + Q[:, 1]) * (qc + 1) + Q[:, 2]) * (qa + 1) + Q[:, 3]
-                uniq, inv = np.unique(keys, return_inverse=True)
-                if len(uniq) <= pool:
-                    break
-                qc, qa = max(qc * 2 // 3, 2), max(qa * 2 // 3, 2)
-            order = np.argsort(inv, kind="stable")
-            counts = np.bincount(inv, minlength=len(uniq))
-            starts = np.concatenate([[0], np.cumsum(counts)])
-            pts = self.unit[None] * sizes[idx][order, None, None] + centers[idx][order, None, :]
-            csum = np.add.reduceat(col[order], starts[:-1], axis=0) / counts[:, None]
-            for b in range(len(uniq)):
-                m = self.submobjects[b]
-                m.points = pts[starts[b]:starts[b + 1]].reshape(-1, 3)
-                m.fill_rgbas = csum[b:b + 1].copy()
-            used = len(uniq)
-        for m in self.submobjects[used:]:
-            if len(m.points):
-                m.points = EMPTY.copy()
-        self.max_used = max(self.max_used, used)
-
-
-RGB_CYAN = np.array(CYAN.to_rgb())
-RGB_MAG = np.array(MAGENTA.to_rgb())
-RGB_INK = np.array(INK.to_rgb())
-RGB_LIME = np.array(LIME.to_rgb())
-RGB_DIM = np.array(DIM.to_rgb())
-
-
 def pop_curve(p):
     """Device pop: 0 -> 1.3 -> 1 (ease_out_back, overshoot tuned to peak at ~1.3)."""
     p = np.clip(p, 0, 1)
@@ -264,25 +172,30 @@ class B07Planet(BeatScene):
         self.hub_base_rest = (self.hub.base.fill_rgbas.copy(), self.hub.base.stroke_rgbas.copy())
 
         # ---------------- globe ----------------
-        self.outline = Circle(radius=R, stroke_color=CYAN, stroke_width=2, stroke_opacity=0.4,
-                              fill_color=CYAN, fill_opacity=0.03).move_to(G)
+        self.outline = Circle(radius=R, stroke_color=CYAN, stroke_width=3, stroke_opacity=0.8,
+                              fill_color=CYAN, fill_opacity=0.04).move_to(G)
         self.outline_rest = self.outline.points.copy()
-        self.points = Field(Circle(radius=0.5).points.copy(), pool=96)
-        self.devices = Field(Square(side_length=1.0).points.copy(), pool=96)
+        self.rim = VGroup(*[Circle(radius=R + dr, stroke_color=CYAN, stroke_width=4, stroke_opacity=op,
+                                   fill_opacity=0).move_to(G) for dr, op in RIM])
+        self.rim_rest = [c.points.copy() for c in self.rim]
+        self.points = Field(Circle(radius=0.5).points.copy(), pool=128, fixed=True)
+        self.devices = Field(Square(side_length=1.0).points.copy(), pool=128, fixed=True)
 
         # ---------------- job pools ----------------
-        self.arcs = VGroup(*[VMobject(stroke_color=MAGENTA, stroke_width=1.5, fill_opacity=0) for _ in JOBS])
+        self.arcs = VGroup(*[VMobject(stroke_color=MAGENTA, stroke_width=2.5, fill_opacity=0) for _ in JOBS])
         for a in self.arcs:
             a.points = EMPTY.copy()
-        self.rings = VGroup(*[Circle(radius=1.0, stroke_color=INK, stroke_width=2, fill_opacity=0) for _ in JOBS])
+        self.rings = VGroup(*[Circle(radius=1.0, stroke_color=INK, stroke_width=2.5, fill_opacity=0) for _ in JOBS])
         self.ring_unit = Circle(radius=1.0).points.copy()
         for r in self.rings:
             r.set_stroke(opacity=0)
-        self.pk_out = streak_mob(MAGENTA, 9)
-        self.pk_back = streak_mob(LIME, 9)
+        self.pk_out = streak_mob(MAGENTA, 14)
+        self.pk_back = streak_mob(LIME, 14)
+        self.pk0 = streak_mob(MAGENTA, 22)       # job 0's packet (the labelled one)
+        self.pk0_core = streak_mob(INK, 8)
 
         # ---------------- light wave front (2.40): radius R*(t-2.40)/0.30, the device-flash delay ----------------
-        self.wave = ShockRing(self, T_WAVE, G, 0.02, R, 6.0, 0.85, WAVE_DUR, CYAN, ease=linear,
+        self.wave = ShockRing(self, T_WAVE, G, 0.02, R, 8.0, 0.9, WAVE_DUR, CYAN, ease=linear,
                               w1=2.0, op1=0.35)
 
         # ---------------- glitch-out tear bars (empty outside 4.45-4.75) ----------------
@@ -292,8 +205,8 @@ class B07Planet(BeatScene):
             t.points = EMPTY.copy()
 
         # ---------------- glitch ghosts (RGB split copies; empty except on split frames) ----------------
-        self.stage = [self.outline, self.points, self.arcs, self.devices, self.rings, self.pk_out,
-                      self.pk_back, self.hub]
+        self.stage = [self.rim, self.outline, self.points, self.arcs, self.devices, self.rings, self.pk_out,
+                      self.pk_back, self.pk0, self.pk0_core, self.hub]
         n_ghost = sum(len(m.family_members_with_points()) if not isinstance(m, Field) else len(m)
                       for m in self.stage) + 8
         self.ghost_c = VGroup(*[VMobject(fill_opacity=0, stroke_width=0) for _ in range(n_ghost)])
@@ -304,20 +217,25 @@ class B07Planet(BeatScene):
         # ---------------- text ----------------
         track = TextTrack(self)
         gl = lambda now: self._glitch_dx(now) * RIGHT        # text jitters with the stage, then cuts
-        track.on(kick("SCALE 6/6 · THE PLANET"), 0.20, T_TEXT_CUT, exit="cut", shift=gl)
-        c1 = card([("Home PCs.", "H96", INK), ("Over the internet.", "S56", MAGENTA)])
-        c2 = card([("In 2020,", "H96", INK), ("home PCs hit 1 exaflop first.", "S56", INK, {"1 exaflop": CYAN})])
-        track.on(c1[0], 0.25, 2.10)
-        track.on(c1[1], 0.40, 2.10)
-        track.on(c2[0], 2.15, T_TEXT_CUT, exit="cut", shift=gl)
-        track.on(c2[1], 2.30, T_TEXT_CUT, exit="cut", shift=gl)
-        # job-0 labels ride the packet: right edge at packet.x - 0.15, centre y = packet.y + 0.32
-        self.lab_wu = Text("work unit", font=FONT_BODY, font_size=34, color=MAGENTA, weight=SEMIBOLD)
-        self.lab_res = Text("result", font=FONT_BODY, font_size=34, color=LIME, weight=SEMIBOLD)
+        # kicker + headline arrive on the cut (frame 0 stays the exact E06); card swaps are hard
+        # (cut + POP on one frame, never a crossfade)
+        track.on(kick("SCALE 6/6 · THE PLANET"), 0.0, T_SRC, exit="cut")
+        track.on(kick("FOLDING@HOME", CYAN), T_SRC, T_TEXT_CUT, enter="pop", exit="cut", shift=gl)
+        c1 = card([("Home PCs.", "H96", INK), ("350,000+ GPUs, online.", "S56", INK, {"350,000+ GPUs": CYAN})])
+        c2 = card([("2020: they beat", "H96", INK), ("the top 500 combined.", "S56", INK,
+                                                     {"top 500 combined.": CYAN})])
+        track.on(c1[0], 1 / 60, T_CARD2, enter="pop", exit="cut")
+        track.on(c1[1], 0.12, T_CARD2, exit="cut")
+        track.on(c2[0], T_CARD2, T_TEXT_CUT, enter="pop", exit="cut", shift=gl)
+        track.on(c2[1], T_CARD2, T_TEXT_CUT, enter="pop", exit="cut", shift=gl)
+        assert G[1] + R < min(c1.get_bottom()[1], c2.get_bottom()[1]) - 0.3
+        # job-0 labels ride the packet: right edge at packet.x - 0.15, centre y = packet.y + 0.36
+        self.lab_wu = Text("work unit", font=FONT_BODY, font_size=44, color=MAGENTA, weight=BOLD)
+        self.lab_res = Text("result", font=FONT_BODY, font_size=44, color=LIME, weight=BOLD)
         for lab in (self.lab_wu, self.lab_res):
             lab.move_to(ORIGIN, aligned_edge=RIGHT).shift(-lab.get_center()[1] * UP)
             # BG knockout halo: other jobs' packets and arcs cross the labels' path
-            lab.set_stroke(BG, width=7, opacity=0.92, background=True)
+            lab.set_stroke(BG, width=9, opacity=0.92, background=True)
         j0 = JOBS[0]
         track.on(self.lab_wu, j0[0], j0[2], shift=lambda now: self._label_anchor(now, out=True))
         track.on(self.lab_res, j0[3], j0[4], shift=lambda now: self._label_anchor(now, out=False))
@@ -325,47 +243,43 @@ class B07Planet(BeatScene):
             for lab, out in ((self.lab_wu, True), (self.lab_res, False)):
                 c = self._label_anchor(t, out)
                 assert SAFE_LEFT <= c[0] - lab.width and c[0] <= SAFE_RIGHT
-        chip_fg = chip("FOLDING@HOME", CYAN, 34)
-        chip_bg = RoundedRectangle(width=chip_fg[0].width, height=chip_fg[0].height,
-                                   corner_radius=chip_fg[0].height / 2, stroke_width=0,
-                                   fill_color=BG, fill_opacity=0.85)
-        self.chip = VGroup(chip_bg, chip_fg).move_to([X_C, -1.95, 0])
-        assert_safe(self.chip)
-        track.on(self.chip, T_CHIP0, T_TEXT_CUT, exit="cut", shift=gl)
+                assert c[1] + lab.height / 2 < TTZ_BOTTOM and c[1] - lab.height / 2 > -2.40
 
-        # ---------------- HUD: slot-machine unit swap, count, SLAM ----------------
-        hud.swap(T_SWAP, "0", dur=SWAP_DUR, dist=SWAP_DIST)
-        hud.label(T_SWAP, NEW_LAB, CYAN, 0.90, fade=SWAP_DUR)
-        hud.roll(T_COUNT0, T_COUNT1, 0, COUNT_TO, ease=ease_out_cubic, log=False)
-        # 1.18 (not 1.3): at 1.3 the 6.24-wide number leaves the frame and hits the label
-        hud.slam(T_WAVE, "350,000+", scale=1.18)
-        hud.post = self._hud_swap_post         # sequenced swap (no double-exposed digits) + glitch
+        # ---------------- HUD: frozen + dimmed, then relabelled on the light wave ----------------
+        # (the storyboard's fallback: no fall to '0', no count up to a smaller number; the exit
+        # state E07 fixes the HUD at '350,000+ / VOLUNTEER GPUs · 2020', which the card has
+        # already shown as GPUs, the unit of b06's '100,000+ GPUs')
+        hud.fade_to(T_DIM0, T_DIM1, 1.0, HUD_DIM)
+        hud.fade_to(T_WAVE, T_WAVE, 1.0, 1.0)
+        hud.slam(T_WAVE, NEW_NUM)                 # start scale capped (1.15); the guard hides the label
+        hud.label(T_WAVE, NEW_LAB, CYAN, 0.90)    # ... so the unit flips while hidden, then fades in
 
         # ---------------- z-order: dust, ring, globe, arcs, devices, rings, packets, hub, text, HUD ----------------
         self.remove(self.hub)
-        add_behind(self, self.ghost_c, self.ghost_m, self.outline, self.points, self.wave, self.arcs,
-                   self.devices, self.rings, self.pk_out, self.pk_back, self.hub, self.tears)
+        add_behind(self, self.ghost_c, self.ghost_m, self.rim, self.outline, self.points, self.wave, self.arcs,
+                   self.devices, self.rings, self.pk_out, self.pk_back, self.pk0, self.pk0_core, self.hub,
+                   self.tears)
         entry_ring(self)
         self.add(track)
         self.remove(hud)
         self.add(hud)
         self._draw(0.0)
-        driver = Mobject()
-        driver.add_updater(lambda m, dt: self._draw(self.now))
-        self.add(driver)
+        drive(self, self._draw)
 
         # ---------------- audio ----------------
         self.cue("hit", gain=0.8, note="match-cut")
         self.cue("whoosh", dt=0.40, dur=0.8, direction="up", note="the widest zoom-out")
-        self.cue("glitch", dt=T_SWAP, dur=0.15, note="HUD unit swap")
-        self.cue("ticks_burst", dt=T_COUNT0, dur=1.15, rate0=40, rate1=8, note="odometer decelerating")
         trng = np.random.default_rng(23)
-        for t_send, d, t_arr, t_cmp, t_back in JOBS:
+        for j, (t_send, d, t_arr, t_cmp, t_back) in enumerate(JOBS):
+            fast = t_send >= T_WAVE - EPS
+            if fast and j % 2:                 # after the wave: every other job, quieter (a buzz)
+                continue
             for t in (t_send, t_back):
                 if t <= T_JOBS1 + EPS:
-                    self.cue("tick", dt=round(t, 4), gain=0.15, pan=round(float(trng.uniform(-0.6, 0.6)), 3),
+                    self.cue("tick", dt=round(t, 4), gain=0.10 if fast else 0.15,
+                             pan=round(float(trng.uniform(-0.6, 0.6)), 3),
                              note="work unit sent" if t == t_send else "result received")
-        self.cue("hit", dt=T_WAVE, gain=0.8, note="350,000+ lands, devices flash")
+        self.cue("hit", dt=T_WAVE, gain=0.8, note="the light wave; HUD relabels to volunteer GPUs")
         self.cue("shimmer", dt=T_WAVE, dur=1.0)
         self.cue("riser", dt=T_PUSH0, dur=0.95, note="feels like it should peak higher")
         self.cue("glitch", dt=T_GLITCH0, dur=0.30, note="harsh digital tear")
@@ -374,7 +288,8 @@ class B07Planet(BeatScene):
         # ---------------- run ----------------
         self.hold_until(T_GLITCH1)
         exit_to(self)                          # 4.75 HARD CUT: BG + dust + HUD only (E07)
-        print(f"[b07] buckets used (max): points {self.points.max_used}, devices {self.devices.max_used}")
+        print(f"[b07] jobs {len(JOBS)}; buckets used (max): points {self.points.max_used}, devices "
+              f"{self.devices.max_used}; overflow frames: {self.points.overflow + self.devices.overflow}")
 
     # ------------------------------------------------------------------
     def _glitch_dx(self, now: float) -> float:
@@ -394,12 +309,12 @@ class B07Planet(BeatScene):
         return np.stack([G[0] + s * X + off[0], G[1] + s * Y + off[1], np.zeros_like(X)], axis=1)
 
     def _label_anchor(self, now: float, out: bool) -> np.ndarray:
-        """Where job 0's label sits: right edge at packet.x - 0.15, centre y at packet.y + 0.32."""
+        """Where job 0's label sits: right edge at packet.x - 0.15, centre y at packet.y + 0.36."""
         p = self._job_packet(JOBS[0], now, out)
         if p is None:
             t_send, d, t_arr, t_cmp, t_back = JOBS[0]
             p = self._job_packet(JOBS[0], t_arr - 1e-6 if out else t_cmp + 1e-6, out)
-        return np.array([p[0] - 0.15, p[1] + 0.32, 0.0])
+        return np.array([p[0] - 0.15, p[1] + 0.36, 0.0])
 
     def _job_packet(self, job, now: float, out: bool):
         """Head position of job's packet at now (no camera offsets), or None if not riding."""
@@ -423,20 +338,23 @@ class B07Planet(BeatScene):
         k = glitch_step(now) if now >= T_GLITCH0 - EPS else -1
         drop = 0.3 if (k >= 0 and jitter(k, 0.5, seed=72) + 0.5 < 0.30) else 1.0
 
-        # ---- globe outline (the rim flashes when the light wave reaches it)
+        # ---- globe outline + atmospheric rim (the rim flashes when the light wave reaches it)
         rim = 0.0
         if now >= T_WAVE + WAVE_DUR - EPS:
             rim = 1.0 - ease_out_cubic(ramp(now, T_WAVE + WAVE_DUR, T_WAVE + WAVE_DUR + 0.35))
         self.outline.points = (self.outline_rest - G) * s + G + off
-        self.outline.set_stroke(CYAN, width=2 + 2.5 * rim, opacity=min(1.0, 0.4 + 0.6 * rim) * form * drop)
-        self.outline.set_fill(CYAN, opacity=(0.03 + 0.05 * rim) * form * drop)
+        self.outline.set_stroke(CYAN, width=3 + 2.5 * rim, opacity=min(1.0, 0.8 + 0.2 * rim) * form * drop)
+        self.outline.set_fill(CYAN, opacity=(0.04 + 0.05 * rim) * form * drop)
+        for c, p, (dr, op) in zip(self.rim, self.rim_rest, RIM):
+            c.points = (p - G) * s + G + off
+            c.set_stroke(CYAN, width=4 + 4 * rim, opacity=min(1.0, op * (1 + 1.5 * rim)) * form * drop)
 
         # ---- 900 points (+ a bright band riding the light-wave front)
         X, Y, Z = sphere_xyz(PT_PHI, PT_LAM, now)
         C = self._to_screen(X, Y, s, off)
         z01 = np.clip(Z, 0, 1)
         rgb = RGB_DIM[None] * (1 - z01[:, None]) + RGB_INK[None] * z01[:, None]
-        a = np.where(Z > -0.05, 0.12 + 0.7 * z01, 0.0) * form * drop
+        a = np.where(Z > -0.05, PT_BASE + 0.65 * z01, 0.0) * form * drop
         if T_WAVE - EPS <= now < T_WAVE + WAVE_DUR + 0.12:
             rho = R * (now - T_WAVE) / WAVE_DUR
             band = np.clip(1.0 - np.abs(np.hypot(X, Y) * s - rho) / 0.40, 0, 1) * (Z > -0.05)
@@ -455,7 +373,7 @@ class B07Planet(BeatScene):
         t_w = T_WAVE + 0.30 * dist / R
         waved = now >= t_w - EPS
         w_fl = np.where(waved, 1.0 - np.clip((now - t_w) / 0.28, 0, 1), 0.0) ** 1.5
-        base_a = np.where(waved, 1.0, 0.25 + 0.75 * np.clip(Z, 0, 1))
+        base_a = np.where(waved, 1.0, 0.35 + 0.65 * np.clip(Z, 0, 1))
         # job compute flash on arrival
         j_fl = np.zeros(N_DEV)
         for t_send, d, t_arr, t_cmp, t_back in JOBS:
@@ -469,7 +387,7 @@ class B07Planet(BeatScene):
 
         # ---- jobs: arcs, packets, rings
         hub = G + off
-        outs, backs = [], []
+        outs, backs, p0 = [], [], []
         hub_pulse = 0.0
         for j, (t_send, d, t_arr, t_cmp, t_back) in enumerate(JOBS):
             arc, ring = self.arcs[j], self.rings[j]
@@ -483,7 +401,10 @@ class B07Planet(BeatScene):
                 fa = 1.0 - clip01((now - t_back) / ARC_FADE) if now >= t_back else 1.0
                 if q > 1e-3:
                     arc.points = to_screen(hub, dev, arc_template_pts(0.0, q))
-                    arc.set_stroke(MAGENTA, width=1.5, opacity=0.4 * fa * drop)
+                    if j == 0:
+                        arc.set_stroke(MAGENTA, width=3.5, opacity=0.95 * fa * drop)
+                    else:
+                        arc.set_stroke(MAGENTA, width=2.5, opacity=0.7 * fa * drop)
                 else:
                     arc.points = EMPTY.copy()
             else:
@@ -499,16 +420,20 @@ class B07Planet(BeatScene):
                 else:
                     continue
                 p = to_screen(hub, dev, arc_template_point(np.array([qt, q])))
-                lst.append(p)
+                if j == 0:
+                    p0.append((p, out))
+                else:
+                    lst.append(p)
             # hub pulse when a result lands
             if t_back - EPS <= now < t_back + 0.20:
                 hub_pulse = max(hub_pulse, 1.0 - (now - t_back) / 0.20)
             # compute ring at the device
             if t_arr - EPS <= now < t_arr + 0.30:
                 p = (now - t_arr) / 0.30
-                r = lerp(0.05, 0.18, ease_out_cubic(p)) * s
+                big = 1.6 if j == 0 else 1.0
+                r = lerp(0.07, 0.24, ease_out_cubic(p)) * s * big
                 ring.points = self.ring_unit * r + dev
-                ring.set_stroke(INK, width=2, opacity=0.9 * (1 - p) * drop)
+                ring.set_stroke(INK, width=2.5 * big, opacity=0.9 * (1 - p) * drop)
             else:
                 ring.set_stroke(opacity=0)
         for mob, lst in ((self.pk_out, outs), (self.pk_back, backs)):
@@ -518,8 +443,17 @@ class B07Planet(BeatScene):
                 mob.set_stroke(opacity=drop)
             else:
                 mob.points = EMPTY.copy()
+        if p0:
+            (P, out), = p0
+            self.pk0.points = seg_points(P[None, 0], P[None, 1])
+            self.pk0.set_stroke(MAGENTA if out else LIME, width=22, opacity=drop)
+            self.pk0_core.points = seg_points(P[None, 1], P[None, 1])
+            self.pk0_core.set_stroke(INK, width=8, opacity=0.9 * drop)
+        else:
+            self.pk0.points = EMPTY.copy()
+            self.pk0_core.points = EMPTY.copy()
 
-        # ---- hub: the cluster token shrinks 1.2 -> 0.40 (ease_out_expo); stroke pulses on results
+        # ---- hub: the cluster token shrinks 1.7 -> 0.40 (ease_out_expo); stroke pulses on results
         hs = lerp(1.0, HUB_SIZE / TOKEN_SIZE, ease_out_expo(clip01(now / T_FORM)))
         for m, (p, sw) in zip(self.hub_mems, self.hub_rest):
             m.points = (p - AC) * hs + AC + off
@@ -530,7 +464,7 @@ class B07Planet(BeatScene):
         b.fill_rgbas = np.array([[*RGB_CYAN, lerp(fr[0, 3], 0.45, hub_pulse) * drop]])
         if drop != 1.0 or getattr(self, "_hub_drop", 1.0) != drop:
             for m in self.hub.glyph.family_members_with_points():
-                m.fill_rgbas = m.fill_rgbas * 0 + rgba(CYAN, 0.65 * drop)
+                m.fill_rgbas = m.fill_rgbas * 0 + rgba(CYAN, TOKEN_GLYPH_FILL * drop)
             self._hub_drop = drop
 
         # ---- glitch: slice displacement, ghosts (CYAN / MAGENTA copies at -/+ 0.05), tear bars
@@ -546,8 +480,8 @@ class B07Planet(BeatScene):
         bands = [(rng.uniform(G[1] - R, G[1] + R), rng.uniform(0.07, 0.30),
                   (1 if rng.random() < 0.5 else -1) * rng.uniform(0.15, 0.45)) for _ in range(3)]
         bands = bands[:2 + int(rng.random() < 0.5)]
-        mobs = [self.outline, *self.points, *self.arcs, *self.devices, *self.rings, self.pk_out,
-                self.pk_back, *self.hub.family_members_with_points()]
+        mobs = [*self.rim, self.outline, *self.points, *self.arcs, *self.devices, *self.rings, self.pk_out,
+                self.pk_back, self.pk0, self.pk0_core, *self.hub.family_members_with_points()]
         for m in mobs:
             p = m.points
             if not len(p):
@@ -572,13 +506,12 @@ class B07Planet(BeatScene):
         self._tears_on = True
         rng = np.random.default_rng((91, k))
         cols = (RGB_CYAN, RGB_MAG, RGB_INK)
-        rgb_bg = np.array(BG.to_rgb())
         for i, t in enumerate(self.tears):
             on, y, u_h, u_x, u_w, ci, op = (rng.random(), rng.uniform(G[1] - R + 0.15, G[1] + R - 0.15),
                                             rng.random(), rng.random(), rng.random(),
                                             int(rng.integers(0, 3)), rng.uniform(0.35, 0.75))
             if i < 3:      # drop-out band: a slice of the stage goes missing
-                h, x0, w, col, op, p_on = lerp(0.06, 0.26, u_h), lerp(-3.9, -1.2, u_x), lerp(2.5, 6.5, u_w), rgb_bg, 0.94, 0.70
+                h, x0, w, col, op, p_on = lerp(0.06, 0.26, u_h), lerp(-3.9, -1.2, u_x), lerp(2.5, 6.5, u_w), RGB_BG, 0.94, 0.70
             else:          # bright sliver
                 h, x0, w, col, p_on = lerp(0.02, 0.10, u_h), lerp(-3.75, 1.4, u_x), lerp(0.7, 3.6, u_w), cols[ci], 0.65
             if on > p_on:
@@ -587,39 +520,6 @@ class B07Planet(BeatScene):
             x1 = min(x0 + w, 3.20)
             t.points = self.sq_unit * np.array([x1 - x0, h, 1.0]) + np.array([(x0 + x1) / 2, y, 0.0])
             t.fill_rgbas = np.array([[*col, op]])
-
-    def _hud_swap_post(self, hud: Hud, now: float) -> None:
-        """1.00-1.25 unit swap, sequenced so the two numbers / labels never double-expose:
-        the old number accelerates down and out (gone by 1.11), the '0' drops in from above
-        (from 1.075); the labels do the same with a short drift. Under the 0.15 s glitch cue the
-        HUD x-jitters with CYAN/MAGENTA split copies on a few story frames (frame 1.00 clean)."""
-        d = now - T_SWAP
-        if not (-EPS <= d < SWAP_DUR - EPS):
-            return
-        a = clip01(d / SWAP_DUR)
-        f = story_frame(d)
-        gl = 1 <= f and d < SWAP_GLITCH - EPS
-        sh0 = np.array([jitter(f, 0.05, seed=31) if gl else 0.0, 0.0, 0.0])
-        e_out, e_in = ease_in_cubic(ramp(a, 0.0, 0.45)), ease_out_cubic(ramp(a, 0.3, 1.0))
-        ao, an = 1.0 - ease_in_out_cubic(ramp(a, 0.0, 0.45)), e_in
-        old_n, new_n = _hud_number_tmpl(OLD_NUM, INK), _hud_number_tmpl("0", INK)
-        hud.s_num_old.display(old_n, ao, 1.0, None, sh0 + DOWN * SWAP_DIST * e_out)
-        hud.s_num.display(new_n, an, 1.0, None, sh0 + UP * SWAP_DIST * (1 - e_in))
-        lo = 1.0 - ease_in_out_cubic(ramp(a, 0.0, 0.40))
-        ln = ease_in_out_cubic(ramp(a, 0.30, 1.0))
-        old_l, new_l = _hud_label_tmpl(OLD_LAB, INK, 0.70), _hud_label_tmpl(NEW_LAB, CYAN, 0.90)
-        hud.s_lab_old.display(old_l, lo, 1.0, None, sh0 + DOWN * 0.14 * ease_in_cubic(ramp(a, 0.0, 0.40)))
-        hud.s_lab.display(new_l, ln, 1.0, None, sh0 + UP * 0.14 * (1 - ease_out_cubic(ramp(a, 0.30, 1.0))))
-        if gl and f in SWAP_SPLIT:
-            first = a < 0.45
-            nt, na = (old_n, ao) if first else (new_n, an)
-            lt, la = (old_l, lo) if first else (new_l, ln)
-            for slot, (tm, dx, c, al) in zip(hud.s_split, ((nt, -0.05, CYAN, na), (nt, 0.05, MAGENTA, na),
-                                                         (lt, -0.05, CYAN, la), (lt, 0.05, MAGENTA, la))):
-                slot.display(tm, 0.5 * al, 1.0, None, sh0 + RIGHT * dx, c)
-        else:
-            for slot in hud.s_split:
-                slot.clear_slot()
 
     def _draw_ghosts(self, now: float, k: int) -> None:
         split = k >= 0 and now < T_GLITCH1 - EPS and (jitter(k, 0.5, seed=73) + 0.5) < 0.75

@@ -1,21 +1,27 @@
-"""b06 - SCALE 5/6 - DATA CENTER: no shared memory, the servers pass messages.
+"""b06 - SCALE 5/6 - DATA CENTER: separate boxes, no shared memory: the servers pass messages.
 
-The node token (E05) is server (c3, r3) of one pod (8 racks x 8 servers): the camera
-pulls back (EXPAND). Two all-reduce SYNC cycles run over the pod's network: every server
-computes on its own data (CYAN flash), MAGENTA gradient messages climb the racks to the
-top-of-rack switches and on to the spines, LIME updates come back down and every server
-applies the same update (LIME flash).
+The node token (E05) is server (c3, r3) of one pod (8 racks x 8 servers, 5.36 units wide):
+the camera pulls back (EXPAND, hero outline INK-flashes on story frames 1-2). 'Many boxes. /
+No shared memory.' POPs on the cut. Two SYNC cycles run over the pod's network: every server
+computes on its own data (CYAN flash), then 16 MAGENTA messages (dots with trails) hop like
+letters: up the sender's rack line into its top-of-rack switch, over an uplink into a spine,
+down another uplink into a DIFFERENT rack's ToR and down to a server there (each switch
+flashes as a message passes, the receiver flashes INK); then every server applies the same
+update (LIME flash). 'They pass / messages.' hard-swaps in on the second cycle.
 
-At 2.45 a second pull-back shrinks the pod into 16 squares of a 56 x 56 hall (3,136
-squares = 100,352 GPUs) while the HUD log-rolls and accelerates. 80 ms freeze + silence,
-then the biggest drop of the film at 3.40: HUD SLAMs 1,689,600,000+, the hall flashes, a
-shock ring + impact shake; messages race along the trunks and two gather/broadcast
-all-reduce pulses sweep the hall. 5.05 an outline draws on, the hall COLLAPSEs into
-handoff_token('cluster') and settles (E06).
+At 2.45 a second pull-back shrinks the pod into 16 squares of a 56 x 56 hall (3,136 squares =
+100,352 GPUs; pitch 0.12, the hall overfills the stage window top and bottom) while the HUD
+log-rolls and accelerates toward 1,689,600,000 but is CUT at ~281,000,000 at 3.32: 80 ms freeze
++ silence (the headline cuts out too), then the biggest drop of the film at 3.40: HUD SLAMs
+1,689,600,000+ with the word equation '100,000+ GPUs × 16,896' in the label slot, the hall
+flashes INK, a radial INK burst, a CYAN shock ring (w14, r 0.3 -> 7.0), 0.10 impact shake;
+messages race along the trunks and gather/broadcast all-reduce pulses sweep the hall (the last
+gather pulls into the centre). 5.20 an outline draws on around the hall window, which
+COLLAPSEs (cut_times) into handoff_token('cluster') (E06); the headline stays through the
+collapse.
 
-Everything that moves is a pure function of self.now (one driver updater). The hall is
-drawn as a handful of multi-subpath VMobjects (one per quantised colour), off-frame
-squares are skipped.
+Everything that moves is a pure function of self.now (one driver). The hall is a motif.Field
+with fixed quantisation (temporally stable colours); off-frame squares are skipped.
 """
 
 from style import *
@@ -23,39 +29,49 @@ from motif import *
 import math
 
 # --------------------------------------------------------------------------
-# Stage A: one pod (8 racks x 8 servers), storyboard b06 visuals
+# Stage A: one pod (8 racks x 8 servers)
 # --------------------------------------------------------------------------
-SRV_U = 0.36
-SRV_PITCH = 0.56
-RACK_X = X_C + (np.arange(8) - 3.5) * SRV_PITCH          # rack c = 0..7
-ROW_Y = (3.5 - np.arange(8)) * SRV_PITCH                 # row r = 0..7 (top = 0)
+SRV_U = 0.46
+SRV_PX, SRV_PY = 0.70, 0.56                               # rack pitch (x), server pitch in a rack (y)
+RACK_X = X_C + (np.arange(8) - 3.5) * SRV_PX             # rack c = 0..7: x[-2.80, 2.10]
+ROW_Y = 1.93 - np.arange(8) * SRV_PY                     # row r = 0..7 (top = 0): y[-1.99, 1.93]
 SRV_C = np.array([[RACK_X[k % 8], ROW_Y[k // 8], 0.0] for k in range(64)])
-HERO = 3 * 8 + 3                                         # (c3, r3) at (-0.63, 0.28)
+HERO = 3 * 8 + 3                                         # (c3, r3) at (-0.70, 0.25)
 SLOT = SRV_C[HERO].copy()
-RACK_TOP, RACK_BOT = 2.42, -2.14
-TOR_Y = 2.50
-UP_Y0, UP_Y1 = 2.58, 2.95
-SPINE_X = np.array([-2.03, -0.91, 0.21, 1.33])
-SPINE_Y = 3.05
-PIVOT_A = np.array([X_C, 0.0, 0.0])                      # stage-A centre (zoom-out 2 pivot)
+RACK_BOT = ROW_Y[7] - SRV_U / 2                          # -2.22
+TOR_W, TOR_H = 0.54, 0.18
+TOR_Y = ROW_Y[0] + SRV_U / 2 + 0.10 + TOR_H / 2          # 2.35
+RACK_TOP = TOR_Y - TOR_H / 2                             # 2.26 (rack lines end in the ToR)
+TOR_TOP = TOR_Y + TOR_H / 2                              # 2.44
+SPINE_W, SPINE_H = 1.00, 0.24
+SPINE_Y = 3.00                                           # spines y[2.88, 3.12]
+SPINE_BOT = SPINE_Y - SPINE_H / 2
+SPINE_X = X_C + (np.arange(4) - 1.5) * 1.40
+PIVOT_A = np.array([X_C, (ROW_Y[0] + ROW_Y[7]) / 2, 0.0])   # server-block centre (zoom-out 2 pivot)
 
 # --------------------------------------------------------------------------
 # Stage B: the hall (56 x 56 squares = 3,136; 1 square = 4 servers = 32 GPUs)
 # --------------------------------------------------------------------------
 HN = 56
+HP = 0.12                                                # hall pitch: x[-3.74, 3.03]
 _I, _J = np.meshgrid(np.arange(HN), np.arange(HN), indexing="ij")   # i = column, j = row
 HI, HJ = _I.ravel(), _J.ravel()
-HALL_C = np.stack([X_C + (HI - 27.5) * 0.10, 0.45 + (27.5 - HJ) * 0.10, np.zeros(HN * HN)], axis=1)
+HALL_C = np.stack([X_C + (HI - 27.5) * HP, AC[1] + (27.5 - HJ) * HP, np.zeros(HN * HN)], axis=1)
 HALL_D = np.hypot(HALL_C[:, 0] - AC[0], HALL_C[:, 1] - AC[1])
 POD = (HI >= 26) & (HI <= 29) & (HJ >= 26) & (HJ <= 29)            # where the pod lands
-HALL_SQ = 0.07
+HALL_SQ = 0.7 * HP
 HALL_UNIT = RoundedRectangle(width=1.0, height=1.0, corner_radius=0.012 / 0.07).points.copy()
 HALL_VAR = 0.80 + 0.20 * np.random.default_rng(61).random(HN * HN)  # per-square brightness texture
-HALL_X0, HALL_X1 = X_C - 2.785, X_C + 2.785
-HALL_Y0, HALL_Y1 = 0.45 - 2.785, 0.45 + 2.785
-TRUNK_X = np.array([-2.35, -1.55, -0.75, 0.05, 0.85, 1.65])
-TRUNK_Y = np.array([2.45, 1.65, 0.85, 0.05, -0.75, -1.55])
-ZOOM2 = 11.2
+HALL_HALF = 27.5 * HP + HALL_SQ / 2
+# The hall overfills the stage vertically: it is seen through a window (soft 0.16 edges) that
+# the collapse outline frames exactly.
+WIN_LO, WIN_HI, WIN_SOFT = -2.30, 3.20, 0.16             # centred on AC; 0.2 clear of the HUD digits
+OUT_W, OUT_H = 6.90, WIN_HI - WIN_LO                     # outline 6.9 x 5.5 centred on AC
+ZX = SRV_PX / (HP / 2)                                   # 11.667: a rack pitch -> half a hall pitch
+ZY = SRV_PY / (HP / 2)                                   # 9.333 (2 x 2 servers land on one square)
+TRUNK_OFF = np.array([-5, -3, -1, 1, 3, 5]) * 4 * HP    # +-0.48, 1.44, 2.40: in the gutters
+TRUNK_X = X_C + TRUNK_OFF
+TRUNK_Y = AC[1] - TRUNK_OFF
 POD_OP = 0.60                                            # the pod's 16 squares right after the zoom
 
 # --------------------------------------------------------------------------
@@ -63,26 +79,71 @@ POD_OP = 0.60                                            # the pod's 16 squares 
 # --------------------------------------------------------------------------
 T_EXP = 0.80
 SYNC = (0.85, 1.65)
+T_CARD2 = 1.75                                           # 'They pass / messages.' hard swap
 T_Z0, T_Z1 = 2.45, 3.35
-T_ROLL0, T_ROLL1 = 2.60, 3.32
+T_ROLL0 = 2.60
 T_FREEZE = 3.32
 T_DROP = 3.40
-T_MSG_END = 5.05
-PULSES = (("gather", 3.60, 3.90), ("bcast", 3.95, 4.25), ("gather", 4.35, 4.65), ("bcast", 4.70, 5.00))
-T_OUT0, T_OUT1 = 5.05, 5.15                               # outline draws on
-T_COL0, T_COL1 = 5.15, 5.78                               # COLLAPSE
-T_SET1 = 5.95                                             # SETTLE end; static to 6.00
-T_TEXT_OUT = 5.25
+PULSES = (("gather", 3.60, 3.90), ("bcast", 3.95, 4.25), ("gather", 4.35, 4.65), ("bcast", 4.70, 5.00),
+          ("gather", 5.05, 5.35))
+T_MSG_END = 5.35
+T_OUT0, T_OUT1 = 5.20, 5.40                              # outline draws on
+T_COL, T_SET, T_EXIT = cut_times(6.0)                    # 5.433 / 5.833 / 5.95
+T_TEXT_OUT = T_EXIT - 0.20                               # headline + kicker leave during the settle
 
-# messages on the trunks: 120 seeded random walks on the 6 x 6 trunk lattice, 3 u/s
+# --------------------------------------------------------------------------
+# Stage-A messages: 16 per SYNC cycle, each hops server -> ToR -> spine -> ToR' -> server' in a
+# different rack. Phases: move, dwell (ToR), move, dwell (spine), move, dwell (ToR'), move.
+# --------------------------------------------------------------------------
+N_HOP = 16
+HOP = np.array([0.12, 0.035, 0.10, 0.035, 0.10, 0.035, 0.12])
+HOP_EDGE = np.concatenate([[0.0], np.cumsum(HOP)])       # phase starts (8 values; last = arrival)
+HOP_MOVE = np.array([1, 0, 1, 0, 1, 0, 1], bool)
+TRAIL = 0.30                                             # message trail length (units)
+
+
+def _hops():
+    rng = np.random.default_rng(606)
+    t0, src, dst, sp, paths = [], [], [], [], []
+    for c0 in SYNC:
+        rows = [rng.permutation(8)[:2] for _ in range(8)]     # 2 senders per rack, distinct rows
+        for m in range(N_HOP):
+            cs, rs = m % 8, int(rows[m % 8][m // 8])
+            cd = int((cs + rng.integers(1, 8)) % 8)            # always a different rack
+            rd = int(rng.integers(0, 8))
+            s = int(rng.integers(0, 4))
+            ts = c0 + 0.05 + 0.10 * rng.random()
+            xs, xd, xp = RACK_X[cs], RACK_X[cd], SPINE_X[s]
+            paths.append([(xs, ROW_Y[rs]), (xs, TOR_Y), (xs, TOR_TOP), (xp, SPINE_BOT), (xp, SPINE_Y),
+                          (xp, SPINE_BOT), (xd, TOR_TOP), (xd, TOR_Y), (xd, ROW_Y[rd])])
+            t0.append(ts)
+            src.append((cs, rs))
+            dst.append((cd, rd))
+            sp.append(s)
+    P = np.array(paths, float)                                   # (n, 9, 2)
+    seg = np.hypot(*(P[:, 1:] - P[:, :-1]).transpose(2, 0, 1))   # (n, 8)
+    cum = np.concatenate([np.zeros((len(P), 1)), np.cumsum(seg, axis=1)], axis=1)   # (n, 9)
+    # arc length at each phase boundary: A ends at point 1, B at 4, C at 7, D at 8
+    s_lo = cum[:, [0, 1, 1, 4, 4, 7, 7]]
+    s_hi = cum[:, [1, 1, 4, 4, 7, 7, 8]]
+    return np.array(t0), np.array(src), np.array(dst), np.array(sp), P, cum, s_lo, s_hi
+
+
+HOP_T0, HOP_SRC, HOP_DST, HOP_SP, HOP_P, HOP_CUM, HOP_SLO, HOP_SHI = _hops()
+N_HOPS = len(HOP_T0)
+assert np.all(HOP_T0 + HOP_EDGE[-1] < np.repeat(SYNC, N_HOP) + 0.74)      # all land before the LIME flash
+
+# --------------------------------------------------------------------------
+# Hall messages on the trunks: 120 seeded random walks on the 6 x 6 trunk lattice
+# --------------------------------------------------------------------------
 N_MSG = 120
-MSG_SPEED = 3.0
-EDGE = 0.80
+MSG_SPEED = 3.6
+EDGE = 0.96
 _mrng = np.random.default_rng(66)
 
 
 def _walks() -> np.ndarray:
-    steps = 12
+    steps = 14
     out = np.zeros((N_MSG, steps + 1, 2), int)
     dirs = [(1, 0), (-1, 0), (0, 1), (0, -1)]
     for n in range(N_MSG):
@@ -100,135 +161,38 @@ def _walks() -> np.ndarray:
     return out
 
 
-WALK = _walks()                                          # (120, 13, 2) lattice indices
+WALK = _walks()                                          # (120, 15, 2) lattice indices
 WALK_XY = np.stack([TRUNK_X[WALK[..., 0]], TRUNK_Y[WALK[..., 1]]], axis=-1)
 MSG_PHASE = _mrng.random(N_MSG) * EDGE                    # start partway along the first edge
-MSG_TAIL = 0.14
+MSG_TAIL = 0.17
 
 
 def stage_mask(y):
-    """Soft stage window: 1 for y in [-2.37, 3.25], 0 below -2.62 / above 3.55, so camera
-    moves never drag geometry under the text zone or the HUD. Identity at rest."""
+    """Soft stage window for stage A: 1 for y in [-2.37, 3.25], 0 below -2.62 / above 3.55, so
+    camera moves never drag geometry under the text zone or the HUD. Identity at rest."""
     y = np.asarray(y, float)
     return np.clip((y + 2.62) / 0.25, 0, 1) * np.clip((3.55 - y) / 0.30, 0, 1)
 
 
+def hall_mask(y):
+    """The hall window (camera space, before the collapse): full inside [WIN_LO+soft, WIN_HI-soft]."""
+    y = np.asarray(y, float)
+    return np.clip((y - WIN_LO) / WIN_SOFT, 0, 1) * np.clip((WIN_HI - y) / WIN_SOFT, 0, 1)
+
+
 def edge_mask(bot: float, top: float) -> float:
     """Stage window for a whole member: fades as its bottom edge goes under -2.45 (HUD number
-    top is -2.52) or its top edge over 3.40 (cards end at 3.63)."""
+    top is -2.52) or its top edge over 3.40 (cards end at 3.48)."""
     return clip01((bot + 2.62) / 0.17) * clip01((3.58 - top) / 0.18)
 
 
-def hold_floor(scene, t: float) -> None:
-    """Hold until the last frame at or before t (exact at 60 fps, rounds down at 30)."""
-    n = int(math.floor(t * config.frame_rate + 1e-6)) - scene._frames
-    if n > 0:
-        scene.wait((n - 0.5) / config.frame_rate)
-
-
-def seg_points(a: np.ndarray, b: np.ndarray, min_len: float = 0.004) -> np.ndarray:
-    """(n,3),(n,3) -> cubic points of n separate straight subpaths a->b. A minimum length
-    keeps each subpath open, so round caps draw a dot even when a == b."""
-    d = b - a
-    L = np.hypot(d[:, 0], d[:, 1])
-    short = L < min_len
-    if np.any(short):
-        b = b.copy()
-        b[short] = a[short] + np.array([min_len, 0.0, 0.0])
-        d = b - a
-    return np.stack([a, a + d / 3, a + 2 * d / 3, b], axis=1).reshape(-1, 3)
-
-
-PKT_LEN = 0.20                                           # packet streak length (units)
-
-
-def streak(P0: np.ndarray, P1: np.ndarray, q_tail, q_head):
-    """(tails, heads) of packets on segments P0->P1 at progress q_tail <= q_head."""
-    qt = np.asarray(q_tail, float)[:, None]
-    qh = np.asarray(q_head, float)[:, None]
-    return P0 + (P1 - P0) * qt, P0 + (P1 - P0) * qh
-
-
-def streak_mob(color, width: float) -> VMobject:
-    m = VMobject(stroke_color=color, stroke_width=width, fill_opacity=0)
-    m.cap_style = CapStyleType.ROUND
-    m.points = np.zeros((0, 3))
-    return m
-
-
-class Field(VGroup):
-    """N same-shape cells drawn as a few multi-subpath VMobjects, one per quantised RGBA
-    (a pool; unused members get no points). Off-frame and transparent cells are skipped.
-    ~6x cheaper in Cairo than one VMobject per cell."""
-
-    def __init__(self, unit_pts: np.ndarray, pool: int = 160):
-        super().__init__(*[VMobject(stroke_width=0, fill_opacity=0) for _ in range(pool)])
-        for m in self.submobjects:
-            m.points = np.zeros((0, 3))
-        self.unit = np.asarray(unit_pts, float)
-        self.max_used = 0
-
-    def clear(self) -> None:
-        for m in self.submobjects:
-            if len(m.points):
-                m.points = np.zeros((0, 3))
-
-    def draw(self, centers: np.ndarray, sizes, rgba: np.ndarray, qc: int = 28, qa: int = 40) -> None:
-        sizes = np.broadcast_to(np.asarray(sizes, float), (len(centers),))
-        half = sizes / 2
-        vis = ((rgba[:, 3] > 0.004) & (np.abs(centers[:, 0]) < FRAME_W / 2 + half)
-               & (np.abs(centers[:, 1]) < FRAME_H / 2 + half))
-        idx = np.nonzero(vis)[0]
-        used = 0
-        pool = len(self.submobjects)
-        if len(idx):
-            col = rgba[idx]
-            while True:
-                Q = np.rint(col * [qc, qc, qc, qa]).astype(np.int64)
-                keys = ((Q[:, 0] * (qc + 1) + Q[:, 1]) * (qc + 1) + Q[:, 2]) * (qa + 1) + Q[:, 3]
-                uniq, inv = np.unique(keys, return_inverse=True)
-                if len(uniq) <= pool:
-                    break
-                qc, qa = max(qc * 2 // 3, 2), max(qa * 2 // 3, 2)
-            order = np.argsort(inv, kind="stable")
-            counts = np.bincount(inv, minlength=len(uniq))
-            starts = np.concatenate([[0], np.cumsum(counts)])
-            pts = self.unit[None] * sizes[idx][order, None, None] + centers[idx][order, None, :]
-            csum = np.add.reduceat(col[order], starts[:-1], axis=0) / counts[:, None]
-            for b in range(len(uniq)):
-                m = self.submobjects[b]
-                m.points = pts[starts[b]:starts[b + 1]].reshape(-1, 3)
-                m.fill_rgbas = csum[b:b + 1].copy()
-            used = len(uniq)
-        for m in self.submobjects[used:]:
-            if len(m.points):
-                m.points = np.zeros((0, 3))
-        self.max_used = max(self.max_used, used)
-
-
-def mix(c0, c1, t):
-    """Vectorised colour lerp: c0, c1 (3,) or (n,3) rgb; t scalar or (n,) -> (n,3)."""
-    t = np.atleast_1d(np.asarray(t, float))[:, None]
-    c0 = np.atleast_2d(np.asarray(c0, float))
-    c1 = np.atleast_2d(np.asarray(c1, float))
-    return c0 * (1 - t) + c1 * t
-
-
-RGB_CYAN = np.array(CYAN.to_rgb())
-RGB_MAG = np.array(MAGENTA.to_rgb())
-RGB_INK = np.array(INK.to_rgb())
-RGB_LIME = np.array(LIME.to_rgb())
-
-
-def ease_out_quad_arr(x):
-    return 1 - (1 - x) * (1 - x)
-
-
-def decay(t_since: float, dur: float) -> float:
-    """1 at the hit, easing out to 0 over dur (0 before the hit)."""
-    if t_since < -EPS:
+def win(d: float, a: float, b: float, tail: float) -> float:
+    """1 on [a, b), then easing out over `tail`; 0 before a."""
+    if d < a - EPS:
         return 0.0
-    return 1.0 - ease_out_cubic(clip01(t_since / dur))
+    if d < b - EPS:
+        return 1.0
+    return decay(d - b, tail)
 
 
 class B06DataCenter(BeatScene):
@@ -240,122 +204,131 @@ class B06DataCenter(BeatScene):
         # ---------------- stage A at rest ----------------
         self.racks = VGroup(*[Line([x, RACK_TOP, 0], [x, RACK_BOT, 0], stroke_color=MAGENTA,
                                    stroke_width=1.5, stroke_opacity=0.35) for x in RACK_X])
-        self.uplinks = VGroup(*[Line([RACK_X[c], UP_Y0, 0], [SPINE_X[s], UP_Y1, 0], stroke_color=MAGENTA,
+        self.uplinks = VGroup(*[Line([RACK_X[c], TOR_TOP, 0], [SPINE_X[s], SPINE_BOT, 0], stroke_color=MAGENTA,
                                      stroke_width=1.2, stroke_opacity=0.30)
                                 for c in range(8) for s in range(4)])
-        self.tors = VGroup(*[RoundedRectangle(width=0.44, height=0.16, corner_radius=0.05, stroke_color=MAGENTA,
+        self.tors = VGroup(*[RoundedRectangle(width=TOR_W, height=TOR_H, corner_radius=0.05, stroke_color=MAGENTA,
                                               stroke_width=2, fill_color=MAGENTA, fill_opacity=0.30)
                              .move_to([x, TOR_Y, 0]) for x in RACK_X])
-        self.spines = VGroup(*[RoundedRectangle(width=0.80, height=0.20, corner_radius=0.06, stroke_color=MAGENTA,
-                                                stroke_width=2.5, fill_color=MAGENTA, fill_opacity=0.35)
-                               .move_to([x, SPINE_Y, 0]) for x in SPINE_X])
+        self.spines = VGroup(*[RoundedRectangle(width=SPINE_W, height=SPINE_H, corner_radius=0.07,
+                                                stroke_color=MAGENTA, stroke_width=2.5, fill_color=MAGENTA,
+                                                fill_opacity=0.35).move_to([x, SPINE_Y, 0]) for x in SPINE_X])
         srv = []
         for k in range(64):
             if k == HERO:
-                self.hero = unit_with_glyph("node", SRV_U, SRV_C[k], CYAN, fill=0.18, stroke=2)
+                self.hero = unit_with_glyph("node", SRV_U, SRV_C[k], CYAN, fill=0.18, stroke=2.5)
                 srv.append(self.hero)
             else:
-                srv.append(unit(SRV_U, CYAN, 0.18, 2).move_to(SRV_C[k]))
+                srv.append(unit(SRV_U, CYAN, 0.18, 2.5).move_to(SRV_C[k]))
         self.servers = VGroup(*srv)
         self.srv_units = [s.unit if k == HERO else s for k, s in enumerate(srv)]
         self.world = VGroup(self.racks, self.uplinks, self.tors, self.spines, self.servers)
-        EXPAND(self.world, SLOT, SRV_U, 0.0, hero=self.hero, token="node",
-               fades={self.hero.glyph: (0.0, 0.35, 1.0, 0.0)})        # captures rest, draws e = 0
-        self.rig = self.world._motif_expand
-        rig = self.rig
+        rig = EXPAND(self.world, SLOT, SRV_U, 0.0, hero=self.hero, token="node",
+                     fades={self.hero.glyph: (0.0, 0.35, 1.0, 0.0)})   # captures rest, draws e = 0
+        self.rig = rig
         self.ix_srv = [rig.index[id(u)] for u in self.srv_units]
         self.ix_glyph = rig.indices_of(self.hero.glyph)
         self.ix_rack = rig.indices_of(self.racks)
         self.ix_up = rig.indices_of(self.uplinks)
         self.ix_tor = rig.indices_of(self.tors)
         self.ix_spine = rig.indices_of(self.spines)
-        self.ix_net = self.ix_rack + self.ix_up + self.ix_tor + self.ix_spine
         self.ix_hero = set(rig.indices_of(self.hero))
         self.ix_rack_set = set(self.ix_rack)
+        self.ix_line = set(self.ix_rack) | set(self.ix_up)
+        # rest centre of every member (zoom-out 2 moves boxes by their centres, so they stay square)
+        self.rest_c = [0.5 * (r.p.min(axis=0) + r.p.max(axis=0)) for r in rig.rest]
         self.stage_a_on = True
 
-        # stage-A packets (one stroke VMobject per colour; round caps = dots / streaks)
-        self.dots_m = streak_mob(MAGENTA, 8)
-        self.dots_l = streak_mob(LIME, 8)
+        # stage-A messages: trail, head, hot core (one multi-subpath stroke VMobject each)
+        self.m_trail = streak_mob(MAGENTA, 8)
+        self.m_head = streak_mob(MAGENTA, 18)
+        self.m_core = streak_mob(INK, 7)
 
         # ---------------- stage B: hall, trunks, messages ----------------
-        self.hall = Field(HALL_UNIT, pool=200)
-        self.trunks = VGroup(*[Line([x, HALL_Y0, 0], [x, HALL_Y1, 0]) for x in TRUNK_X],
-                             *[Line([HALL_X0, y, 0], [HALL_X1, y, 0]) for y in TRUNK_Y])
+        self.hall = Field(HALL_UNIT, pool=256, qc=16, qa=24, fixed=True)
+        self.trunks = VGroup(*[Line([x, AC[1] - HALL_HALF, 0], [x, AC[1] + HALL_HALF, 0]) for x in TRUNK_X],
+                             *[Line([X_C - HALL_HALF, y, 0], [X_C + HALL_HALF, y, 0]) for y in TRUNK_Y])
         for ln in self.trunks:
             ln.set_stroke(MAGENTA, width=1.5, opacity=0)
         self.trunk_rest = [(ln.get_start().copy(), ln.get_end().copy()) for ln in self.trunks]
-        self.msgs = streak_mob(MAGENTA, 5)
-        self.ring = ShockRing(self, T_DROP, AC, 0.3, 5.0, 8.0, 0.9, 0.55, INK, ease_out_cubic)
+        self.msgs = streak_mob(MAGENTA, 6)
+        self.ring = ShockRing(self, T_DROP, AC, 0.3, 7.0, 14.0, 0.9, 0.55, CYAN, ease_out_cubic)
+        self.flash = RadialFlash(self, T_DROP, AC, peak=0.40, decay=0.05)
 
         # ---------------- outline + COLLAPSE (captured now from the full outline) ----------------
-        self.outline_full = RoundedRectangle(width=5.8, height=5.8, corner_radius=0.3, stroke_color=CYAN,
+        self.outline_full = RoundedRectangle(width=OUT_W, height=OUT_H, corner_radius=0.3, stroke_color=CYAN,
                                              stroke_width=3, fill_color=CYAN, fill_opacity=0).move_to(AC)
         self.outline = self.outline_full.copy()
         self.collapse = COLLAPSE(self.outline, None, "cluster")
-        self.col_s1 = COLLAPSE_SIZE / 5.8
         self.outline.set_stroke(opacity=0)
 
         # ---------------- text ----------------
         track = TextTrack(self)
-        track.on(kick("SCALE 5/6 · DATA CENTER"), 0.20, T_TEXT_OUT)
-        c1 = card([("No shared", "H84"), ("memory.", "H84")])
+        # the kicker and headline arrive on the cut (frame 0 stays the exact E05) and stay
+        # through the collapse; card swaps are hard (cut + POP on one frame, never a crossfade)
+        track.on(kick("SCALE 5/6 · DATA CENTER"), 0.0, T_TEXT_OUT)
+        c1 = card([("Many boxes.", "H96", INK), ("No shared memory.", "S56", INK)])
         c2 = card([("They pass", "H84"), ("messages.", "H84", MAGENTA)])
         c3 = card([("100,000+", "H96", CYAN), ("GPUs, training one AI.", "S56", INK)])
         self.cards = (c1, c2, c3)
-        track.on(c1[0], 0.25, 1.65)
-        track.on(c1[1], 0.25, 1.65)
-        track.on(c2[0], 1.70, 3.10)
-        track.on(c2[1], 1.70, 3.10)
+        assert SPINE_Y + SPINE_H / 2 < min(c1.get_bottom()[1], c2.get_bottom()[1]) - 0.3   # switch tier has air
+        track.on(c1[0], 1 / 60, T_CARD2, enter="pop", exit="cut")
+        track.on(c1[1], 0.12, T_CARD2, exit="cut")
+        track.on(c2[0], T_CARD2, T_FREEZE, enter="pop", exit="cut")     # the freeze blanks the headline
+        track.on(c2[1], T_CARD2, T_FREEZE, enter="pop", exit="cut")
         track.on(c3[0], T_DROP, T_TEXT_OUT, enter="slam", about=[X_C, CARD_TOP, 0])   # grows down, clear of the kicker
         track.on(c3[1], 3.50, T_TEXT_OUT)
 
         # ---------------- HUD ----------------
-        hud.roll(T_ROLL0, T_ROLL1, 135168, 1689600000, ease=ease_in_quad)
-        # 1.18 (not 1.3): the 6.9-wide number would overshoot the 9-unit frame at 1.3
-        hud.slam(T_DROP, "1,689,600,000+", mult="×12,500", scale=1.18)
+        # The roll aims at 1,689,600,000 by the hit but is CUT at the freeze (~281,000,000): the
+        # destination number first appears ON the drop frame, a 6x jump with the hit.
+        hud.roll(T_ROLL0, T_DROP, 135168, 1689600000, ease=ease_in_quad)
+        self.v_freeze = hud.number_at(T_FREEZE - 1e-4)[0]
+        hud.cut(T_FREEZE, self.v_freeze)
+        hud.slam(T_DROP, "1,689,600,000+")                  # start scale capped (1.058, safe zone)
+        hud.mult(T_DROP, "100,000+ GPUs × 16,896")         # word equation in the label slot, 1.4 s
 
-        # ---------------- z-order: dust, ring, world, hall, fx, collapse, text, HUD ----------------
+        # ---------------- z-order: dust, ring, hall, world, fx, collapse, text, HUD ----------------
         self.remove(st.token)                 # the hero server draws the token now
-        add_behind(self, self.hall, self.trunks, self.world, self.dots_m, self.dots_l, self.msgs,
-                   self.ring, self.outline, self.collapse.glyph)
+        add_behind(self, self.hall, self.trunks, self.world, self.m_trail, self.m_head, self.m_core,
+                   self.msgs, self.ring, self.flash, self.outline, self.collapse.glyph)
         entry_ring(self)
         self.add(track)
         self.remove(hud)
         self.add(hud)
         self._draw(0.0)
-        driver = Mobject()
-        driver.add_updater(lambda m, dt: self._draw(self.now))
-        self.add(driver)
+        drive(self, self._draw)
 
         # ---------------- audio ----------------
         self.cue("hit", gain=0.8, note="match-cut and ring")
         self.cue("whoosh", dt=0.40, dur=0.8, direction="up", note="rack zoom-out")
         for c0 in SYNC:
-            self.cue("ticks_burst", dt=c0 + 0.10, dur=0.35, rate0=18, rate1=30, note="messages going up")
-            self.cue("ticks_burst", dt=c0 + 0.45, dur=0.33, rate0=30, rate1=18, note="updates coming down")
+            self.cue("ticks_burst", dt=c0 + 0.08, dur=0.32, rate0=18, rate1=30, note="messages up to the spines")
+            self.cue("ticks_burst", dt=c0 + 0.40, dur=0.32, rate0=30, rate1=18, note="messages down to other racks")
             self.cue("pop", dt=c0 + 0.78, note="same update everywhere")
-        self.cue("ticks_burst", dt=T_ROLL0, dur=0.72, rate0=6, rate1=40, note="odometer accelerating")
+        self.cue("ticks_burst", dt=T_ROLL0, dur=round(T_FREEZE - T_ROLL0, 4), rate0=6, rate1=40,
+                 note="odometer accelerating")
         self.cue("riser", dt=2.70, dur=0.62, note="steep, ends at the gap")
         self.cue("whoosh", dt=2.90, dur=0.9, direction="up", note="hall zoom-out")
         self.cue("silence", dt=T_FREEZE, dur=0.08, note="the gap before the drop")
         self.cue("hit", dt=T_DROP, gain=1.0, note="the biggest drop of the film")
         self.cue("sub_drop", dt=T_DROP, dur=1.4)
         self.cue("pad_swell", dt=T_DROP, dur=1.6, note="euphoric lift")
-        self.cue("shimmer", dt=3.60, dur=1.3, note="rides the all-reduce pulses")
+        self.cue("shimmer", dt=3.60, dur=1.6, note="rides the all-reduce pulses")
         for _, t0, _ in PULSES:
             self.cue("tick", dt=t0, gain=0.5, note="gather/broadcast")
-        self.cue("whoosh", dt=5.47, dur=0.62, direction="down", note="collapse")
-        self.cue("tick", dt=T_COL1, gain=0.5, note="settle")
+        self.cue("whoosh", dt=round((T_COL + T_SET) / 2, 4), dur=0.45, direction="down", note="collapse")
+        self.cue("tick", dt=round(T_SET, 4), gain=0.5, note="settle")
 
         # ---------------- run ----------------
         self.hold_until(T_DROP)
-        # stage A has cross-faded into the hall: drop it (and its packets) from the scene
+        # stage A has cross-faded into the hall: drop it (and its messages) from the scene
         self.stage_a_on = False
-        self.remove(self.world, self.dots_m, self.dots_l)
-        hold_floor(self, T_SET1)
+        self.remove(self.world, self.m_trail, self.m_head, self.m_core)
+        hold_floor(self, T_EXIT)
         exit_to(self)                         # canonical E06, static to 6.00
-        print(f"[b06] hall buckets used (max): {self.hall.max_used}")
+        print(f"[b06] frozen roll value {self.v_freeze}; hall buckets used (max): {self.hall.max_used}, "
+              f"overflow frames: {self.hall.overflow}")
 
     # ------------------------------------------------------------------
     def _draw(self, now: float) -> None:
@@ -370,15 +343,38 @@ class B06DataCenter(BeatScene):
             return 1.0
         return ease_in_out_cubic(ramp(now, T_Z0, T_Z1))
 
+    def _hop_s(self, t: float):
+        """Arc length of every stage-A message along its path at time t, and its phase
+        (-1 = not sent yet, 7 = arrived)."""
+        d = t - HOP_T0
+        ph = np.searchsorted(HOP_EDGE, d, side="right") - 1          # -1 .. 7
+        p = np.clip(ph, 0, 6)
+        frac = np.clip((d - HOP_EDGE[p]) / HOP[p], 0, 1)
+        e = np.where(HOP_MOVE[p], ease_in_out_sine_arr(frac), 1.0)
+        r = np.arange(N_HOPS)
+        s = HOP_SLO[r, p] + (HOP_SHI[r, p] - HOP_SLO[r, p]) * e
+        s = np.where(ph < 0, 0.0, np.where(ph > 6, HOP_CUM[:, -1], s))
+        return s, ph
+
+    @staticmethod
+    def _hop_pos(s: np.ndarray) -> np.ndarray:
+        """(n, 3) points at arc length s along each message's 9-point path."""
+        k = np.clip((HOP_CUM <= s[:, None] + 1e-12).sum(axis=1) - 1, 0, 7)
+        r = np.arange(N_HOPS)
+        L = np.maximum(HOP_CUM[r, k + 1] - HOP_CUM[r, k], 1e-9)
+        f = np.clip((s - HOP_CUM[r, k]) / L, 0, 1)[:, None]
+        p = HOP_P[r, k] * (1 - f) + HOP_P[r, k + 1] * f
+        return np.concatenate([p, np.zeros((N_HOPS, 1))], axis=1)
+
     def _draw_stage_a(self, now: float) -> None:
         rig = self.rig
         if now < T_EXP - EPS:
-            EXPAND(self.world, SLOT, SRV_U, ease_out_expo(now / T_EXP))
+            EXPAND(self.world, SLOT, SRV_U, ease_out_expo(now / T_EXP),
+                   ink=1.0 if flash_frames(now, 1 / 60, 2) else 0.0)
             # stage window on everything but the hero (which is the token at e = 0): rack lines
             # are clipped, every other member fades as an edge leaves the window
-            hero_ix = self.ix_hero
             for i, r in enumerate(rig.rest):
-                if i in hero_ix:
+                if i in self.ix_hero:
                     continue
                 m = r.m
                 if i in self.ix_rack_set:
@@ -388,132 +384,134 @@ class B06DataCenter(BeatScene):
                 if k < 1.0:
                     m.fill_rgbas = m.fill_rgbas * [1, 1, 1, k]
                     m.stroke_rgbas = m.stroke_rgbas * [1, 1, 1, k]
-            self.dots_m.points = np.zeros((0, 3))
-            self.dots_l.points = np.zeros((0, 3))
+            for mob in (self.m_trail, self.m_head, self.m_core):
+                mob.points = EMPTY.copy()
             return
 
+        # zoom-out 2: per-axis camera (x: ZX, y: ZY) so the 2 x 2 server groups land exactly on
+        # the pod's hall squares at e2 = 1; boxes move by their centres (they stay square),
+        # lines map affinely. Identity at e2 = 0.
         e2 = self._zoom2(now)
-        z = ZOOM2 ** (-e2)
-        b = np.array([X_C, 0.45 * e2, 0.0]) - z * PIVOT_A
+        zx, zy = ZX ** (-e2), ZY ** (-e2)
+        piv = lerp(PIVOT_A, AC, e2)
+        zv = np.array([zx, zy, 1.0])
+        for i, r in enumerate(rig.rest):
+            m = r.m
+            if i in self.ix_line:
+                m.points = piv + (r.p - PIVOT_A) * zv
+            else:
+                c = self.rest_c[i]
+                m.points = (r.p - c) * zx + piv + (c - PIVOT_A) * zv
+            m.stroke_width = r.sw * zx
         a_net = 1.0 - ramp(e2, 0.25, 0.65)
         a_srv = 1.0 - ramp(e2, 0.75, 1.0)
         boost = ramp(e2, 0.30, 0.75)                     # servers turn solid as they shrink
 
-        # cycle state
-        cyan_f = lime_f = tor_f = spine_f = rack_glow = up_glow = 0.0
+        # cycle state: compute flash, update flash
+        cyan_f = lime_f = 0.0
         for c0 in SYNC:
             cyan_f = max(cyan_f, decay(now - c0, 0.25))
             lime_f = max(lime_f, decay(now - (c0 + 0.78), 0.32))
-            tor_f = max(tor_f, decay(now - (c0 + 0.30), 0.22), 0.6 * decay(now - (c0 + 0.60), 0.20))
-            spine_f = max(spine_f, decay(now - (c0 + 0.45), 0.28))
-            rack_glow = max(rack_glow, ramp(now, c0 + 0.08, c0 + 0.14) * (1 - ramp(now, c0 + 0.28, c0 + 0.40)),
-                            ramp(now, c0 + 0.58, c0 + 0.64) * (1 - ramp(now, c0 + 0.76, c0 + 0.90)))
-            up_glow = max(up_glow, ramp(now, c0 + 0.28, c0 + 0.33) * (1 - ramp(now, c0 + 0.58, c0 + 0.66)))
+        # per-message glows: rack lines, uplinks, ToRs, spines, receivers
+        rack_g, tor_f, up_g, spine_f, recv = np.zeros(8), np.zeros(8), np.zeros(32), np.zeros(4), np.zeros(64)
+        for n in range(N_HOPS):
+            d = now - HOP_T0[n]
+            if d < -EPS or d > HOP_EDGE[-1] + 0.30:
+                continue
+            (cs, rs), (cd, rd), s = HOP_SRC[n], HOP_DST[n], HOP_SP[n]
+            E = HOP_EDGE
+            rack_g[cs] = max(rack_g[cs], win(d, E[0], E[1], 0.10))
+            tor_f[cs] = max(tor_f[cs], win(d, E[1], E[2], 0.16))
+            up_g[cs * 4 + s] = max(up_g[cs * 4 + s], win(d, E[2], E[3], 0.12))
+            spine_f[s] = max(spine_f[s], win(d, E[3], E[4], 0.16))
+            up_g[cd * 4 + s] = max(up_g[cd * 4 + s], win(d, E[4], E[5], 0.12))
+            tor_f[cd] = max(tor_f[cd], win(d, E[5], E[6], 0.16))
+            rack_g[cd] = max(rack_g[cd], win(d, E[6], E[7], 0.10))
+            if d >= E[7] - EPS:
+                recv[rd * 8 + cd] = max(recv[rd * 8 + cd], decay(d - E[7], 0.24))
 
-        for i, r in enumerate(rig.rest):
-            m = r.m
-            m.points = r.p * z + b
-            m.stroke_width = r.sw * z
+        def put(i, fill_rgb, fill_a, stroke_rgb, stroke_a):
+            m = rig.rest[i].m
+            yc = 0.5 * (m.points[:, 1].min() + m.points[:, 1].max())
+            k = float(stage_mask(yc))
+            m.fill_rgbas = np.array([[*fill_rgb, fill_a * k]])
+            m.stroke_rgbas = np.array([[*stroke_rgb, stroke_a * k]])
 
-        def setc(ix, fill_rgb, fill_a, stroke_rgb, stroke_a):
-            for i in ix:
-                m = rig.rest[i].m
-                yc = 0.5 * (m.points[:, 1].min() + m.points[:, 1].max())
-                k = float(stage_mask(yc))
-                m.fill_rgbas = np.array([[*fill_rgb, fill_a * k]])
-                m.stroke_rgbas = np.array([[*stroke_rgb, stroke_a * k]])
+        # servers: CYAN compute flash, INK on receiving a message, LIME update flash, solid as
+        # they shrink, cross-fade out into the hall
+        base_rgb = mix(RGB_CYAN, RGB_LIME, lime_f)[0]
+        for k, i in enumerate(self.ix_srv):
+            rv = recv[k]
+            f_rgb = mix(base_rgb, RGB_INK, 0.7 * rv)[0]
+            f_a = max(lerp(0.18, 1.0, cyan_f), lerp(0.18, 0.85, lime_f), lerp(0.18, 0.95, rv),
+                      lerp(0.18, POD_OP, boost)) * a_srv
+            s_rgb = mix(base_rgb, RGB_INK, max(0.6 * cyan_f, rv))[0]
+            put(i, f_rgb, f_a, s_rgb, a_srv * (1 - 0.8 * boost))
+        for i in self.ix_glyph:
+            put(i, RGB_CYAN, 0.0, RGB_CYAN, 0.0)
+        for c, i in enumerate(self.ix_rack):
+            put(i, RGB_MAG, 0.0, mix(RGB_MAG, RGB_INK, 0.35 * rack_g[c])[0], lerp(0.35, 0.95, rack_g[c]) * a_net)
+            self.rig.rest[i].m.stroke_width = lerp(1.5, 3.0, rack_g[c]) * zx
+        for j, i in enumerate(self.ix_up):
+            put(i, RGB_MAG, 0.0, mix(RGB_MAG, RGB_INK, 0.35 * up_g[j])[0], lerp(0.30, 1.0, up_g[j]) * a_net)
+            self.rig.rest[i].m.stroke_width = lerp(1.2, 3.0, up_g[j]) * zx
+        for c, i in enumerate(self.ix_tor):
+            f = tor_f[c]
+            put(i, mix(RGB_MAG, RGB_INK, 0.5 * f)[0], lerp(0.30, 1.0, f) * a_net, mix(RGB_MAG, RGB_INK, f)[0], a_net)
+        for s, i in enumerate(self.ix_spine):
+            f = spine_f[s]
+            put(i, mix(RGB_MAG, RGB_INK, 0.5 * f)[0], lerp(0.35, 1.0, f) * a_net, mix(RGB_MAG, RGB_INK, f)[0], a_net)
 
-        # servers: CYAN compute flash, LIME update flash, solid as they shrink, cross-fade out
-        f_rgb = mix(RGB_CYAN, RGB_LIME, lime_f)[0]
-        f_a = max(lerp(0.18, 1.0, cyan_f), lerp(0.18, 0.85, lime_f), lerp(0.18, POD_OP, boost)) * a_srv
-        s_rgb = mix(mix(RGB_CYAN, RGB_LIME, lime_f)[0], RGB_INK, 0.6 * cyan_f)[0]
-        setc(self.ix_srv, f_rgb, f_a, s_rgb, a_srv * (1 - 0.8 * boost))
-        setc(self.ix_glyph, RGB_CYAN, 0.0, RGB_CYAN, 0.0)
-        setc(self.ix_rack, RGB_MAG, 0.0, RGB_MAG, lerp(0.35, 0.85, rack_glow) * a_net)
-        setc(self.ix_up, RGB_MAG, 0.0, RGB_MAG, lerp(0.30, 0.75, up_glow) * a_net)
-        setc(self.ix_tor, mix(RGB_MAG, RGB_INK, 0.5 * tor_f)[0], lerp(0.30, 1.0, tor_f) * a_net,
-             mix(RGB_MAG, RGB_INK, tor_f)[0], a_net)
-        setc(self.ix_spine, mix(RGB_MAG, RGB_INK, 0.5 * spine_f)[0], lerp(0.35, 1.0, spine_f) * a_net,
-             mix(RGB_MAG, RGB_INK, spine_f)[0], a_net)
-
-        # packets (only during the SYNC cycles, before the zoom-out)
-        up_pts, dn_pts = [], []
-        for c0 in SYNC:
-            up_pts += self._packets(now, c0, up=True)
-            dn_pts += self._packets(now, c0, up=False)
-        for mob, segs in ((self.dots_m, up_pts), (self.dots_l, dn_pts)):
-            if segs:
-                A = np.concatenate([s[0] for s in segs]) * z + b
-                B = np.concatenate([s[1] for s in segs]) * z + b
-                mob.points = seg_points(A, B)
-                mob.stroke_width = 8 * z
-                mob.set_stroke(opacity=a_net)
-            else:
-                mob.points = np.zeros((0, 3))
-
-    @staticmethod
-    def _packets(now: float, c0: float, up: bool):
-        """[(tails (n,3), heads (n,3))] of the packets in flight for cycle c0 (world coords).
-        Rack legs run as a train at one constant speed: going up, all leave their servers at
-        c0+0.10 and are swallowed by the ToR one after another (last at c0+0.30); coming down
-        is the exact time-reverse, so all 64 land on their servers together at c0+0.78."""
-        out = []
-        top = np.stack([SRV_C[:, 0], np.full(64, RACK_TOP), np.zeros(64)], axis=1)
-        dist = RACK_TOP - SRV_C[:, 1]
-        v = dist.max() / 0.20
-        if up and c0 + 0.10 - EPS <= now < c0 + 0.30 + PKT_LEN / v:
-            head = np.clip((now - c0 - 0.10) * v / dist, 0, 1)
-            tail = np.clip((now - c0 - 0.10) * v / dist - PKT_LEN / dist, 0, 1)
-            live = tail < 1
-            out.append(streak(SRV_C[live], top[live], tail[live], head[live]))
-        if not up and c0 + 0.60 - EPS <= now < c0 + 0.78 - EPS:
-            head = 1 - np.clip((c0 + 0.78 - now) * v / dist, 0, 1)      # 0 = ToR, 1 = server
-            tail = np.clip(head - PKT_LEN / dist, 0, 1)
-            live = head > 0
-            if np.any(live):
-                out.append(streak(top[live], SRV_C[live], tail[live], head[live]))
-        tor = np.array([[RACK_X[c], UP_Y0, 0.0] for c in range(8) for s in range(4)])
-        spn = np.array([[SPINE_X[s], UP_Y1, 0.0] for c in range(8) for s in range(4)])
-        L = np.hypot(*(spn - tor)[:, :2].T)
-        for t0, t1, P0, P1, go in ((c0 + 0.30, c0 + 0.45, tor, spn, up), (c0 + 0.45, c0 + 0.60, spn, tor, not up)):
-            if go and t0 - EPS <= now < t1 - EPS:
-                q = ease_in_out_sine(clip01((now - t0) / (t1 - t0)))
-                qd = q * L
-                out.append(streak(P0, P1, np.clip(qd - PKT_LEN * 0.8, 0, None) / L, np.full(32, q)))
-        return out
+        # messages in flight (dot + trail + hot core); identity camera while they run
+        s, ph = self._hop_s(now)
+        live = (ph >= 0) & (ph <= 6)
+        if np.any(live) and a_net > 0:
+            s_prev, _ = self._hop_s(now - 0.035)
+            s_tail = np.maximum(s_prev, s - TRAIL)
+            H = self._hop_pos(s)[live]
+            T = self._hop_pos(s_tail)[live]
+            H = piv + (H - PIVOT_A) * zv
+            T = piv + (T - PIVOT_A) * zv
+            self.m_trail.points = seg_points(T, H)
+            self.m_head.points = seg_points(H, H)
+            self.m_core.points = seg_points(H, H)
+            self.m_trail.set_stroke(MAGENTA, width=8 * zx, opacity=0.6 * a_net)
+            self.m_head.set_stroke(MAGENTA, width=18 * zx, opacity=a_net)
+            self.m_core.set_stroke(INK, width=7 * zx, opacity=0.9 * a_net)
+        else:
+            for mob in (self.m_trail, self.m_head, self.m_core):
+                mob.points = EMPTY.copy()
 
     # ---------------- stage B ----------------
     def _hall_cam(self, now: float):
-        """(k, b, shake) with screen = k*q + b for hall-world points q."""
+        """(k, piv, shake, e2): camera-space point = piv + k*(q - AC) + shake for hall-world q."""
         e2 = self._zoom2(now)
-        k = ZOOM2 ** (1 - e2)
-        b = np.array([X_C, 0.45 * e2, 0.0]) - k * AC
-        sh = shake(now - T_DROP, 0.06, 0.25, seed=6)
-        return k, b + sh, e2
+        k = ZX ** (1 - e2)
+        piv = lerp(PIVOT_A, AC, e2)
+        sh = shake(now - T_DROP, 0.10, 0.25, seed=6)
+        return k, piv, sh, e2
+
+    def _collapse_state(self, now: float):
+        """(sc, a_col): the contents' scale about AC and opacity during the COLLAPSE."""
+        if now < T_COL - EPS:
+            return 1.0, 1.0
+        ec = 1.0 if now >= T_SET - EPS else ease_in_out_expo(ramp(now, T_COL, T_SET))
+        return self.collapse.s1 ** ec, 1.0 - ramp(ec, *self.collapse.contents_fade)
 
     def _draw_hall(self, now: float) -> None:
-        if now < T_Z0 - EPS:
+        sc, a_col = self._collapse_state(now)
+        if now < T_Z0 - EPS or a_col <= 0:
             self.hall.clear()
             for ln in self.trunks:
                 ln.set_stroke(opacity=0)
-            self.msgs.points = np.zeros((0, 3))
+            self.msgs.points = EMPTY.copy()
             return
-        k, b, e2 = self._hall_cam(now)
-        # collapse: contents scale about AC (C = AC) by s = (1.128/5.8)^e and fade over e in [.45, .8]
-        ec = 0.0
-        if now >= T_COL0 - EPS:
-            ec = 1.0 if now >= T_COL1 - EPS else ease_in_out_expo(ramp(now, T_COL0, T_COL1))
-        sc = self.col_s1 ** ec
-        a_col = 1.0 - ramp(ec, 0.45, 0.80)
-        if a_col <= 0:
-            self.hall.clear()
-            for ln in self.trunks:
-                ln.set_stroke(opacity=0)
-            self.msgs.points = np.zeros((0, 3))
-            return
-        kk = k * sc
-        bb = (b - AC) * sc + AC if ec > 0 else b
-        C = HALL_C * kk + bb
+        k, piv, sh, e2 = self._hall_cam(now)
+
+        def col(P):                               # camera space -> screen (collapse about AC)
+            return P if sc == 1.0 else (P - AC) * sc + AC
+
+        C0 = piv + k * (HALL_C - AC) + sh
         n = len(HALL_C)
 
         # ---- colour + opacity per square
@@ -534,11 +532,11 @@ class B06DataCenter(BeatScene):
                     continue
                 if kind == "gather":
                     if now < t1 + 0.12:
-                        rho = 4.0 * (1.0 - ease_in_quad(ramp(now, t0, t1)))
-                        band = np.clip(1.0 - np.abs(HALL_D - rho) / 0.25, 0, 1) * (1 - ramp(now, t1, t1 + 0.12))
+                        rho = 4.6 * (1.0 - ease_in_quad(ramp(now, t0, t1)))
+                        band = np.clip(1.0 - np.abs(HALL_D - rho) / 0.30, 0, 1) * (1 - ramp(now, t1, t1 + 0.12))
                         mag = np.maximum(mag, band)
                 else:
-                    td = t0 + (t1 - t0) * HALL_D / 4.0          # front passes square at td
+                    td = t0 + (t1 - t0) * HALL_D / 4.6          # front passes square at td
                     passed = now >= td - EPS
                     fl = np.where(passed, 1.0 - ease_out_quad_arr(np.clip((now - td) / 0.085, 0, 1)), 0.0)
                     ink = np.maximum(ink, fl)
@@ -546,46 +544,46 @@ class B06DataCenter(BeatScene):
             rgb = mix(mix(RGB_CYAN, RGB_MAG, mag), RGB_INK, ink)
             a = np.maximum(base, np.maximum(mag * 0.95, ink)) * HALL_VAR
             a = np.maximum(a, ink)                       # flashes read at full strength
-        a = a * stage_mask(C[:, 1]) * a_col
-        self.hall.draw(C, HALL_SQ * kk, np.concatenate([rgb, a[:, None]], axis=1))
+        a = a * hall_mask(C0[:, 1]) * a_col
+        self.hall.draw(col(C0), HALL_SQ * k * sc, np.concatenate([rgb, a[:, None]], axis=1))
 
-        # ---- trunks
+        # ---- trunks (clipped to the hall window in camera space, then collapsed)
         if now < T_DROP - EPS:
             ta = 0.30 * ramp(e2, 0.6, 1.0)
         else:
-            d = now - T_DROP
-            ta = lerp(0.9, 0.5, ease_out_cubic(ramp(d, 0.0, 0.40)))
+            ta = lerp(0.9, 0.5, ease_out_cubic(ramp(now - T_DROP, 0.0, 0.40)))
         ta *= a_col
+        w = 1.5 * min(k * sc, 1.6)
         for ln, (p0, p1) in zip(self.trunks, self.trunk_rest):
-            q0, q1 = p0 * kk + bb, p1 * kk + bb
-            if abs(q0[0] - q1[0]) < 1e-9:                 # vertical: clip to the stage window
-                lo, hi = max(min(q0[1], q1[1]), -2.50), min(max(q0[1], q1[1]), 3.40)
+            q0, q1 = piv + k * (p0 - AC) + sh, piv + k * (p1 - AC) + sh
+            if abs(q0[0] - q1[0]) < 1e-9:                 # vertical: clip to the window
+                lo, hi = max(min(q0[1], q1[1]), WIN_LO + 0.08), min(max(q0[1], q1[1]), WIN_HI - 0.08)
                 if hi <= lo or ta <= 0:
                     ln.set_stroke(opacity=0)
                     continue
-                ln.put_start_and_end_on(np.array([q0[0], lo, 0]), np.array([q0[0], hi, 0]))
-                ln.set_stroke(MAGENTA, width=1.5 * min(kk, 1.6), opacity=ta)
+                ln.put_start_and_end_on(col(np.array([q0[0], lo, 0])), col(np.array([q0[0], hi, 0])))
+                ln.set_stroke(MAGENTA, width=w, opacity=ta)
             else:
-                mk = float(stage_mask(q0[1]))
+                mk = float(hall_mask(q0[1]))
                 lo, hi = max(min(q0[0], q1[0]), -4.7), min(max(q0[0], q1[0]), 4.7)
                 if hi <= lo or ta * mk <= 0:
                     ln.set_stroke(opacity=0)
                     continue
-                ln.put_start_and_end_on(np.array([lo, q0[1], 0]), np.array([hi, q0[1], 0]))
-                ln.set_stroke(MAGENTA, width=1.5 * min(kk, 1.6), opacity=ta * mk)
+                ln.put_start_and_end_on(col(np.array([lo, q0[1], 0])), col(np.array([hi, q0[1], 0])))
+                ln.set_stroke(MAGENTA, width=w, opacity=ta * mk)
 
-        # ---- messages along the trunks (3.40 - 5.05)
+        # ---- messages along the trunks (3.40 - 5.35)
         if T_DROP - EPS <= now < T_MSG_END:
-            env = ramp(now, T_DROP, T_DROP + 0.10) * (1 - ramp(now, 4.90, T_MSG_END))
+            env = ramp(now, T_DROP, T_DROP + 0.10) * (1 - ramp(now, T_MSG_END - 0.15, T_MSG_END))
             s = (now - T_DROP) * MSG_SPEED + MSG_PHASE
             head = self._walk_pos(s)
             tail = self._walk_pos(np.maximum(s - MSG_TAIL, MSG_PHASE))
-            H = np.concatenate([head, np.zeros((N_MSG, 1))], axis=1) * kk + bb
-            T = np.concatenate([tail, np.zeros((N_MSG, 1))], axis=1) * kk + bb
-            self.msgs.points = seg_points(T, H)
-            self.msgs.set_stroke(MAGENTA, width=5 * kk, opacity=0.95 * env * a_col)
+            H = piv + k * (np.concatenate([head, np.zeros((N_MSG, 1))], axis=1) - AC) + sh
+            T = piv + k * (np.concatenate([tail, np.zeros((N_MSG, 1))], axis=1) - AC) + sh
+            self.msgs.points = seg_points(col(T), col(H))
+            self.msgs.set_stroke(MAGENTA, width=6 * k * sc, opacity=0.95 * env * a_col)
         else:
-            self.msgs.points = np.zeros((0, 3))
+            self.msgs.points = EMPTY.copy()
 
     @staticmethod
     def _walk_pos(s: np.ndarray) -> np.ndarray:
@@ -600,13 +598,10 @@ class B06DataCenter(BeatScene):
         if now < T_OUT0 - EPS:
             self.outline.set_stroke(opacity=0)
             return
-        if now < T_COL0 - EPS:
+        if now < T_COL - EPS:
             a = ease_out_cubic(ramp(now, T_OUT0, T_OUT1))
             self.outline.pointwise_become_partial(self.outline_full, 0, max(a, 1e-3))
             self.outline.set_stroke(CYAN, width=3, opacity=1)
             self.outline.set_fill(CYAN, opacity=0)
             return
-        if now < T_COL1 - EPS:
-            self.collapse.at(ease_in_out_expo(ramp(now, T_COL0, T_COL1)))
-        else:
-            self.collapse.settle(ramp(now, T_COL1, T_SET1))
+        self.collapse.render(now, T_COL, T_SET, T_EXIT)

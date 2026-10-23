@@ -226,11 +226,49 @@ def inst_pad_swell(gain=1.0, dur=2.0, chord=0, **_):
     return np.stack([x, delay(x, 300)], axis=1) * env[:, None] * gain, 0
 
 
+def inst_reverse_swell(gain=1.0, dur=0.05, **_):
+    """Reversed noise+tone bloom that ends exactly on the cue (pre-hit suck-in)."""
+    t = tvec(dur)
+    x = butter(RNG.standard_normal(len(t)), "band", [300, 6000]) * np.exp(-t * 18) * 0.5
+    x += np.sin(2 * np.pi * 110 * t) * np.exp(-t * 12) * 0.4
+    x = x[::-1] * np.linspace(0.2, 1.0, len(t)) ** 2
+    return np.stack([x, delay(x, 120)], axis=1) * gain, len(t)
+
+
+def inst_noise_burst(gain=1.0, **_):
+    """Wide, bright transient layered on climax hits."""
+    t = tvec(0.6)
+    x = butter(RNG.standard_normal(len(t)), "band", [500, 12000]) * np.exp(-t * 9) * 0.35
+    return np.stack([x, delay(x, 260)], axis=1) * gain, 0
+
+
 INSTRUMENTS = {
     "hit": inst_hit, "sub_drop": inst_sub_drop, "whoosh": inst_whoosh, "riser": inst_riser,
     "tick": inst_tick, "ticks_burst": inst_ticks_burst, "glitch": inst_glitch,
     "shimmer": inst_shimmer, "pad_swell": inst_pad_swell, "pop": inst_pop,
+    "reverse_swell": inst_reverse_swell, "noise_burst": inst_noise_burst,
 }
+
+# Hit hierarchy: the master limiter flattens equal-gain hits, so tier them
+# before mixing. A hit that coincides with a long sub_drop is a climax.
+TIER_ROUTINE, TIER_LANDING, TIER_CLIMAX = 0.6, 0.8, 1.0
+
+
+def tier_hits(cues: list[dict]) -> list[dict]:
+    drops = [c for c in cues if c["type"] == "sub_drop"]
+    out = []
+    for c in cues:
+        if c["type"] != "hit":
+            out.append(c)
+            continue
+        paired = [d for d in drops if abs(d["t"] - c["t"]) < 0.02]
+        climax = any(d.get("dur", 0) >= 1.4 for d in paired) and c.get("gain", 1.0) >= 1.0
+        tier = TIER_CLIMAX if climax else (TIER_LANDING if paired else TIER_ROUTINE)
+        out.append({**c, "gain": c.get("gain", 1.0) * tier})
+        if climax:
+            out.append({"t": c["t"], "type": "reverse_swell", "gain": 0.9})
+            out.append({"t": c["t"], "type": "noise_burst", "gain": 1.0})
+    return sorted(out, key=lambda c: c["t"])
 
 
 # --------------------------------------------------------------------------
@@ -352,25 +390,26 @@ def load_cues() -> list[dict]:
 def render(total: float, cues: list[dict]) -> np.ndarray:
     tail = 3.0
     n = n_samples(total + tail)
+    nt = n_samples(total)
     e = energy_curve(total + tail)
+    cues = tier_hits(cues)
 
-    duck = np.ones(n)  # sidechain + silences
+    side = np.ones(n)  # sidechain ducking of the bed under hits
     for c in cues:
-        a = n_samples(c["t"])
         if c["type"] in ("hit", "sub_drop"):
+            a = n_samples(c["t"])
             t = np.arange(n - a) / SR
-            duck[a:] *= 1 - 0.65 * c.get("gain", 1.0) * np.exp(-t / 0.22)
-        if c["type"] == "silence":
-            d = c.get("dur", 0.5)
-            b = n_samples(c["t"] + d)
-            ramp = n_samples(0.06)
-            duck[max(a - ramp, 0):a] *= np.linspace(1, 0.05, len(duck[max(a - ramp, 0):a]))
-            duck[a:b] *= 0.05
-            duck[b:b + ramp] *= np.linspace(0.05, 1, len(duck[b:b + ramp]))
+            side[a:] *= 1 - 0.65 * min(c.get("gain", 1.0), 1.0) * np.exp(-t / 0.22)
 
     dry, send = music_bed(total + tail, e)
-    dry *= duck[:, None]
-    send *= duck[:, None]
+    # The bed ends with the film (short fade); it must not wrap onto the start,
+    # or the replay would hear two beds at once.
+    fade = n_samples(0.03)
+    bed_env = np.zeros(n)
+    bed_env[:nt] = 1.0
+    bed_env[nt - fade:nt] = np.linspace(1, 0, fade)
+    dry *= (side * bed_env)[:, None]
+    send *= (side * bed_env)[:, None]
 
     sfx = np.zeros((n, 2))
     sfx_send = np.zeros((n, 2))
@@ -390,18 +429,69 @@ def render(total: float, cues: list[dict]) -> np.ndarray:
     ir = reverb_ir()
     wet_src = send + sfx_send
     wet = np.stack([signal.fftconvolve(wet_src[:, i], ir[:, i])[:n] for i in range(2)], axis=1)
-    mix = dry * 0.9 + sfx * 1.0 + wet * 0.35
 
-    # Loop: wrap the tail back onto the start so a replay is seamless.
-    nt = n_samples(total)
-    out = mix[:nt].copy()
-    over = mix[nt:]
+    # Loop: SFX and reverb tails that run past the end wrap onto the start.
+    ambience = dry * 0.9 + wet * 0.35
+    out = ambience[:nt].copy()
+    over = ambience[nt:] + sfx[nt:]
     out[: len(over)] += over * np.linspace(1, 0, len(over))[:, None] ** 0.5
 
+    # Silences are applied after the wrap so nothing leaks into them. Short
+    # ones (freeze frames, pre-drop gaps) are true silence; long ones duck.
+    hush = np.ones(nt)
+    for c in cues:
+        if c["type"] != "silence":
+            continue
+        d = c.get("dur", 0.5)
+        depth = c.get("depth", 0.003 if d <= 0.35 else 0.1)
+        a, b = n_samples(c["t"]), min(n_samples(c["t"] + d), nt)
+        r_in, r_out = n_samples(0.015), n_samples(0.01)
+        lo = max(a - r_in, 0)
+        hush[lo:a] = np.minimum(hush[lo:a], np.linspace(1, depth, a - lo))
+        hush[a:b] = np.minimum(hush[a:b], depth)
+        hush[b:b + r_out] = np.minimum(hush[b:b + r_out], np.linspace(depth, 1, len(hush[b:b + r_out])))
+    out *= hush[:, None]
+    out += sfx[:nt]  # cue sounds themselves are placed after the hush (they are intentional)
+
     out = butter(out, "high", 28)
-    peak = np.max(np.abs(out)) + 1e-9
-    out = np.tanh(out / peak * 1.4) / np.tanh(1.4) * 0.89  # gentle soft clip, ~-1 dBFS
-    return out
+    return master(out)
+
+
+TARGET_LUFS = -14.5  # TikTok/Reels-friendly; platforms normalise around -14
+CEILING = 0.84       # ~ -1.5 dBFS sample peak; keeps true peak under -1 dBTP after AAC
+
+
+def lufs(x: np.ndarray) -> float:
+    """Integrated loudness per ITU-R BS.1770-4 (K-weighting + gating), 48 kHz."""
+    b1, a1 = [1.53512485958697, -2.69169618940638, 1.19839281085285], [1.0, -1.69065929318241, 0.73248077421585]
+    b2, a2 = [1.0, -2.0, 1.0], [1.0, -1.99004745483398, 0.99007225036621]
+    k = signal.lfilter(b2, a2, signal.lfilter(b1, a1, x, axis=0), axis=0)
+    blk, hop = int(0.4 * SR), int(0.1 * SR)
+    starts = range(0, len(k) - blk + 1, hop)
+    z = np.array([np.mean(k[i:i + blk] ** 2, axis=0).sum() for i in starts])
+    lk = -0.691 + 10 * np.log10(z + 1e-12)
+    z = z[lk > -70]
+    rel = -0.691 + 10 * np.log10(z.mean() + 1e-12) - 10
+    z = z[(-0.691 + 10 * np.log10(z + 1e-12)) > rel]
+    return float(-0.691 + 10 * np.log10(z.mean() + 1e-12))
+
+
+def master(x: np.ndarray) -> np.ndarray:
+    """Soft-clip limiter with its drive solved for TARGET_LUFS. The hit tiers are
+    set before this, so the hierarchy survives (peaks compress, order holds)."""
+    x = x / (np.max(np.abs(x)) + 1e-9)
+
+    def limit(g):
+        return np.tanh(x * g) / np.tanh(max(g, 1e-3)) * CEILING if g > 0 else x
+
+    lo, hi = 0.3, 8.0
+    for _ in range(18):
+        mid = (lo + hi) / 2
+        if lufs(limit(mid)) < TARGET_LUFS:
+            lo = mid
+        else:
+            hi = mid
+    return limit((lo + hi) / 2)
 
 
 def main() -> None:

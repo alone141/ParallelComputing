@@ -369,6 +369,16 @@
    "confidence": "high",
    "as_of": "2026-10-23",
    "safe_on_screen_phrasing": "Unless you make the problem bigger..."
+  },
+  {
+   "id": "gpu_h100_sxm_fp32",
+   "topic": "GPU lanes (film lineage: one H100 SXM5)",
+   "claim": "NVIDIA H100 SXM5 has 132 SMs x 128 FP32 CUDA cores = 16,896 FP32 lanes; HGX/DGX H100 nodes hold 8 such GPUs; 100,000+ H100 clusters train frontier models (see dc_meta_llama).",
+   "value": "16,896 FP32 CUDA cores (H100 SXM5)",
+   "as_of": "2022 (Hopper launch); unchanged spec",
+   "source_url": "https://developer.nvidia.com/blog/nvidia-hopper-architecture-in-depth/",
+   "confidence": "high",
+   "safe_on_screen_phrasing": "H100: 16,896 math lanes"
   }
  ],
  "pitfalls": [

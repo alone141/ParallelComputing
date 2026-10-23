@@ -1,10 +1,16 @@
 """b01 HOOK: one at a time vs all at once (4.5 s, film 0.0-4.5).
 
 Frame 0 is handoff_state('LOOP') (== b09's last frame): the amber worker is mid-crawl on
-idx 32. It crawls on the integer frame clock to idx 49, freezes for 8 frames (headline
+idx 32; the 'PARALLEL COMPUTING' kicker fades in from frame 1 (topic legible within 0.15 s)
+and stays to the cut. It crawls on the integer frame clock to idx 49, freezes for 8 frames (headline
 jitter, silence), then at 1.00 s every other cell lights up in a radial INK->CYAN wave
-while the lone worker stays AMBER. The open-loop card follows, then the camera pushes into
-the worker, which morphs into the cyan E01 token and settles.
+(white radial burst + CYAN shock ring from the worker) while the lone worker stays AMBER.
+The camera then never sits still: a slow linear push-in about the worker (1.00 -> 1.06,
+1.30-3.40) carries straight into the ease_in_out_expo push-in (3.40-4.33), with a second,
+softer diagonal light pulse on the open-loop card (2.35). The worker morphs into the cyan
+E01 token and settles (cut_times(4.5): land 4.333, settle 0.12 s, static E01 f267-f269).
+The kicker + open-loop card stay fully visible until the token is static (hard cut at 4.45),
+so the cut never shows an empty, text-less frame before b02's frame 0.
 
 Everything per frame is a pure function of self.now (one vectorised grid updater + the
 motif text tracks), so 30 fps previews and 60 fps finals agree.
@@ -22,15 +28,19 @@ T_HIT = 1.00                    # f60 the parallel wave
 WAVE_SPAN = 0.35                # flash front reaches the farthest cell 0.35 s after the hit
 FLASH_SETTLE = 0.25             # INK flash -> LIT
 T_HOOK_OUT = 2.15               # hook cards leave (gone by 2.35, no overlap with the next card)
-T_CARDS = 2.35                  # kicker + open loop in
-SLAM_S = 1.15                   # 'All at once.' is 6.9 wide: 1.3x would leave the frame
+T_CARDS = 2.35                  # open-loop card in (+ the second light pulse)
 T_RO_OUT = 2.85                 # '320 WORKERS · 1 STEP' out
-T_PUSH0 = 3.40                  # push-in on the worker
-T_PUSH1 = 257 * F               # 4.2833: push-in lands (frame-aligned, see SETTLE)
+T_DRIFT0, T_DRIFT1 = 1.30, 3.40 # slow push-in about the worker (linear) ...
+DRIFT_S = 1.06                  # ... 1.00 -> 1.06, handing its speed to the push-in
+T_PUSH0 = T_DRIFT1              # push-in on the worker (ease_in_out_expo)
+_, T_PUSH1, T_SETTLE1 = cut_times(4.5)   # 4.3333 (f260) lands, 4.45 (f267) settled
 T_FADE0, T_FADE1 = 3.55, 4.20   # non-worker cells fade out
 T_MORPH0 = 3.70                 # worker -> token style
-T_SETTLE1 = 267 * F             # 4.45: settle done; f267-f269 = static E01 (3 frames)
-T_TXT_OUT = 4.20                # kicker + open-loop card out (gone by 4.40)
+T_TXT_OUT = T_SETTLE1           # kicker + open-loop card: full until the token is static, then cut
+
+PULSE_SPAN = 0.26               # second light pulse: front crosses the grid diagonal in 0.26 s ...
+PULSE_DUR = 0.16                # ... each cell 0 -> peak -> 0 over 0.16 s (whole sweep ~0.42 s)
+PULSE_OP = 0.97                 # LIT opacity at the pulse peak (shimmer 0.62 +- 0.25)
 
 SHAKE_SEED = 1
 JITTER_SEED = 4
@@ -40,21 +50,43 @@ _NOT_W = np.arange(HOOK_N) != W_IDX
 _DIST = np.linalg.norm(HOOK_CENTERS - W_PT, axis=1)
 _T_FLASH = T_HIT + WAVE_SPAN * _DIST / _DIST[_NOT_W].max()     # per-cell flash time
 _PHASE = 1.2 * (HOOK_CENTERS[:, 0] - HOOK_CENTERS[:, 1])        # diagonal sheen phase
+_DIAG = HOOK_CENTERS[:, 0] - HOOK_CENTERS[:, 1]                 # top-left -> bottom-right
+_T_PULSE = T_CARDS + PULSE_SPAN * (_DIAG - _DIAG.min()) / (_DIAG.max() - _DIAG.min())
 _BASE49 = HookGrid.crawl_arrays(W_IDX)
+_W_SW = float(_BASE49["sw"][W_IDX])                             # the worker's own stroke width
 _INK1 = rgba(INK, 1.0)
 _CYAN_RGB = rgba(CYAN)[:3]
+_LIT_RGB_HOT = lerp(_CYAN_RGB, rgba(INK)[:3], 0.30)             # pulse peak: cyan lifted toward INK
 _FLASH_SW = 1.5
+_V_DRIFT = (DRIFT_S - 1.0) / (T_DRIFT1 - T_DRIFT0)              # drift speed carried into the push
 
 
 _HOT = 0.42                     # worker morph passes through hot INK (no muddy olive midpoint)
 
 
 def _morph_fill(mo: float) -> np.ndarray:
-    """Worker fill AMBER op1 -> (hot, INK-ish) -> CYAN op 0.18 (the E01 token fill)."""
+    """Worker fill AMBER op1 -> (hot, INK-ish) -> CYAN op TOKEN_FILL (the E01 token fill)."""
     hot = rgba(INK, 1.0)
     if mo <= _HOT:
         return lerp(HOOK_WORKER_FILL, lerp(HOOK_WORKER_FILL, hot, 0.75), mo / _HOT)
     return lerp(lerp(HOOK_WORKER_FILL, hot, 0.75), rgba(CYAN, TOKEN_FILL), (mo - _HOT) / (1 - _HOT))
+
+
+def _cam_scale(now: float) -> float:
+    """Camera scale about the worker before the push-in: 1.0 until 1.30, then linear to 1.06."""
+    return 1.0 + (DRIFT_S - 1.0) * ramp(now, T_DRIFT0, T_DRIFT1)
+
+
+def _pulse(now: float) -> np.ndarray:
+    """Second light pulse (2.35): per-cell 0 -> 1 -> 0 bump as the diagonal front passes."""
+    p = (now - _T_PULSE) / PULSE_DUR
+    out = np.zeros(HOOK_N)
+    on = (p > 0.0) & (p < 1.0)
+    if np.any(on):
+        q = p[on]
+        out[on] = np.where(q < 0.35, 1.0 - (1.0 - q / 0.35) ** 2,
+                           1.0 - ease_in_out_sine_arr((q - 0.35) / 0.65))
+    return out
 
 
 def finish(scene) -> None:
@@ -64,12 +96,6 @@ def finish(scene) -> None:
         scene.wait(1 / config.frame_rate)
     elif n > 1:
         scene.hold_until(beat_duration(type(scene).__name__))
-
-
-def _eox(p):
-    """Vectorised ease_out_expo (exactly 1 at p >= 1)."""
-    p = np.asarray(p, float)
-    return np.where(p >= 1.0, 1.0, 1.0 - np.power(2.0, -10.0 * p))
 
 
 class B01Hook(BeatScene):
@@ -97,18 +123,35 @@ class B01Hook(BeatScene):
             since = now - _T_FLASH
             hit = (since >= -EPS) & _NOT_W
             if np.any(hit):
-                e = _eox(np.clip(since[hit] / FLASH_SETTLE, 0.0, 1.0))[:, None]
-                lit_fill = np.column_stack([np.tile(_CYAN_RGB, (int(hit.sum()), 1)), lit_op[hit]])
+                nh = int(hit.sum())
+                e = ease_out_expo_arr(np.clip(since[hit] / FLASH_SETTLE, 0.0, 1.0))[:, None]
+                lit_rgb = np.tile(_CYAN_RGB, (nh, 1))
+                lit_st = np.tile(HOOK_LIT_STROKE, (nh, 1))
+                lit_sz = np.ones(nh)
+                pu = _pulse(now)[hit]
+                if np.any(pu > 0):               # the second, softer diagonal light pulse
+                    lit_op[hit] = lerp(lit_op[hit], PULSE_OP, pu)
+                    lit_rgb = lerp(lit_rgb, _LIT_RGB_HOT, pu[:, None])
+                    lit_st[:, 3] = lerp(lit_st[:, 3], 0.95, pu)
+                    lit_sz = 1.0 + 0.07 * pu
+                lit_fill = np.column_stack([lit_rgb, lit_op[hit]])
                 fill[hit] = lerp(_INK1, lit_fill, e)
-                stroke[hit] = lerp(_INK1, HOOK_LIT_STROKE, e)
+                stroke[hit] = lerp(_INK1, lit_st, e)
                 sw[hit] = _FLASH_SW
-                size[hit] = lerp(1.3, 1.0, e[:, 0])
-            centers = HOOK_CENTERS + shake(now - T_HIT, 0.06, 0.20, SHAKE_SEED)
+                size[hit] = lerp(1.3, lit_sz, e[:, 0])
+            jolt = shake(now - T_HIT, 0.06, 0.20, SHAKE_SEED)
             corner = None
 
-            if now > T_PUSH0 + EPS:              # push-in on the worker
+            if now <= T_PUSH0 + EPS:             # slow push-in about the worker (camera)
+                s = _cam_scale(now)
+                centers = W_PT + s * (HOOK_CENTERS - W_PT) + jolt
+                if s != 1.0:
+                    size = size * s              # (the worker keeps its own stroke, as in the push)
+                    sw[_NOT_W] *= s
+            else:                                # push-in on the worker, from the drift's pose
                 e = ease_in_out_expo(ramp(now, T_PUSH0, T_PUSH1))
-                s = HOOK_PUSH_SCALE ** e
+                base = DRIFT_S + _V_DRIFT * (now - T_PUSH0)      # the drift keeps its speed ...
+                s = base ** (1.0 - e) * HOOK_PUSH_SCALE ** e      # ... and hands over to the push
                 centers = lerp(W_PT, AC, e) + s * (HOOK_CENTERS - W_PT)
                 fade = 1.0 - ease_in_out_sine(ramp(now, T_FADE0, T_FADE1))
                 fill[_NOT_W, 3] *= fade
@@ -118,7 +161,7 @@ class B01Hook(BeatScene):
                 mo = ease_in_out_cubic(ramp(now, T_MORPH0, T_PUSH1))
                 fill[W_IDX] = _morph_fill(mo)
                 stroke[W_IDX] = lerp(HOOK_WORKER_STROKE, rgba(CYAN, 1.0), mo)
-                sw[W_IDX] = lerp(2.0, TOKEN_STROKE, mo)
+                sw[W_IDX] = lerp(_W_SW, TOKEN_STROKE, mo)
                 k = s * lerp(HOOK_WORKER_SCALE, 1.0, e)
                 if now >= T_PUSH1 - EPS:         # SETTLE 0.94 -> 1.0 about AC
                     p = ramp(now, T_PUSH1, T_SETTLE1)
@@ -130,8 +173,11 @@ class B01Hook(BeatScene):
         grid.add_updater(render_grid)
 
         # ---------------------------------------------------------------- effects
-        ring = ShockRing(self, T_HIT, W_PT, 0.2, 6.5, 6.0, 1.0, 0.5)
+        # CYAN shock ring (w12, r 0.2 -> 7.0) + a white RadialFlash from the worker instead of the
+        # old full-frame INK tint (which bloomed into a flat grey wash over the cyan wave).
+        ring = ShockRing(self, T_HIT, W_PT, 0.2, 7.0, 12.0, 1.0, 0.5, color=CYAN)
         self.add(ring)
+        self.add(RadialFlash(self, T_HIT, W_PT, peak=0.45, decay=0.08))   # under the text
 
         # ---------------------------------------------------------------- text
         tr = TextTrack(self)
@@ -148,23 +194,18 @@ class B01Hook(BeatScene):
             return ORIGIN
 
         tr.on(head, 0.0, T_HOOK_OUT, enter="cut", exit="out", alpha=head_alpha, shift=head_shift)
-        allc = card([("All at once.", "H96", CYAN)], top=below(head))[0]
-
-        def hook_out(now):
-            return smooth(clip01((now - T_HOOK_OUT) / 0.20)) if now >= T_HOOK_OUT - EPS else 0.0
-
-        def all_scale(now):
-            d = now - T_HIT
-            return lerp(SLAM_S, 1.0, ease_out_back(d / 0.20)) if -EPS <= d < 0.20 - EPS else 1.0
-
-        all_live = LiveText(lambda now: "A" if T_HIT - EPS <= now < T_HOOK_OUT + 0.20 - EPS else None,
-                            lambda s: allc, scene=self, about=allc.get_center(),
-                            alpha=lambda now: 1.0 - hook_out(now),
-                            shift=lambda now: UP * 0.15 * hook_out(now), scale=all_scale)
-        tr.on(kick("PARALLEL COMPUTING", CYAN), T_CARDS, T_TXT_OUT)
+        # 'All at once.' shares line 1's H96 scale (a matched pair, card()'s baseline pitch): it
+        # sits 0.75 above the grid and its SLAM can run at full strength inside the safe zone.
+        pair = card([("One at a time.", "H96", INK), ("All at once.", "H96", CYAN)])
+        allc = pair[1]
+        tr.on(allc, T_HIT, T_HOOK_OUT, enter="slam", exit="out",
+              scale=fit_scale(allc, 1.3, box=SAFE_BOX), cap=False)
+        # The topic is on screen from the first second (CARD_IN from t 0.0 is invisible on frame 0,
+        # so the LOOP frame stays exact) and simply stays when the open-loop card arrives.
+        tr.on(kick("PARALLEL COMPUTING", CYAN), 0.0, T_TXT_OUT, exit="cut")
         ol = card([("It scales…", "H84", INK), ("until it doesn't.", "H84", AMBER)])
-        tr.on(ol[0], T_CARDS, T_TXT_OUT)
-        tr.on(ol[1], T_CARDS, T_TXT_OUT)
+        tr.on(ol[0], T_CARDS, T_TXT_OUT, exit="cut")
+        tr.on(ol[1], T_CARDS, T_TXT_OUT, exit="cut")
 
         par = "320 WORKERS · 1 STEP"
 
@@ -178,16 +219,12 @@ class B01Hook(BeatScene):
         def ro_out(now):
             return smooth(clip01((now - T_RO_OUT) / 0.20)) if now >= T_RO_OUT - EPS else 0.0
 
-        self.add(all_live)
         ro = LiveText(ro_str, lambda s: step_readout_tmpl(s, CYAN if s == par else AMBER),
                       scene=self,
                       alpha=lambda now: 1.0 - ro_out(now),
-                      shift=lambda now: UP * 0.15 * ro_out(now),
+                      shift=lambda now: DOWN * 0.12 * ro_out(now),   # away from the growing grid
                       scale=lambda now: pop_scale(now - T_HIT))
         self.add(ro)
-
-        flash = FrameFlash(self, T_HIT, 0.22, 0.12)
-        self.add(flash)
 
         # ---------------------------------------------------------------- audio
         for k in range(17):                      # one tick per hop: f2, f5, ... f50
@@ -198,6 +235,7 @@ class B01Hook(BeatScene):
         self.cue("sub_drop", dt=T_HIT, dur=1.4)
         self.cue("shimmer", dt=1.05, dur=1.3)
         self.cue("tick", dt=T_CARDS, gain=0.5)
+        self.cue("shimmer", dt=T_CARDS, gain=0.45, dur=0.5, note="second light pulse")
         self.cue("pad_swell", dt=2.90, dur=1.4)
         self.cue("whoosh", dt=(T_PUSH0 + T_PUSH1) / 2, dur=0.9, direction="up")
         self.cue("tick", dt=T_PUSH1, gain=0.5)

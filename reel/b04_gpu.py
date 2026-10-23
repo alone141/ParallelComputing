@@ -2,20 +2,25 @@
 
 The CPU token (E03) card-flips (replacement, not containment) into a GPU token, whose
 base opens into the H100 die. 3,072 pixels (1 pixel = 1 thread, 8x4 blocks = warps of
-32) appear in a radial wave while the HUD log-rolls 256 -> 16,896 (x66). One warp is
-singled out and runs three instructions in lockstep (all 32 pixels change on the same
-frame); then six waves of 16 warps shade a sphere top to bottom; on the 4.55 hit the
-light sweeps across the ball (all 3,072 colours recomputed every frame). The die then
-collapses into handoff_token('gpu') (E04).
+32) appear in a radial wave while the HUD rolls 256 -> 16,896 ('66x ONE CPU'). On the 1.30
+slam the LIGHT WAVE races out from the centre (every pixel INK, then CYAN) and the die
+settles into an idle-busy hum: every warp flickers on its own (8 Hz), never dark.
+2.55-2.85 the camera pushes in 4.5x on one warp: its 32 threads run three instructions
+in lockstep (an INK instruction beam fires, all 32 recolour on the SAME frame: CYAN,
+LIME, then each thread its own pixel colour), then the camera pulls back straight into
+six waves of 16 warps scattered over the whole die (stratified, never a top-to-bottom
+scanline), which develop a shaded sphere; 4.55 hit: one full-die INK flash, pop, shock
+ring; the light then sweeps across the ball (all 3,072 colours recomputed every frame).
+The die collapses (cut_times) into handoff_token('gpu') (E04).
 
-Everything that moves is a pure function of self.now (one driver updater, the pixel
-field is one vectorised redraw); the scene only holds until the structural switch
-points (collapse capture, canonical exit).
+Everything that moves is a pure function of self.now (one driver updater; the pixel
+field is one vectorised state function drawn through motif.Field, one VMobject per
+quantised colour); the scene only holds until the structural switch points (collapse
+capture, canonical exit).
 """
 
 from style import *
 from motif import *
-import math
 
 # --------------------------------------------------------------------------
 # World layout (storyboard b04 visuals)
@@ -30,11 +35,13 @@ PX = X_C + (_I - 31.5) * 0.10 + 0.03 * (_I // 8 - 3.5)
 PY = AC[1] + (23.5 - _J) * 0.10 - 0.03 * (_J // 4 - 5.5)
 PC = np.stack([PX, PY, np.zeros(N_PIX)], axis=1)
 WARP_C, WARP_R = _I // 8, _J // 4                     # 8 x 12 = 96 warps of 32
+N_WARP = 96
 WARP_ID = WARP_R * 8 + WARP_C
-BAND = _J // 8                                        # wave k = block rows 2k, 2k+1
 FOCUS = (WARP_C == 3) & (WARP_R == 5)                 # cols 24-31 x rows 20-23
+FOCUS_W = 5 * 8 + 3
 DIST = np.hypot(PX - AC[0], PY - AC[1])
-T_APPEAR = 0.40 + 0.55 * DIST / DIST.max()            # radial reveal from AC
+DMAX = float(DIST.max())
+T_APPEAR = 0.40 + 0.55 * DIST / DMAX                  # radial reveal from AC
 
 DIE_W, DIE_H, DIE_R = 7.0, 5.4, 0.28
 OUT_C = np.array([-0.765, 0.665, 0.0])                # focus-warp outline
@@ -48,79 +55,237 @@ T_FLIP_END = 0.24
 FLASH_FRAMES = (7, 8)                                 # 2-frame INK flash at 0.12 (60 fps grid)
 T_DIE0, T_DIE1 = 0.26, 0.80                           # token base -> die
 T_GLYPH_OUT = 0.45
-T_ROLL0, T_LAND = 0.40, 1.30                          # HUD log-roll, 16,896 lands
-T_RIPPLE1 = 1.85
-TWINKLE = (1.48, 2.58)                                # idle warps blink (as whole warps)
-T_FOCUS, T_FOCUS_END = 2.70, 3.90
-STEPS = (2.95, 3.30, 3.65)                            # lockstep instructions
+T_ROLL0, T_LAND = 0.40, 1.30                          # HUD roll (accelerating), 16,896 slams
+LW_DUR = 0.25                                         # 1.30 LIGHT WAVE: front reaches the corners
+LW_R0 = 0.80                                          # ... already this wide on the slam frame
+T_OUTLINE = 2.48                                      # focus outline telegraphs the target
+Z_IN0, Z_IN1 = 2.55, 2.85                             # camera push-in on the focus warp
+Z_OUT0, Z_OUT1 = 3.75, 4.00                           # pull-back, straight into the waves
+ZK = 4.5                                              # 8x4 warp -> ~3.9 x 2.1 units
+STEPS = (2.95, 3.25, 3.55)                            # lockstep instructions (all 32, one frame)
 T_WAVE0, WAVE_DT = 4.00, 0.10
 T_HIT = 4.55
-T_SWEEP1 = 5.50
-T_COLLAPSE = 5.50
-T_SETTLE = 6.15
-T_SETTLED = 6.32
-T_EXIT = 380 / 60                                     # 6.333: canonical E04 (on the 30 & 60 fps grids)
-
-THETA0, THETA1 = 2.6, 0.5
+T_COL, T_SET, T_EXIT = cut_times(6.5)                 # 5.933 / 6.333 / 6.45
+T_SWEEP1 = 6.10                                       # light sweep (frozen at T_COL)
+T_TEXT_OUT = T_EXIT - 0.20                            # kicker + headline leave during the settle
 
 # --------------------------------------------------------------------------
 # Colours / shading (precomputed; per frame only the light direction changes)
 # --------------------------------------------------------------------------
-C_DIM = np.array(DIMMER.to_rgb())
-C_CY = np.array(CYAN.to_rgb())
-C_INK = np.array(INK.to_rgb())
+C_DIM = RGB_DIMMER
+C_CY = RGB_CYAN
+C_INK = RGB_INK
+C_LIME = RGB_LIME
 BASE_OP = 0.90
 IMG_OP = 0.95
-IDLE_TINT = 0.07                                      # idle threads: DIMMER lifted 7% toward CYAN (reads on a phone)
+IDLE_TINT = 0.07                                      # pre-wave threads: DIMMER lifted 7% toward CYAN
+BUSY0, BUSY1 = 0.25, 0.45                             # idle-busy: CYAN opacity range per warp
+BUSY_HZ = 8.0
+DIM_K = 0.35                                          # other warps while one is in focus ...
+DIM_BACK = 0.55                                       # ... and how far they come back on the pull-back
+READY_TINT = 0.15                                     # the focus warp waiting for its instruction
+STEP_RGB = (C_CY, C_LIME, None)                       # None = each thread its own pixel colour
 
 _U = (_I - 31.5) / 21.0
 _V = (23.5 - _J) / 21.0
 INSIDE = _U ** 2 + _V ** 2 <= 1.0
 NRM = np.stack([_U, _V, np.sqrt(np.clip(1.0 - _U ** 2 - _V ** 2, 0.0, None))], axis=1)
 OUTSIDE_RGB = lerp(C_DIM[None, :], C_CY[None, :], (0.18 * np.clip((-0.2 - _V) / 1.2, 0, 1))[:, None])
+LX0, LX1 = -1.6, 2.0                                  # light x sweep (wider than cos 2.6 -> cos 0.5)
+SPEC_GAIN = 1.6
 
 
-def shade(theta: float) -> np.ndarray:
-    """(N_PIX, 3) RGB of the shaded sphere for light angle theta (storyboard formula)."""
-    L = np.array([math.cos(theta), 0.7, 0.9])
+def shade(lx: float) -> np.ndarray:
+    """(N_PIX, 3) RGB of the shaded sphere for a light at (lx, 0.7, 0.9) (storyboard formula,
+    widened sweep and a hotter specular)."""
+    L = np.array([lx, 0.7, 0.9])
     L /= np.linalg.norm(L)
     d = np.maximum(0.0, NRM @ L)
     H = L + np.array([0.0, 0.0, 1.0])
     H /= np.linalg.norm(H)
     sp = np.maximum(0.0, NRM @ H) ** 24
     inside = lerp(lerp(C_DIM[None, :], C_CY[None, :], (d ** 0.9)[:, None]), C_INK[None, :],
-                  np.minimum(1.0, 1.2 * sp)[:, None])
+                  np.minimum(1.0, SPEC_GAIN * sp)[:, None])
     return np.where(INSIDE[:, None], inside, OUTSIDE_RGB)
 
 
-SHADE0 = shade(THETA0)
+SHADE0 = shade(LX0)
 
 
-def theta_at(now: float) -> float:
+def light_x(now: float) -> float:
     if now < T_HIT:
-        return THETA0
-    return lerp(THETA0, THETA1, ease_in_out_sine(ramp(now, T_HIT, T_SWEEP1)))
+        return LX0
+    return lerp(LX0, LX1, ease_in_out_sine(ramp(now, T_HIT, T_SWEEP1)))
 
 
-# idle twinkle: whole warps blink faint CYAN (seeded schedule)
-_trng = np.random.default_rng(404)
-TW_N = 34
-TW_T = np.sort(_trng.uniform(*TWINKLE, TW_N))
-TW_W = _trng.permutation(96)[:TW_N]
-TW_DUR = 0.34
+# 1.30 light wave: per-pixel arrival (linear in distance from AC beyond LW_R0), 60 fps grid
+LW_T = T_LAND + LW_DUR * np.maximum(DIST - LW_R0, 0.0) / (DMAX - LW_R0)
+LW_F = np.rint(LW_T * 60).astype(int)
+
+# idle-busy: every warp re-rolls its CYAN level at ~8 Hz, each on its own phase
+_brng = np.random.default_rng(404)
+BUSY_R = _brng.random((N_WARP, 64))
+BUSY_PH = _brng.random(N_WARP)
+
+
+def busy_level(now: float) -> np.ndarray:
+    """(N_WARP,) CYAN opacity of each warp's idle-busy flicker at now."""
+    b = np.clip(np.floor(now * BUSY_HZ + BUSY_PH).astype(int), 0, BUSY_R.shape[1] - 1)
+    return BUSY0 + (BUSY1 - BUSY0) * BUSY_R[np.arange(N_WARP), b]
+
+
+# waves of warps: stratified scatter. The die is cut into 16 regions of 2x3 warps and each
+# region's 6 warps get a random order 0..5, so every wave lights exactly one warp in every
+# region: 16 warps spread over the whole die per wave (the sphere develops everywhere at once).
+_wrng = np.random.default_rng(7)
+WAVE_OF_WARP = np.zeros(N_WARP, int)
+for _rr in range(4):
+    for _rc in range(4):
+        _ws = [r * 8 + c for r in range(3 * _rr, 3 * _rr + 3) for c in range(2 * _rc, 2 * _rc + 2)]
+        WAVE_OF_WARP[_ws] = _wrng.permutation(6)
+WAVE_T = T_WAVE0 + WAVE_DT * WAVE_OF_WARP[WARP_ID]   # per pixel
+WAVE_F = np.rint(WAVE_T * 60).astype(int)
+IN_WAVES = ~FOCUS                                     # the focus warp already computed its pixels
+
+# zoom window: zoomed pixels stay inside the die (inset), fading out near its edge
+WIN = (AC[0] - DIE_W / 2 + 0.08, AC[0] + DIE_W / 2 - 0.08, AC[1] - DIE_H / 2 + 0.08, AC[1] + DIE_H / 2 - 0.08)
+WIN_FADE = 0.30
 
 _RR = RoundedRectangle(width=1.0, height=1.0, corner_radius=PIX_CORNER / PIX).points.copy()
 
 
-def ease_out_cubic_arr(x):
-    return 1.0 - (1.0 - x) ** 3
+def zoom_e(now: float) -> float:
+    """Camera push-in progress (0 = rest, 1 = focus warp at 4.5x on AC)."""
+    if now < Z_IN0 - EPS:
+        return 0.0
+    if now < Z_OUT0 - EPS:
+        return ease_in_out_quart(ramp(now, Z_IN0, Z_IN1))
+    return 1.0 - ease_in_out_quart(ramp(now, Z_OUT0, Z_OUT1))
 
 
-def hold_floor(scene, t: float) -> None:
-    """Hold until the last frame at or before t (exact at 60 fps; 30-fps previews round down)."""
-    n = int(math.floor(t * config.frame_rate + 1e-6)) - scene._frames
-    if n > 0:
-        scene.wait((n - 0.5) / config.frame_rate)
+def cam_at(now: float) -> tuple[float, np.ndarray, float]:
+    """(k, c, e): p -> c + (p - OUT_C) * k (log-space zoom about the focus warp, which
+    slides to AC)."""
+    e = zoom_e(now)
+    return ZK ** e, lerp(OUT_C, AC, e), e
+
+
+def flash_decay(now: float, t: float, dur: float) -> float:
+    """1 on the 2 story frames from t, then 1 -> 0 (ease_out_cubic) over dur; 0 before t."""
+    if now < t - EPS:
+        return 0.0
+    if flash_frames(now, t, 2):
+        return 1.0
+    return 1.0 - ease_out_cubic(ramp(now, t + 2 / 60, t + 2 / 60 + dur))
+
+
+def field_pop(now: float) -> float:
+    if now < T_HIT - EPS:
+        return 1.0
+    p = ramp(now, T_HIT, T_HIT + 0.25)
+    return 1.0 if p >= 1.0 else lerp(1.08, 1.0, ease_out_cubic(p))
+
+
+def pixel_state(now: float):
+    """(centers (N,3), sizes (N,), rgba (N,4)) of the 3,072 threads at now (pure)."""
+    f = story_frame(now)
+    rgb = np.tile(C_DIM, (N_PIX, 1))
+    alpha = np.full(N_PIX, BASE_OP)
+    size = np.ones(N_PIX)
+
+    # radial reveal 0.40-1.10 (scale 0 -> 1 in 0.12 s) with a CYAN wavefront
+    a = ramp_arr(now, T_APPEAR, T_APPEAR + 0.12)
+    size *= ease_out_cubic_arr(a)
+    alpha = np.where(a > 0, alpha, 0.0)
+    tint = np.where(now >= T_APPEAR, 1.0 - ease_out_cubic_arr(ramp_arr(now, T_APPEAR, T_APPEAR + 0.40)), 0.0)
+    tint = np.maximum(tint * 0.75, IDLE_TINT * (a > 0))
+    rgb = lerp(rgb, C_CY[None, :], tint[:, None])
+
+    # 1.30 LIGHT WAVE: INK (2 frames) -> CYAN (0.10 s) -> idle-busy (0.40 s), front from AC
+    if now >= T_LAND - EPS:
+        busy = busy_level(now)[WARP_ID]
+        d = now - LW_T
+        hit = f >= LW_F
+        q1 = ramp_arr(d, 2 / 60, 2 / 60 + 0.10)
+        q2 = ease_in_out_sine_arr(ramp_arr(d, 2 / 60 + 0.10, 2 / 60 + 0.50))
+        c_rgb = lerp(C_INK[None, :], C_CY[None, :], q1[:, None])
+        c_a = lerp(lerp(1.0, 0.95, q1), busy, q2)
+        ink = hit & (f - LW_F < 2)
+        rgb = np.where(hit[:, None], c_rgb, rgb)
+        alpha = np.where(hit, c_a, alpha)
+        rgb[ink] = C_INK
+        alpha[ink] = 1.0
+
+    # warp focus: the others dim; the focus warp goes 'ready', then 3 lockstep steps
+    dimk = ease_out_cubic(ramp(now, Z_IN0, Z_IN1)) * (1.0 - DIM_BACK * ease_in_out_sine(ramp(now, Z_OUT0, Z_OUT1)))
+    if dimk > 0:
+        alpha = np.where(FOCUS, alpha, alpha * lerp(1.0, DIM_K, dimk))
+        rk = ease_out_cubic(ramp(now, Z_IN0, Z_IN0 + 0.25))
+        ready = lerp(C_DIM, C_CY, READY_TINT)
+        rgb[FOCUS] = lerp(rgb[FOCUS], ready[None, :], rk)
+        alpha[FOCUS] = lerp(alpha[FOCUS], BASE_OP, rk)
+    step = -1
+    for k, s in enumerate(STEPS):
+        if now >= s - EPS:
+            step = k
+    if step >= 0:
+        ts = STEPS[step]
+        target = SHADE0[FOCUS] if STEP_RGB[step] is None else STEP_RGB[step][None, :]
+        if flash_frames(now, ts, 2):
+            rgb[FOCUS] = C_INK
+            alpha[FOCUS] = 1.0
+        else:
+            q = ease_out_cubic(ramp(now, ts + 2 / 60, ts + 2 / 60 + 0.12))
+            rgb[FOCUS] = lerp(C_INK[None, :], target, q)
+            alpha[FOCUS] = lerp(1.0, IMG_OP, q)
+        pp = ramp(now, ts, ts + 0.15)
+        if pp < 1.0:
+            size[FOCUS] *= lerp(1.15, 1.0, ease_out_cubic(pp))
+
+    # waves of warps 4.00-4.50 (scattered): INK for 2 frames, settles to the image in 0.15 s
+    img = SHADE0 if now < T_HIT else shade(light_x(now))
+    if now >= T_WAVE0 - EPS:
+        on = IN_WAVES & (f >= WAVE_F)
+        ink = on & (f - WAVE_F < 2)
+        sp = ease_out_cubic_arr(ramp_arr(now, WAVE_T + 2 / 60, WAVE_T + 2 / 60 + 0.15))
+        sett = on & ~ink
+        rgb[sett] = lerp(C_INK[None, :], img[sett], sp[sett][:, None])
+        alpha[sett] = lerp(1.0, IMG_OP, sp[sett])
+        rgb[ink] = C_INK
+        alpha[ink] = 1.0
+        if now >= T_HIT - EPS:                        # after the hit: the live image everywhere
+            rgb[FOCUS] = img[FOCUS]
+            alpha[FOCUS] = IMG_OP
+
+    # 4.55 HIT: one full-die INK flash (2 frames), then the image comes back up through INK
+    if now >= T_HIT - EPS:
+        if flash_frames(now, T_HIT, 2):
+            rgb[:] = C_INK
+            alpha[:] = 1.0
+        else:
+            lift = 0.65 * (1.0 - ease_out_cubic(ramp(now, T_HIT + 2 / 60, T_HIT + 0.28)))
+            if lift > 0:
+                rgb = lerp(rgb, C_INK[None, :], lift)
+
+    # camera: push-in on the focus warp (pixels outside the die window fade / are culled)
+    k, c, e = cam_at(now)
+    s = field_pop(now)
+    if e > 0:
+        centers = c + (PC - OUT_C) * k
+        sz = PIX * size * k
+        hs = sz / 2
+        din = np.minimum(np.minimum(centers[:, 0] - WIN[0], WIN[1] - centers[:, 0]),
+                         np.minimum(centers[:, 1] - WIN[2], WIN[3] - centers[:, 1])) - hs
+        ce = clip01(e * 3.0)
+        fade = np.where(din < 0, 0.0, lerp(1.0, np.clip(din / WIN_FADE, 0.0, 1.0), ce))
+        alpha = alpha * fade
+    elif s != 1.0:
+        centers = (PC - AC) * s + AC
+        sz = PIX * size * s
+    else:
+        centers = PC
+        sz = PIX * size
+    return centers, sz, np.column_stack([rgb, alpha])
 
 
 class _Snap:
@@ -150,66 +315,69 @@ class B04Gpu(BeatScene):
         self.die = RoundedRectangle(width=DIE_W, height=DIE_H, corner_radius=DIE_R, stroke_color=CYAN,
                                     stroke_width=3, fill_color=CYAN, fill_opacity=0.04).move_to(AC)
         assert len(self.die.points) == len(self.tok_gpu.base.points)
-        self.pixels = VGroup(*[VMobject(stroke_width=0, fill_color=DIMMER, fill_opacity=0) for _ in range(N_PIX)])
-        for k, sq in enumerate(self.pixels):
-            sq.points = _RR * PIX + PC[k]
+        self.field = Field(_RR, pool=240, qc=24, qa=32, fixed=True)
         self.outline = RoundedRectangle(width=OUT_W, height=OUT_H, corner_radius=OUT_R, stroke_color=INK,
                                         stroke_width=3, fill_opacity=0).move_to(OUT_C)
         self.outline_rest = self.outline.points.copy()
-        self._pix_rgba = np.zeros((N_PIX, 4))
-        self._pix_pts = np.zeros((N_PIX,) + _RR.shape)
+        self.beam = Line(LEFT, RIGHT, stroke_color=INK, stroke_width=7)
+        self.beam.cap_style = CapStyleType.ROUND
+        self.ring = ShockRing(self, T_HIT, AC, r0=0.5, r1=4.0, w0=8.0, op0=1.0, dur=0.50, color=INK)
 
-        # ---------------- text ----------------
+        # ---------------- text (kicker + headline in on the cut, out during the settle) ----------------
         track = TextTrack(self)
-        track.on(kick("SCALE 3/6 · ONE GPU"), 0.20, 5.95)
+        track.on(kick("SCALE 3/6 · ONE GPU"), 0.0, T_TEXT_OUT)
         c1 = card([("Now, a GPU.", "H96", INK),
                    ("H100: 16,896 math lanes", "S56", INK, {"16,896 math lanes": CYAN})])
-        track.on(c1[0], 0.25, 2.45)                    # gone by 2.65, when 'Warps of 32.' enters
-        track.on(c1[1], 0.40, 2.45)
-        c2 = card([("Warps of 32.", "H96", INK, {"32": CYAN}), ("One instruction.", "S56", INK)])
+        track.on(c1[0], 0.05, 2.45, enter="pop")      # gone by 2.65, when 'Warps of 32.' enters
+        track.on(c1[1], 0.25, 2.45)
+        c2 = card([("Warps of 32.", "H96", INK, {"32": CYAN}),
+                   ("32 threads, 1 instruction.", "S56", INK)])
         track.on(c2[0], 2.65, T_HIT, exit="cut")        # hard swap on the 4.55 hit
         track.on(c2[1], 2.80, T_HIT, exit="cut")
         c3 = card([("Every pixel,", "H84", INK), ("in parallel.", "H84", CYAN)])
-        track.on(c3, T_HIT, 5.95, enter="pop")
+        track.on(c3, T_HIT, T_TEXT_OUT, enter="pop")
 
-        # ---------------- HUD ----------------
-        hud.roll(T_ROLL0, T_LAND, 256, 16896)
-        hud.slam(T_LAND, "16,896", mult="×66")
+        # ---------------- HUD: the roll accelerates into the slam (with its ticks) ----------------
+        hud.roll(T_ROLL0, T_LAND, 256, 16896, ease=ease_in_quad)
+        hud.slam(T_LAND, "16,896")
+        hud.mult(T_LAND, "66× ONE CPU")                # word line: what the jump means
 
-        # ---------------- z-order: dust, ring, die, pixels, outline, flip tokens, text, HUD ----
+        # ---------------- z-order: dust, ring, die, pixels, outline, beam, hit ring, flip tokens, text, HUD ----
         self.remove(st.token)                          # the flip token now draws E03
-        add_behind(self, self.die, self.pixels, self.outline, self.tok_cpu, self.tok_gpu)
+        add_behind(self, self.die, self.field, self.outline, self.beam, self.ring, self.tok_cpu, self.tok_gpu)
         entry_ring(self)
         self.add(track)
         self.remove(hud)
         self.add(hud)
         self.collapse = None
         self._draw(0.0)
-        driver = Mobject()
-        driver.add_updater(lambda m, dt: self._draw(self.now))
-        self.add(driver)
+        drive(self, self._draw)
 
         # ---------------- audio ----------------
         self.cue("glitch", dur=0.12, note="card-flip")
         self.cue("hit", dt=T_FLIP_MID, gain=0.8, note="GPU swapped in")
-        self.cue("ticks_burst", dt=T_ROLL0, dur=0.90, rate0=8, rate1=60, note="odometer")
+        self.cue("ticks_burst", dt=T_ROLL0, dur=0.86, rate0=8, rate1=60, note="odometer (accelerating roll)")
         self.cue("whoosh", dt=0.53, dur=0.55, direction="up", note="die opens")
         self.cue("hit", dt=T_LAND, gain=0.8, note="16,896 lands")
+        self.cue("shimmer", dt=T_LAND, dur=0.55, gain=0.6, note="light wave across the die")
+        self.cue("whoosh", dt=2.50, dur=0.40, direction="up", note="push-in on one warp")
         for s in STEPS:
-            self.cue("tick", dt=s, gain=0.6, freq=3800, pan=0, note="lockstep step")
+            self.cue("tick", dt=s, gain=0.9, freq=3800, pan=0, note="lockstep step: all 32 threads")
         self.cue("riser", dt=3.60, dur=0.40, note="into the waves")
+        self.cue("whoosh", dt=3.72, dur=0.30, direction="down", note="pull back")
         self.cue("ticks_burst", dt=T_WAVE0, dur=0.55, rate0=10, rate1=10, note="one tick per warp wave")
         self.cue("hit", dt=T_HIT, note="image complete")
         self.cue("sub_drop", dt=T_HIT, dur=0.9)
-        self.cue("shimmer", dt=T_HIT, dur=0.95, note="rides the light sweep")
-        self.cue("whoosh", dt=5.83, dur=0.65, direction="down", note="collapse")
-        self.cue("tick", dt=T_SETTLE, gain=0.5, note="settle")
+        self.cue("shimmer", dt=T_HIT, dur=1.30, note="rides the light sweep")
+        self.cue("whoosh", dt=round(T_COL - 0.10, 4), dur=0.55, direction="down", note="collapse")
+        self.cue("tick", dt=round(T_SET, 4), gain=0.5, note="settle")
 
         # ---------------- run ----------------
-        self.hold_until(T_COLLAPSE)
-        self._draw(T_COLLAPSE)                         # exact frozen state at theta(5.50)
-        self.outline.points = np.zeros((0, 3))
-        self.collapse = COLLAPSE(self.die, self.pixels, "gpu")
+        self.hold_until(T_COL)
+        self._draw(T_COL)                              # exact frozen state at the light of T_COL
+        for m in (self.outline, self.beam):
+            m.points = EMPTY.copy()
+        self.collapse = COLLAPSE(self.die, self.field, "gpu")
         self.add(self.collapse.glyph)
         hold_floor(self, T_EXIT)
         exit_to(self)                                  # canonical E04, static to 6.50
@@ -217,15 +385,12 @@ class B04Gpu(BeatScene):
     # ------------------------------------------------------------------
     def _draw(self, now: float) -> None:
         if self.collapse is not None:
-            if now < T_SETTLE - EPS:
-                self.collapse.at(ease_in_out_expo(ramp(now, T_COLLAPSE, T_SETTLE)))
-            else:
-                self.collapse.settle(ramp(now, T_SETTLE, T_SETTLED))
+            self.collapse.render(now, T_COL, T_SET, T_EXIT)
             return
         self._draw_flip(now)
         self._draw_die(now)
-        self._draw_pixels(now)
-        self._draw_outline(now)
+        self.field.draw(*pixel_state(now))
+        self._draw_focus(now)
 
     # ---- 0.00-0.45: card-flip, then the token glyph zooms/fades as the die opens
     def _draw_flip(self, now: float) -> None:
@@ -256,7 +421,7 @@ class B04Gpu(BeatScene):
             for s in self._snap_gpu_glyph:
                 m = s.m
                 if ga <= 0:
-                    m.points = np.zeros((0, 3))
+                    m.points = EMPTY.copy()
                     continue
                 m.points = (s.p - AC) * z + AC
                 v = s.fr.copy()
@@ -270,7 +435,7 @@ class B04Gpu(BeatScene):
     def _apply_snap(s: _Snap, vis: bool, exact: bool, stretch, flash: bool) -> None:
         m = s.m
         if not vis:
-            m.points = np.zeros((0, 3))
+            m.points = EMPTY.copy()
             return
         m.points = s.p.copy() if exact else (s.p - AC) * stretch + AC
         if flash:
@@ -280,127 +445,49 @@ class B04Gpu(BeatScene):
             m.fill_rgbas, m.stroke_rgbas = s.fr.copy(), s.sr.copy()
         m.stroke_width = s.sw
 
-    # ---- die: token base -> 7.0 x 5.4 die; INK stroke flash + pop on the 4.55 hit
+    # ---- die: token base -> 7.0 x 5.4 die; on the 4.55 hit an INK w8 stroke (2 frames) + pop
     def _draw_die(self, now: float) -> None:
         d = self.die
         if now < T_DIE0 - EPS:
-            d.points = np.zeros((0, 3))
+            d.points = EMPTY.copy()
             return
         e = ease_out_expo(ramp(now, T_DIE0, T_DIE1))
         tb = self._snap_gpu_base
         pts = lerp(tb.p, self.die_rest, e)
-        s = self._field_pop(now)
+        s = field_pop(now)
         d.points = pts if s == 1.0 else (pts - AC) * s + AC
-        hk = 1.0 - ease_out_cubic(ramp(now, T_HIT, T_HIT + 0.40)) if now >= T_HIT - EPS else 0.0
-        stroke_c = interpolate_color(CYAN, INK, hk) if hk > 0 else CYAN
+        hk = flash_decay(now, T_HIT, 0.40)
+        lw = flash_decay(now, T_LAND, 0.30) * 0.6       # the light wave also charges the die edge
+        k = max(hk, lw)
+        stroke_c = interpolate_color(CYAN, INK, k) if k > 0 else CYAN
         d.stroke_rgbas = rgba(stroke_c, 1.0).reshape(1, 4)
-        d.stroke_width = lerp(lerp(TOKEN_STROKE, 3.0, e), 5.0, hk)
-        d.fill_rgbas = rgba(CYAN, lerp(TOKEN_FILL, 0.04, e) + 0.05 * hk).reshape(1, 4)
+        d.stroke_width = lerp(TOKEN_STROKE, 3.0, e) + 5.0 * hk + 2.0 * lw
+        d.fill_rgbas = rgba(CYAN, lerp(TOKEN_FILL, 0.04, e) + 0.08 * hk).reshape(1, 4)
 
-    @staticmethod
-    def _field_pop(now: float) -> float:
-        if now < T_HIT - EPS:
-            return 1.0
-        p = ramp(now, T_HIT, T_HIT + 0.25)
-        return 1.0 if p >= 1.0 else lerp(1.04, 1.0, ease_out_cubic(p))
-
-    # ---- the 3,072-pixel field: one vectorised redraw
-    def _draw_pixels(self, now: float) -> None:
-        f = story_frame(now)
-        rgb = np.tile(C_DIM, (N_PIX, 1))
-        alpha = np.full(N_PIX, BASE_OP)
-        size = np.ones(N_PIX)
-
-        # radial reveal 0.40-1.10 (scale 0 -> 1 in 0.12 s) with a CYAN wavefront
-        a = ramp_arr(now, T_APPEAR, T_APPEAR + 0.12)
-        size *= ease_out_cubic_arr(a)
-        alpha = np.where(a > 0, alpha, 0.0)
-        tint = np.where(now >= T_APPEAR, 1.0 - ease_out_cubic_arr(ramp_arr(now, T_APPEAR, T_APPEAR + 0.40)), 0.0)
-        tint = np.maximum(tint * 0.75, IDLE_TINT * (a > 0))
-        # 16,896 lands (1.30): one ripple of light across the field
-        if T_LAND - EPS <= now < T_RIPPLE1:
-            p = ramp(now, T_LAND, T_RIPPLE1)
-            rho = (DIST.max() + 0.4) * ease_out_cubic(p)
-            tint = np.maximum(tint, 0.55 * (1 - p) * np.exp(-((DIST - rho) / 0.32) ** 2))
-        # idle: whole warps blink (lockstep units), 1.48-2.84
-        if TWINKLE[0] - EPS <= now < TWINKLE[1] + TW_DUR:
-            d = now - TW_T
-            env = np.where((d >= 0) & (d < TW_DUR),
-                           ramp_arr(d, 0.0, 0.05) * (1 - ease_out_cubic_arr(ramp_arr(d, 0.05, TW_DUR))), 0.0)
-            wt = np.zeros(96)
-            np.maximum.at(wt, TW_W, 0.42 * env * (1 - ramp(now, 2.60, T_FOCUS + 0.02)))
-            tint = np.maximum(tint, wt[WARP_ID])
-        rgb = lerp(rgb, C_CY[None, :], tint[:, None])
-
-        # warp focus 2.70-3.90: the others drop to 0.4, the focus warp runs 3 lockstep steps
-        dim = ease_out_cubic(ramp(now, T_FOCUS, T_FOCUS + 0.18)) * (1 - ease_in_out_sine(ramp(now, T_FOCUS_END, T_FOCUS_END + 0.15)))
-        if dim > 0:
-            alpha = np.where(FOCUS, alpha, lerp(BASE_OP, 0.40, dim))
-        step = -1
-        for k, s in enumerate(STEPS):
-            if now >= s - EPS:
-                step = k
-        if step >= 0:
-            if step == 0:
-                rgb[FOCUS] = C_INK
-                alpha[FOCUS] = 1.0
-            elif step == 1:
-                rgb[FOCUS] = C_CY
-                alpha[FOCUS] = IMG_OP
-            else:
-                rgb[FOCUS] = SHADE0[FOCUS]
-                alpha[FOCUS] = IMG_OP
-            pp = ramp(now, STEPS[step], STEPS[step] + 0.15)
-            if pp < 1.0:
-                size[FOCUS] *= lerp(1.15, 1.0, ease_out_cubic(pp))
-
-        # waves of warps 4.00-4.50: band k flashes INK for 2 frames, settles to the image in 0.15 s
-        img = SHADE0 if now < T_HIT else shade(theta_at(now))
-        tw = T_WAVE0 + WAVE_DT * BAND
-        fw = np.rint(tw * 60).astype(int)
-        on = now >= tw - EPS
-        if np.any(on):
-            ink = on & (f - fw < 2)
-            sp = ease_out_cubic_arr(ramp_arr(now, tw + 2 / 60, tw + 2 / 60 + 0.15))
-            sett = on & ~ink
-            rgb[sett] = lerp(C_INK[None, :], img[sett], sp[sett][:, None])
-            alpha[sett] = lerp(1.0, IMG_OP, sp[sett])
-            rgb[ink] = C_INK
-            alpha[ink] = 1.0
-
-        # 4.55 hit: the whole field pops 1.04 -> 1 and lifts toward INK
-        s = self._field_pop(now)
-        if now >= T_HIT - EPS:
-            lift = 0.16 * (1 - ease_out_cubic(ramp(now, T_HIT, T_HIT + 0.28)))
-            if lift > 0:
-                rgb = lerp(rgb, C_INK[None, :], lift)
-        centers = PC if s == 1.0 else (PC - AC) * s + AC
-        sz = PIX * size * s
-
-        pts = self._pix_pts
-        np.multiply(_RR[None, :, :], sz[:, None, None], out=pts)
-        pts += centers[:, None, :]
-        rg = self._pix_rgba
-        rg[:, :3] = rgb
-        rg[:, 3] = alpha
-        for k, sq in enumerate(self.pixels.submobjects):
-            sq.points = pts[k]
-            sq.fill_rgbas = rg[k:k + 1]
-
-    # ---- focus-warp outline
-    def _draw_outline(self, now: float) -> None:
-        o = self.outline
-        if now < T_FOCUS - EPS or now >= T_FOCUS_END + 0.15 - EPS:
-            o.points = np.zeros((0, 3))
+    # ---- focus warp: INK outline + the instruction beam (both ride the camera)
+    def _draw_focus(self, now: float) -> None:
+        o, bm = self.outline, self.beam
+        k, c, e = cam_at(now)
+        vis_in = ease_out_expo(ramp(now, T_OUTLINE, T_OUTLINE + 0.22))
+        vis_out = 1.0 - ease_in_out_sine(ramp(now, Z_OUT0, Z_OUT0 + 0.20))
+        a = vis_in * vis_out
+        if now < T_OUTLINE - EPS or a <= 0:
+            o.points = EMPTY.copy()
+            bm.points = EMPTY.copy()
             return
-        ein = ease_out_expo(ramp(now, T_FOCUS, T_FOCUS + 0.22))
-        aout = 1 - ease_in_out_sine(ramp(now, T_FOCUS_END, T_FOCUS_END + 0.15))
-        sc = lerp(1.35, 1.0, ein)
-        fl = 0.0
-        for s in STEPS:
-            if now >= s - EPS:
-                fl = 1 - ease_out_cubic(ramp(now, s, s + 0.22))
-        sc *= 1.0 + 0.06 * fl
-        o.points = self.outline_rest.copy() if sc == 1.0 else (self.outline_rest - OUT_C) * sc + OUT_C
-        o.stroke_rgbas = rgba(INK, ein * aout).reshape(1, 4)
-        o.stroke_width = 3.0 + 3.0 * fl
+        fl = max(flash_decay(now, s, 0.22) for s in STEPS)
+        sc = lerp(1.35, 1.0, vis_in) * (1.0 + 0.05 * fl)
+        local = (self.outline_rest - OUT_C) * sc
+        o.points = c + local * k
+        o.stroke_rgbas = rgba(INK, a).reshape(1, 4)
+        o.stroke_width = lerp(3.0, 5.0, e) + 4.0 * fl
+        # the instruction beam: a dim bus over the warp while zoomed, full INK on every issue
+        ba = clip01((e - 0.85) / 0.15) * vis_out
+        if ba <= 0:
+            bm.points = EMPTY.copy()
+            return
+        top = c[1] + (OUT_H / 2) * k + 0.22
+        hw = (OUT_W / 2) * k + 0.06
+        bm.points = seg([c[0] - hw, top, 0.0], [c[0] + hw, top, 0.0])
+        bm.stroke_rgbas = rgba(INK, ba * lerp(0.28, 1.0, fl)).reshape(1, 4)
+        bm.stroke_width = 7.0 + 5.0 * fl

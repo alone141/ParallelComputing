@@ -314,11 +314,12 @@ class BeatScene(Scene):
     """
 
     with_dust = True
-    # Waits must render frame by frame (never freeze), so the dust keeps
-    # drifting and frame counts stay exact.
-    always_update_mobjects = True
 
     def setup(self):
+        # Waits must render frame by frame (never freeze), so the dust keeps
+        # drifting and frame counts stay exact. (Set on the instance: Scene.__init__
+        # assigns the attribute, which would shadow a class-level default.)
+        self.always_update_mobjects = True
         self._cues: list[dict] = []
         self._frames = 0
         self._in_play = False

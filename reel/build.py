@@ -38,16 +38,20 @@ QUALITY = {
     "final": {"res": (1080, 1920), "fps": 60},
 }
 
-# Two-scale bloom (computed at reduced size, cheap), gentle vignette, fine grain.
+# Two-scale bloom, gentle vignette, fine grain. The bloom works on fixed-size
+# intermediates and the grain is generated at 540x960 and upscaled, so the final
+# 1080x1920 master looks exactly like the approved 540x960 previews.
 GRADE = (
     "[1:v]format=gbrp,scale={w}:{h}[bgl];"
     "[0:v]format=gbrp[src];[src][bgl]blend=all_mode=lighten:shortest=1,split=3[base][b1][b2];"
-    "[b1]scale=iw/2:ih/2,gblur=sigma=4,scale={w}:{h}:flags=bicubic[g1];"
-    "[b2]scale=iw/6:ih/6,gblur=sigma=6,scale={w}:{h}:flags=bicubic[g2];"
+    "[b1]scale=270:480,gblur=sigma=4,scale={w}:{h}:flags=bicubic[g1];"
+    "[b2]scale=90:160,gblur=sigma=6,scale={w}:{h}:flags=bicubic[g2];"
     "[base][g1]blend=all_mode=screen:all_opacity=0.45[t1];"
     "[t1][g2]blend=all_mode=screen:all_opacity=0.65,"
-    "vignette=angle=PI/7:aspect={w}/{h},"
-    "noise=alls=4:allf=t,format=yuv420p[v]"
+    "vignette=angle=PI/7:aspect={w}/{h}[graded];"
+    "color=c=gray:s=540x960:r={fps},format=gbrp,noise=alls=4:allf=t,"
+    "scale={w}:{h}:flags=bicubic[grain];"
+    "[graded][grain]blend=all_mode=grainmerge:all_opacity=1:shortest=1,format=yuv420p[v]"
 )
 
 
@@ -181,7 +185,7 @@ def film(quality: str) -> None:
                         capture_output=True, text=True, check=True, cwd=REEL,
                         env=dict(os.environ, PYTHONPATH=str(REEL))).stdout.strip().splitlines()[-1]
     run(["ffmpeg", "-y", "-v", "error", "-i", str(raw), "-loop", "1", "-i", bg,
-         "-filter_complex", GRADE.format(w=w, h=h),
+         "-filter_complex", GRADE.format(w=w, h=h, fps=q["fps"]),
          "-map", "[v]", "-c:v", "libx264", "-preset", "slow" if quality == "final" else "veryfast",
          "-crf", "16" if quality == "final" else "23", "-profile:v", "high", "-pix_fmt", "yuv420p",
          "-r", str(q["fps"]), "-movflags", "+faststart", str(silent)])
