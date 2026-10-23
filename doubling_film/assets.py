@@ -129,11 +129,15 @@ def sphere_shade(n=512, lx=-0.55, ly=0.55, strength=0.88, color=(0.004, 0.012, 0
 
 
 @_cached
-def rim_light(n=512, lx=-0.55, ly=0.55, width=0.08):
-    """Thin bright crescent on the lit edge of a sphere ("screen" blend)."""
-    x, y = _grid(n)
+def rim_light(n=512, lx=-0.55, ly=0.55, width=0.08, extent=1.2):
+    """Thin bright crescent on the lit edge of a sphere ("screen" blend).
+
+    The texture spans ``extent`` sphere radii so the glow fades out well inside
+    the square; draw it at ``extent`` times the sphere's diameter."""
+    x, y = _grid(n, extent)
     r = np.hypot(x, y)
-    edge = np.exp(-(((r - 0.985) / width) ** 2)) * (r < 1.02)
+    d = r - 0.985
+    edge = np.where(d < 0, np.exp(-((d / width) ** 2)), np.exp(-((d / 0.025) ** 2)))
     facing = np.clip((x * lx + y * ly) / (r + 1e-6), 0, 1)
     a = np.clip(edge * facing**1.5, 0, 1)
     return _white(a)

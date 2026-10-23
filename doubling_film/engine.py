@@ -24,6 +24,7 @@ from manim import (
     VMobject,
 )
 from manim.camera.camera import Camera
+from manim.constants import LineJointType
 from PIL import Image
 
 INTER = "Inter"
@@ -356,6 +357,8 @@ class MonoLine(VGroup):
     def __init__(self, font: MonoFont, slots=16, color="#FFFFFF", stroke_width=0.0, stroke_color="#000000"):
         super().__init__(*[VMobject(fill_color=color, fill_opacity=1, stroke_width=stroke_width,
                                     stroke_color=stroke_color, stroke_opacity=1) for _ in range(slots)])
+        for slot in self.submobjects:
+            slot.joint_type = LineJointType.ROUND  # a wide halo stroke would grow miter needles
         self.font = font
         self.alpha = 1.0
 

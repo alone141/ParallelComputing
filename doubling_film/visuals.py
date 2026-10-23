@@ -41,7 +41,7 @@ from engine import (
     smooth,
     text,
 )
-from story import EVEREST_SUMMIT_X, GALAXY_SUN, ROW_DURATION, SOLAR_EARTH
+from story import EVEREST_SUMMIT_X, GALAXY_SCALE, GALAXY_SUN, ROW_DURATION, SOLAR_EARTH
 
 D0 = 5.2  # reference diameter in scene units
 R0 = D0 / 2
@@ -114,8 +114,8 @@ class MeasureRow:
 
     MAX_BEADS = 90
 
-    def __init__(self, spec, t_start):
-        self.spec, self.t_start = spec, t_start
+    def __init__(self, spec, t_start, t_end):
+        self.spec, self.t_start, self.t_end = spec, t_start, t_end
         self.a = np.array([spec.start[0], spec.start[1], 0.0]) * D0
         self.b = np.array([spec.end[0], spec.end[1], 0.0]) * D0
         length = float(np.linalg.norm(self.b - self.a))
@@ -150,11 +150,12 @@ class MeasureRow:
         head = self.a + (self.b - self.a) * max(p, 1e-3)
         set_rest(self.glow, polyline_points([self.a, head]))
         set_rest(self.core, polyline_points([self.a, head]))
-        self.glow.k = self.core.k = 1.0
+        fade = 1.0 - smooth(self.t_end - 0.25, self.t_end, t)  # leaves with its counter
+        self.glow.k = self.core.k = fade
         for s, bead in zip(self.bead_pos, self.beads):
-            bead.k = smooth(s - 0.01, s + 0.004, p)
+            bead.k = smooth(s - 0.01, s + 0.004, p) * fade
         set_rest(self.head, quad(head[0], head[1], 0.55))
-        self.head.k = 1.0 - smooth(ROW_DURATION, ROW_DURATION + 0.6, t - self.t_start)
+        self.head.k = (1.0 - smooth(ROW_DURATION, ROW_DURATION + 0.6, t - self.t_start)) * fade
 
     def head_point(self):
         """Current (posed) screen position of the growing end."""
@@ -173,7 +174,8 @@ class Visual:
         self.t_leave = tl.leave[ms.key]
         self.spinners: list = []
         self.mob = self.build()
-        self.row = MeasureRow(ms.row, tl.row_start[ms.key]) if ms.row else None
+        row_end = tl.leave[ms.key] if ms.key != "universe" else tl.outro_start + 0.05
+        self.row = MeasureRow(ms.row, tl.row_start[ms.key], row_end) if ms.row else None
         if self.row:
             self.mob.add(self.row.group)
         self.rig = Rig(self.mob)
@@ -213,11 +215,6 @@ class Visual:
             self.row.animate(t)
         self.rig.pose(s, [center[0], center[1], 0.0], a, self.angle(t))
 
-    def stagger(self, mobs, t, start, step, dur=0.18):
-        for i, m in enumerate(mobs):
-            k = ease_out((t - start - i * step) / dur)
-            for leaf in m.get_family():
-                leaf.k = k
 
 
 # ---------------------------------------------------------------------------
@@ -346,7 +343,7 @@ class Virus(Visual):
             texture.add(Circle(radius=rr, fill_color="#FF6FB0", fill_opacity=rng.uniform(0.12, 0.3),
                                stroke_width=0).move_to([p[0], p[1], 0]))
         shade = sprite("sphere_shade", 2 * br, blend="over")
-        rim = sprite("rim_light", 2 * br * 1.02, "#FFB3D6", alpha=0.9)
+        rim = sprite("rim_light", 2 * br * 1.02 * 1.2, "#FFB3D6", alpha=0.9)
         spec = sprite("glow", br * 0.9, "#FFFFFF", alpha=0.2, at=(-0.35 * br, 0.4 * br))
         self.spinners = [(spikes, 0.16), (texture, 0.16)]
         return Group(glow, spikes, body, texture, shade, rim, spec)
@@ -572,7 +569,7 @@ class Earth(Visual):
             clouds.add(e)
         shade = sprite("sphere_shade", D0, blend="over", strength=0.9)
         spec = sprite("glow", R * 0.9, "#FFFFFF", alpha=0.16, at=(-0.38 * R, 0.42 * R))
-        rim = sprite("rim_light", D0 * 1.02, "#9ED8FF", alpha=0.8)
+        rim = sprite("rim_light", D0 * 1.02 * 1.2, "#9ED8FF", alpha=0.8)
         return Group(glow, atmo, ocean, land, ice, clouds, shade, spec, rim)
 
 
@@ -585,10 +582,10 @@ class Sun(Visual):
         return Group(corona, inner, disc, bloom)
 
 
-PLANETS = [  # (name, AU, radius px at 1080p, colour, start angle)
+PLANETS = [  # (name, AU, radius px at 1080p, colour, angle at arrival; labels kept off the YOU pin)
     ("Mercury", 0.387, 3, "#B9B2A8", 2.2), ("Venus", 0.723, 4, "#F0D9A8", 4.1), ("Earth", 1.0, 4.5, "#4DA3FF", 0.0),
     ("Mars", 1.524, 3.5, "#FF7A50", 1.2), ("Jupiter", 5.2, 8, "#E8C9A0", 2.6), ("Saturn", 9.54, 7, "#F2DDA8", 4.9),
-    ("Uranus", 19.2, 5.5, "#A8F0F2", 1.4), ("Neptune", 30.07, 5.5, "#6F8CFF", 5.6),
+    ("Uranus", 19.2, 5.5, "#A8F0F2", 2.2), ("Neptune", 30.07, 5.5, "#6F8CFF", -0.45),
 ]
 TILT = 0.42
 
@@ -618,7 +615,7 @@ class SolarSystem(Visual):
     def animate(self, t, n):
         pos = {}
         for dot, a, au, a0, name in self.planets:
-            ang = a0 if name == "Earth" else a0 + 0.55 * au**-0.75 * t
+            ang = a0 if name == "Earth" else a0 + 0.55 * au**-0.75 * (t - self.t_arrive)
             pos[name] = np.array([a * math.cos(ang), a * TILT * math.sin(ang), 0])
             move_rest(dot, pos[name])
         move_rest(self.saturn_ring, pos["Saturn"])
@@ -645,7 +642,7 @@ class MilkyWay(Visual):
 
     def build(self):
         halo = sprite("glow", D0 * 1.6, "#6A4CFF", alpha=0.25)
-        gal = sprite("galaxy", D0 * 1.15)
+        gal = sprite("galaxy", D0 * 1.15 * GALAXY_SCALE)
         return Group(halo, gal)
 
     def angle(self, t):

@@ -71,7 +71,7 @@ config.frame_height = 16.0
 config.background_color = "#04050B"
 config.video_encoder_options = {"crf": "15", "preset": "medium"}
 
-Y0 = 0.15  # where the featured object sits
+Y0 = 0.22  # where the featured object sits
 WHITE_TXT = "#F5F7FF"
 MUTED = "#8A93A8"
 BODY = "#C9D1E6"
@@ -114,7 +114,7 @@ def markup(s, size, accent, **kw):
         hl = re.findall(r"\[(.+?)\]", row)
         clean = row.replace("[", "").replace("]", "")
         rows.append(text(clean, size, t2c={h: accent for h in hl}, **kw))
-    g = VGroup(*rows).arrange(DOWN, buff=0.14)
+    g = VGroup(*rows).arrange(DOWN, buff=0.1)
     return g
 
 
@@ -230,7 +230,7 @@ class DoublingFilm(Scene):
         mw = BY_KEY["milkyway"]
         t_ans = self.tl.arrive["milkyway"] + mw.note_delay
         t_end = self.tl.arrive["universe"] + 0.6
-        bx = mx + 0.3
+        bx = mx + 0.74  # right of the meter's YOU tag
         brA = VGroup(Line([bx, my(0), 0], [bx, my(N_HUMAN) - 0.04, 0], stroke_width=1.8, color=MUTED),
                      Line([bx - 0.07, my(0), 0], [bx, my(0), 0], stroke_width=1.8, color=MUTED))
         brB = VGroup(Line([bx, my(N_HUMAN) + 0.04, 0], [bx, my(N_GALAXY), 0], stroke_width=2.2, color="#6CF2FF"),
@@ -251,7 +251,8 @@ class DoublingFilm(Scene):
     def build_labels(self):
         tl = self.tl
         self.labels = []
-        ya, yt, yc = -2.98, -3.63, -4.33
+        ya, yt, yc = -2.86, -3.51, -4.21
+        safe_w = 6.8  # keep clear of the TikTok/Reels button column (x > 3.4)
 
         def block(size_text, title, compare, accent, t_in, t_out, note=None, t_note=None, step=None):
             mono = not re.search("[⁰¹²³⁴⁵⁶⁷⁸⁹⁻]", size_text)
@@ -264,11 +265,11 @@ class DoublingFilm(Scene):
                 chip_txt.move_to(chip)
                 a = VGroup(VGroup(chip, chip_txt), a).arrange(RIGHT, buff=0.26)
             a.move_to([0, ya, 0])
-            ti = fit_width(text(title, 60, font=INTER_DISPLAY, weight=BOLD, color=WHITE_TXT), 7.8).move_to([0, yt, 0])
+            ti = fit_width(text(title, 60, font=INTER_DISPLAY, weight=BOLD, color=WHITE_TXT), safe_w).move_to([0, yt, 0])
             self.labels += [AnimText(a, t_in, t_out), AnimText(ti, t_in + 0.06, t_out, stagger=0.018)]
             c_out = t_note if note else t_out
             for s, ti_, to_ in [(compare, t_in + 0.16, c_out)] + ([(note, t_note + 0.12, t_out)] if note else []):
-                c = fit_width(markup(s, 31, accent, color=BODY, weight=MEDIUM), 8.0)
+                c = fit_width(markup(s, 31 if "\n" not in s else 29, accent, color=BODY, weight=MEDIUM), safe_w)
                 c.move_to([0, yc - (c.height - 0.32) / 2, 0])
                 self.labels.append(AnimText(c, ti_, to_, stagger=0.008))
 
@@ -277,9 +278,10 @@ class DoublingFilm(Scene):
         block("2 → 4 → 8 → 16 → … Planck lengths", "DOUBLE IT. AGAIN.", "Every step makes it [twice] as long.",
               "#B9A6FF", 3.45, tl.steps_end - 0.1)
         # Colliders resolve ~1e-20 m (about doubling 50): only claim "beyond any
-        # experiment" while the counter is below that.
+        # experiment" while the counter is below that.  The exit fade takes ~0.3 s
+        # at ~30 doublings/s, so start it around step 42.
         ts = np.linspace(tl.steps_end, tl.arrive["proton"], 4000)
-        t50 = float(ts[np.argmax(tl.n_at(ts) >= 49.5)])
+        t50 = float(ts[np.argmax(tl.n_at(ts) >= 42.0)])
         block(f"STEPS {len(STEP_TIMES) + 1} → 50", "THE GREAT DESERT", "Smaller than [any experiment] can probe.",
               "#B9A6FF", tl.steps_end + 0.15, t50)
         for m in MILESTONES[1:]:
@@ -295,12 +297,12 @@ class DoublingFilm(Scene):
                   t2c={"double": "#B9A6FF", "galaxy?": "#6CF2FF"})
         q.move_to([0, 4.75, 0])
         sub = text("Guess before it ends.", 27, color=MUTED).move_to([0, 3.3, 0])
-        self.hook = [AnimText(q, 0.0, 2.5, stagger=0.011, dur_in=0.32), AnimText(sub, 0.85, 2.5)]
+        self.hook = [AnimText(q, 0.0, 2.1, stagger=0.011, dur_in=0.32), AnimText(sub, 0.85, 2.1)]
         o = tl.outro_start
         self.outro_t = o
         self.big_glow = sprite("glow", 6.5, "#FF6FD8", alpha=0.0)
         l1 = text("DOUBLINGS", 26, weight=MEDIUM, color=BODY, tracking=0.13).move_to([0, -0.78, 0])
-        l2 = lines(["From the smallest length", "to the edge of everything."], size=34, color=WHITE_TXT,
+        l2 = lines(["From the Planck length", "to the edge of everything."], size=34, color=WHITE_TXT,
                    weight=MEDIUM, gap=0.14).move_to([0, -1.95, 0])
         end = tl.total - 1.45
         self.outro = [AnimText(l1, o + 0.75, end), AnimText(l2, o + 1.0, end, stagger=0.01)]
@@ -432,8 +434,7 @@ class DoublingFilm(Scene):
             row = vis.row
             if row is None or not vis.visible or t < row.t_start:
                 continue
-            leave = tl.leave[vis.key] if vis.key != "universe" else tl.outro_start + 0.05
-            a = smooth(row.t_start, row.t_start + 0.15, t) * (1 - smooth(leave - 0.25, leave, t))
+            a = smooth(row.t_start, row.t_start + 0.15, t) * (1 - smooth(row.t_end - 0.25, row.t_end, t))
             a *= vis.alpha(n, t)
             if a < 0.003:
                 continue
@@ -445,8 +446,9 @@ class DoublingFilm(Scene):
                 # ride the middle of the filled part, so it lands centred on the row
                 sx, sy = row.glow.points[0][:2]
                 mx, my = (sx + hx) / 2, (sy + hy) / 2
-                x = min(max(mx, -4.2 + width / 2), 4.2 - width / 2)
-                pos, align = (x, my + (0.3 if spec.label_side == "up" else -0.3)), "center"
+                x = min(max(mx, -3.4 + width / 2), 3.3 - width / 2)  # clear of the meter and the button column
+                off = spec.label_offset
+                pos, align = (x, my + (off if spec.label_side == "up" else -off)), "center"
             elif spec.label_side == "left":
                 pos, align = (hx - 0.2, hy), "right"
             else:
@@ -469,7 +471,7 @@ class DoublingFilm(Scene):
             subs.append(self.pin)
 
         # HUD ----------------------------------------------------------------
-        hud_a = smooth(2.4, 2.95, t) * (1 - smooth(o + 0.1, o + 0.6, t))
+        hud_a = smooth(2.5, 2.95, t) * (1 - smooth(o + 0.1, o + 0.6, t))
         if hud_a > 0.003:
             self.hud_static.pose(1.0, [0, 0, 0], hud_a)
             for tk in self.meter_ticks:
@@ -500,9 +502,11 @@ class DoublingFilm(Scene):
                 subs.append(self.x2)
 
         # the counter (it flies to the centre for the outro) ------------------
-        cnt_a = smooth(2.4, 2.95, t) * (1 - smooth(tl.total - 1.45, tl.total - 1.1, t))
+        cnt_a = smooth(2.5, 2.95, t) * (1 - smooth(tl.total - 1.45, tl.total - 1.1, t))
         if cnt_a > 0.003:
             shown = min(int(round(n)), 205) if t < o else 205
+            if t < tl.steps_end + 0.05:  # counted steps: flip with the ×2 pop and the pluck
+                shown = int(math.floor(n + 0.02))
             punch = 0.0
             for m in MILESTONES[1:]:
                 if tl.arrive[m.key] - 0.05 <= t <= tl.leave[m.key]:

@@ -3,8 +3,10 @@
     python soundtrack.py media/soundtrack.wav
 
 * a tick on every doubling (it becomes a buzz when the zoom races)
+* a rising pluck on each of the first counted doublings
 * whooshes whose brightness follows the zoom speed
 * a bell on every milestone, climbing an A-minor pentatonic scale
+* a soft ratchet while each comparison counter climbs, and a chime when it lands
 * sub-bass impacts on the big reveals (you, the galaxy, the universe)
 * a pad that slowly opens up as the scale grows, and a convolution reverb
 """

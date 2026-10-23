@@ -35,7 +35,7 @@ class Row:
     end: tuple[float, float]
     color: str
     label_side: str = "up"  # where the live counter sits: up | down | left | right
-    shown: str | None = None  # final counter text when it differs from the count
+    label_offset: float = 0.3  # distance of an up/down counter from the row
 
 
 @dataclass
@@ -78,15 +78,18 @@ def _earth_nepal() -> tuple[float, float]:
 
 
 EARTH_NEPAL = _earth_nepal()
-# The Sun's place in the Milky Way drawing (units of the galaxy diameter).
-# 26,700 ly from the centre of a 100,000 ly disc, on the Orion spur.
-GALAXY_SUN = (0.5 * 0.534 * np.cos(np.radians(-118)), 0.5 * 0.534 * np.sin(np.radians(-118)))
+# The galaxy texture is drawn GALAXY_SCALE x the nominal diameter so that its
+# visible (bright) disc spans the 100,000 ly reference.  The Sun's place in it,
+# in units of the nominal diameter: 26,700 ly out, on the Orion spur.
+GALAXY_SCALE = 1.12
+GALAXY_SUN = (0.5 * 0.534 * GALAXY_SCALE * np.cos(np.radians(-118)),
+              0.5 * 0.534 * GALAXY_SCALE * np.sin(np.radians(-118)))
 SOLAR_EARTH = (0.5 / 30.07, 0.0)  # 1 AU in units of Neptune's orbital diameter
 
 MILESTONES: list[Milestone] = [
     Milestone(
         "planck", PLANCK, "THE PLANCK LENGTH", "1.6 × 10⁻³⁵ m",
-        "The smallest length in physics", "#B9A6FF", 0.0,
+        "Where known physics runs out", "#B9A6FF", 0.0,
     ),
     Milestone(
         "proton", 1.68e-15, "A PROTON", "0.0000000000000017 m",
@@ -111,7 +114,7 @@ MILESTONES: list[Milestone] = [
     Milestone(
         "ant", 4.0e-3, "AN ANT", "4 millimetres",
         "[530] blood cells, nose to tail", "#FFB547", 3.2,
-        row=Row(530, "blood cells", (-0.5, -0.25), (0.5, -0.25), "#FF4D5E"),
+        row=Row(530, "blood cells", (-0.48, -0.25), (0.39, -0.25), "#FF4D5E", label_side="down"),
     ),
     Milestone(
         "human", 1.7, "YOU", "1.7 metres",
@@ -148,15 +151,15 @@ MILESTONES: list[Milestone] = [
     Milestone(
         "star", 4.2465 * LIGHT_YEAR, "THE NEAREST STAR", "4.2 light-years away",
         "[4,500] solar systems away", "#FF8C6B", 3.2,
-        row=Row(4_500, "solar systems", (-0.47, 0.0), (0.47, 0.0), "#8FB8FF"),
+        row=Row(4_500, "solar systems", (-0.47, 0.0), (0.47, 0.0), "#8FB8FF", label_side="down", label_offset=0.85),
         sit=(-0.5, 0.0), attach=(-0.5, 0.0), you=(-0.5, 0.0),
     ),
     Milestone(
         "milkyway", 1.0e5 * LIGHT_YEAR, "THE MILKY WAY", "100,000 light-years",
-        "[23,000] trips to the nearest star", "#C7A6FF", 5.4,
+        "[23,500] trips to the nearest star", "#C7A6FF", 5.4,
         note="You're closer to [a galaxy]\nthan to the Planck length.",
         note_delay=2.5, sit=GALAXY_SUN, you=GALAXY_SUN,
-        row=Row(23_000, "trips", (-0.5, 0.0), (0.5, 0.0), "#FF8C6B"),
+        row=Row(23_500, "trips", (-0.5, 0.0), (0.5, 0.0), "#FF8C6B"),
     ),
     Milestone(
         "universe", 93e9 * LIGHT_YEAR, "THE OBSERVABLE UNIVERSE", "93 billion light-years",
@@ -229,7 +232,7 @@ class Timeline:
         self.leave: dict[str, float] = {"planck": HOOK}
         self.row_start: dict[str, float] = {}
         t += 2.45  # the long sprint through the empty zone
-        prev_n = 3.0
+        prev_n = float(len(STEP_TIMES))
         for m in MILESTONES[1:]:
             if m.key != "proton":
                 t += transition_time(m.n - prev_n)
