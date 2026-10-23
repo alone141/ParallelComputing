@@ -1,0 +1,477 @@
+{
+ "angle": "A hype \"level-up run\" with one idea per level, built on draft B's structure and timing grid (5.0 / 9.5 / 12.0 / 12.5 / 12.5 / 3.5 = 55.0 s), with the judges' best lines grafted in. HOOK: one worker crawls the tasks one at a time, then all 320 go at once, then 'It scales\u2026 / then stalls.' LEVEL 1/3, ONE CPU: 'That worker? / One CPU core.' Then '16 cores. / 16 different jobs.' sharing one memory, and 'Need more?' LEVEL 2/3, ONE GPU: '16? Cute. / Meet the GPU.' Thousands of tiny cores work in groups of 32 on one instruction, doing the same math for every pixel. Then 'For AI? / Not enough.' LEVEL 3/3, DATA CENTER: many boxes with no shared memory pass messages. 'Go bigger.' leads into the film's biggest drop, '100,000+ / GPUs. One AI.', and then 'More GPUs\u2026' plays over a riser that never resolves. Then the FINAL BOSS: a record-scratch glitch tears the counter away, and the twist runs 'So\u2026 infinite / speed?' \u2192 'No.' \u2192 'A million / GPUs?' \u2192 the curve stalls \u2192 '10% serial / = max 10\u00d7.' \u2192 'Forever.' The ending asks 'Why buy / 100,000 GPUs?' and zooms back down to the one amber worker, which loops into frame 0. The SIMD, 8-GPU node and planet segments stay removed. Each scale opens from the previous one's token: worker \u2192 CPU core T6 \u2192 CPU token flips into the GPU \u2192 one box of the pod \u2192 cluster \u2192 serial block \u2192 worker.",
+ "logline": "One amber worker levels up to 1,689,600,000+ CUDA cores working at once, and then the final boss, Amdahl's law, caps it at 10\u00d7.",
+ "counter_unit": "CORES WORKING AT ONCE. It reads 'CORE WORKING AT ONCE' while the number is 1; measured at 6.06 wide singular and 6.38 plural, against a 6.9 limit. It climbs 1 \u2192 16 \u2192 16,896 \u2192 1,689,600,000+ and never drops. Why it is honest: every number is a literal spec count of what the maker calls a core. 1 = the hook's worker, now one CPU core. 16 = a Ryzen 9 9950X (16 physical cores, not its 32 threads). 16,896 = the FP32 CUDA cores of one H100 SXM5 (132 SMs \u00d7 128). 1,689,600,000+ = 100,000+ H100s \u00d7 16,896. Why not 'CALCULATIONS AT ONCE': with SIMD cut, that unit forces either an untaught '\u00d7 16 lanes' (256) or a CPU value of 16. A 9950X core actually handles 16 FP32 numbers per AVX-512 instruction, so 16 would undercount the CPU about 16\u00d7 and inflate the CPU-to-GPU jump by the same factor. That is a factual error; 'CUDA cores aren't real cores' is only a vocabulary quibble. How the CUDA-core pitfall is handled: each jump's LIME line names the kind of core ('16-CORE RYZEN 9 9950X', 'H100: 16,896 CUDA CORES', '100,000+ GPUs \u00d7 16,896'). The GPU cards qualify them before the number lands ('Thousands of / tiny cores.', then 'Groups of 32. / One instruction.'), set against the CPU's '16 different jobs.' The caption, logline and pinned comment never call the 1.69 billion 'cores' without 'CUDA'. No CPU-to-GPU ratio is ever shown, because it would read as a speed claim. The counter appears for the first time in the CPU segment. The twist's glitch tears it out by 0.30 s. A separately labelled SPEEDUP meter (1.0\u00d7 \u2192 10\u00d7, which also only climbs) enters 1.6 s later on 'No.', so a muted viewer never sees the counter drop.",
+ "segments": [
+  {
+   "id": "hook",
+   "duration": 5,
+   "kicker": "PARALLEL COMPUTING",
+   "beats": [
+    {
+     "t": 0,
+     "card": [
+      "H96: One at a time."
+     ],
+     "visual": "LOCKED frame 0, the same as the ending's last frame. On the 20\u00d716 grid of 320 task cells, the amber worker is mid-crawl on idx 32 and hops one cell every 3 frames, leaving a bright trail. The camera creeps in 1.0 \u2192 1.035. The kicker is on from frame 0.",
+     "counter": "AMBER step readout STEP 032 / 320 \u2192 049 / 320 (no HUD yet)",
+     "sound": "hop tick every 3 frames; bed energy 0.55"
+    },
+    {
+     "t": 0.45,
+     "card": [],
+     "visual": "The idle field charges: cell outlines go DIM \u2192 CYAN 0.45 while the worker keeps crawling.",
+     "counter": "STEP 0xx / 320",
+     "sound": "riser"
+    },
+    {
+     "t": 0.867,
+     "card": [],
+     "visual": "8-frame micro-freeze (f52-f59). Worker and camera stop dead and the headline jitters.",
+     "counter": "STEP 049 / 320 (frozen)",
+     "sound": "true silence 0.133 s"
+    },
+    {
+     "t": 1,
+     "card": [
+      "H96: One at a time. [dims to 0.40]",
+      "H96: All at once. [CYAN, SLAM]"
+     ],
+     "visual": "LOCKED HIT: a radial white-to-cyan wave lights the other 319 cells within 0.35 s, with a white burst, a CYAN shock ring and an impact shake. The lone worker stays AMBER on the top layer. Diagonal shimmer over the lit field. Payoff holds 1.70 s.",
+     "counter": "readout hard-cuts to 320 WORKERS \u00b7 1 STEP (CYAN)",
+     "sound": "top-tier hit + sub_drop 1.4 s + shimmer"
+    },
+    {
+     "t": 2.7,
+     "card": [
+      "H84: It scales\u2026",
+      "H84: then stalls. [AMBER]"
+     ],
+     "visual": "Hard-swap POP at f162 (moved from f160, so 'All at once.' gets its full 1.70 s). The card lands on the calm lit field under a second, softer diagonal light pulse while the slow linear push-in continues (1.035 \u2192 1.06). The readout leaves at 3.25. Read for 1.2 s before anything else moves.",
+     "counter": "320 WORKERS \u00b7 1 STEP until 3.25, then nothing",
+     "sound": "tick + soft shimmer; pad_swell from 3.40"
+    },
+    {
+     "t": 3.9,
+     "card": [],
+     "visual": "ease_in_out_expo push-in on the worker (3.90-4.833). The other cells fade out 4.05-4.70. From 4.20 the worker morphs AMBER \u2192 hot \u2192 glowing CYAN token, which lands at 4.833. Kicker and card hard-cut at 4.95; the static token holds to 5.00.",
+     "counter": "",
+     "sound": "whoosh up through the push-in; tick on the landing (4.833)"
+    }
+   ]
+  },
+  {
+   "id": "cpu",
+   "duration": 9.5,
+   "kicker": "LEVEL 1/3 \u00b7 ONE CPU",
+   "beats": [
+    {
+     "t": 0,
+     "card": [
+      "KICKER: LEVEL 1/3 \u00b7 ONE CPU",
+      "H84: That worker?",
+      "H84: One CPU core. ['CPU core.' CYAN]"
+     ],
+     "visual": "The card POPs on story frame 1. Entry ring, then an EXPAND pull-back (0.00-0.50): the hook's token is core T6 (b03 HERO = 5) of a 4\u00d74 grid of 16 cores. The other 15 fade in DIM with no T labels yet, and the MAGENTA SHARED MEMORY bar sits dim below. The leftover SIMD lane bars inside each core are hidden.",
+     "counter": "1 \u00b7 CORE WORKING AT ONCE (the HUD's first appearance, POP at 0.10)",
+     "sound": "hit 0.8 on the match-cut + whoosh up"
+    },
+    {
+     "t": 1,
+     "card": [],
+     "visual": "T6 runs ONE job alone, twice (1.00-1.80, 1.80-2.60). Each run: a MAGENTA fetch packet leaves SHARED MEMORY, an INK kick, the progress fill climbs, a LIME done flash, then a LIME write-back packet. The other 15 cores stay dark.",
+     "counter": "1 \u00b7 CORE WORKING AT ONCE",
+     "sound": "soft tick on each fetch and each done"
+    },
+    {
+     "t": 2.7,
+     "card": [
+      "H96: 16 cores. ['16' CYAN]",
+      "S56: 16 different jobs."
+     ],
+     "visual": "Hard-swap onto a calm stage: T6 keeps humming, the other 15 sit idle, and the T1-T16 labels fade in dim. Read for 1.0 s.",
+     "counter": "1 \u00b7 CORE WORKING AT ONCE",
+     "sound": "riser 3.20 \u2192 3.70"
+    },
+    {
+     "t": 3.7,
+     "card": [],
+     "visual": "POWER-ON: every core flashes INK \u2192 CYAN behind a CYAN shock ring from the grid centre, and each core pops as the ring passes. Each core then starts its OWN job on its own clock, visibly out of phase (its own fill rate and fetch/write timing). The memory bar flashes. Payoff holds 1.8 s.",
+     "counter": "SLAM 1 \u2192 16 \u00b7 LIME '16-CORE RYZEN 9 9950X' (3.70-5.50), then the label CORES WORKING AT ONCE",
+     "sound": "tier-2 hit + sub_drop 0.6 s + shimmer; scattered, panned, out-of-phase ticks"
+    },
+    {
+     "t": 5.5,
+     "card": [
+      "H84: They share",
+      "H84: one memory. ['memory.' MAGENTA]"
+     ],
+     "visual": "Hard-swap. Traffic eases to a low hum, the SHARED MEMORY bar brightens, and the T labels step back to 0.5 opacity. Calm read for 1.0 s.",
+     "counter": "16 \u00b7 CORES WORKING AT ONCE",
+     "sound": "tick on the swap"
+    },
+    {
+     "t": 6.5,
+     "card": [],
+     "visual": "Traffic doubles. MAGENTA packets stream from the shared bar into every core and LIME results stream back, and the bar flashes wherever a packet leaves or lands. Jobs of different lengths finish at their own moments, so LIME done flashes ripple out of sync under a slow stage drift.",
+     "counter": "16 \u00b7 CORES WORKING AT ONCE",
+     "sound": "busy panned blips, arrival ticks"
+    },
+    {
+     "t": 7.9,
+     "card": [
+      "H96: Need more?"
+     ],
+     "visual": "Hard-swap. At 8.10 the traffic drains and the CPU package outline draws on. COLLAPSE at 8.933 into handoff_token('cpu') (E03), settle at 9.333, static from 9.45. Kicker and card hard-cut at 9.45.",
+     "counter": "16 \u00b7 CORES WORKING AT ONCE (rides the cut; the E03 HUD is now '16', not '256')",
+     "sound": "riser 8.10 \u2192 8.93 into a whoosh down; tick on settle"
+    }
+   ]
+  },
+  {
+   "id": "gpu",
+   "duration": 12,
+   "kicker": "LEVEL 2/3 \u00b7 ONE GPU",
+   "beats": [
+    {
+     "t": 0,
+     "card": [
+      "KICKER: LEVEL 2/3 \u00b7 ONE GPU",
+      "H96: 16? Cute. ['16?' CYAN]",
+      "S56: Meet the GPU."
+     ],
+     "visual": "Card-flip (0.00-0.40): the CPU token flips into the GPU token (8\u00d78 pixel glyph). This is replacement, not containment. Calm token hold while the card is read.",
+     "counter": "16 \u00b7 CORES WORKING AT ONCE",
+     "sound": "glitch 0.12 s + hit 0.8 at the flip midpoint"
+    },
+    {
+     "t": 1.1,
+     "card": [],
+     "visual": "The token's base opens into the die (1.10-1.70): 3,072 tiny cells appear in a soft radial wave and settle to a dim idle hum.",
+     "counter": "16 \u00b7 CORES WORKING AT ONCE",
+     "sound": "whoosh up + low shimmer"
+    },
+    {
+     "t": 2.45,
+     "card": [
+      "H84: Thousands of",
+      "H84: tiny cores. ['tiny cores.' CYAN]"
+     ],
+     "visual": "Hard-swap onto the calm, dim die. Read for 1.0 s. The windup runs in the HUD.",
+     "counter": "16, then from 2.95 an accelerating log-roll toward 16,896",
+     "sound": "accelerating ticks + riser 2.95 \u2192 3.45"
+    },
+    {
+     "t": 3.45,
+     "card": [],
+     "visual": "LIGHT WAVE: every cell flashes INK, then CYAN, racing out from the centre behind a shock ring. From 3.75 to 4.55, three diagonal dispatch waves of 32-cell groups sweep the die, which settles into a busy shimmer. Payoff holds 1.2 s.",
+     "counter": "SLAM 16,896 \u00b7 LIME 'H100: 16,896 CUDA CORES' (3.45-5.25), then CORES WORKING AT ONCE",
+     "sound": "tier-1 hit + sub_drop + shimmer; tick per dispatch wave"
+    },
+    {
+     "t": 4.65,
+     "card": [],
+     "visual": "The camera pushes in 4.5\u00d7 on ONE group of 32 cells, outlined as a LIME block (4.65-4.95).",
+     "counter": "16,896",
+     "sound": "whoosh up"
+    },
+    {
+     "t": 4.95,
+     "card": [
+      "H96: Groups of 32. ['32' CYAN]",
+      "S56: One instruction."
+     ],
+     "visual": "Hard-swap. Calm stage: the group's bus charges and all 32 brighten together. Read for 1.0 s.",
+     "counter": "16,896 \u00b7 CORES WORKING AT ONCE",
+     "sound": ""
+    },
+    {
+     "t": 5.95,
+     "card": [],
+     "visual": "Three lockstep steps at 5.95, 6.25 and 6.55. Each time an INK instruction beam fires down the bus and all 32 cells recolour on the SAME frame: CYAN, then LIME, then each its own pixel colour. Payoff holds to 7.15, then the camera pulls back to the whole die (7.15-7.45).",
+     "counter": "16,896",
+     "sound": "one hard unison tick per step; whoosh down on the pull-back"
+    },
+    {
+     "t": 7.45,
+     "card": [
+      "H84: Same math,",
+      "H84: every pixel. ['every pixel.' CYAN]"
+     ],
+     "visual": "Hard-swap on the calm, humming die. Read for 1.0 s.",
+     "counter": "16,896 \u00b7 CORES WORKING AT ONCE",
+     "sound": "short riser into the waves"
+    },
+    {
+     "t": 8.45,
+     "card": [],
+     "visual": "Six waves of 16 groups, scattered over the die (never a top-to-bottom scanline), develop a shaded ball (8.45-9.15). At 9.20 a burst of light fires from the ball's centre with a pop and a shock ring.",
+     "counter": "16,896",
+     "sound": "one tick per wave; tier-2 hit + shimmer at 9.20"
+    },
+    {
+     "t": 9.8,
+     "card": [
+      "H84: For AI? ['AI' CYAN]",
+      "H84: Not enough."
+     ],
+     "visual": "Hard-swap over the finished ball under a slow push-in (1.0 \u2192 1.02). From 10.40 to 11.20 the light steps across the ball once and a wave of groups repaints it, so the stage stays alive. COLLAPSE at 11.433 into handoff_token('gpu') (E04), settle 11.833, static from 11.95. Kicker and card hard-cut at 11.95.",
+     "counter": "16,896 \u00b7 CORES WORKING AT ONCE (rides the cut)",
+     "sound": "repaint ticks; whoosh down into the collapse; tick on settle"
+    }
+   ]
+  },
+  {
+   "id": "datacenter",
+   "duration": 12.5,
+   "kicker": "LEVEL 3/3 \u00b7 DATA CENTER",
+   "beats": [
+    {
+     "t": 0,
+     "card": [
+      "KICKER: LEVEL 3/3 \u00b7 DATA CENTER",
+      "H96: Many boxes.",
+      "S56: No shared memory."
+     ],
+     "visual": "Entry ring, then an EXPAND pull-back (0.00-0.50): the GPU token becomes one box (c3, r3) in a pod of 8 racks \u00d7 8 boxes. E04 is re-pointed here from the cut node beat. The hero outline flashes INK; the other 63 boxes, the rack lines and the ToR/spine switches stay dim while the network breathes faintly. The sub-line POPs one story frame after the headline.",
+     "counter": "16,896 \u00b7 CORES WORKING AT ONCE",
+     "sound": "hit 0.8 + whoosh up; bed energy 0.9"
+    },
+    {
+     "t": 1.5,
+     "card": [],
+     "visual": "The pod powers on rack by rack in a CYAN wave. Every box computes on its own data with out-of-sync CYAN flashes, and nothing travels between boxes yet.",
+     "counter": "16,896",
+     "sound": "ticks rising rack by rack"
+    },
+    {
+     "t": 2.6,
+     "card": [
+      "H84: So they pass",
+      "H84: messages. ['messages.' MAGENTA]"
+     ],
+     "visual": "Hard-swap. Calm stage: the boxes hum and the network lines brighten faintly. Read for 1.0 s.",
+     "counter": "16,896 \u00b7 CORES WORKING AT ONCE",
+     "sound": ""
+    },
+    {
+     "t": 3.6,
+     "card": [],
+     "visual": "SYNC. 16 MAGENTA messages hop like letters: up the sender's rack to its top-of-rack switch, over an uplink to a spine, then down into a DIFFERENT rack. Each switch flashes as a message passes and each receiver flashes INK. At 4.50 every box applies the same update (LIME flash). A faster second cycle runs 4.65-5.25.",
+     "counter": "16,896",
+     "sound": "ticks_burst per hop; pop on the LIME update"
+    },
+    {
+     "t": 5.4,
+     "card": [
+      "H96: Go bigger."
+     ],
+     "visual": "Hard-swap. The pod holds calm under a slow push-in (1.0 \u2192 1.025). Read for 1.0 s.",
+     "counter": "16,896 \u00b7 CORES WORKING AT ONCE",
+     "sound": "tick on the swap"
+    },
+    {
+     "t": 6.4,
+     "card": [],
+     "visual": "Second pull-back: the pod shrinks into 16 squares of a 56\u00d756 hall (3,136 squares) that overfills the frame.",
+     "counter": "accelerating log-roll up from 16,896",
+     "sound": "whoosh up; accelerating ticks; steep riser 6.80 \u2192 7.30"
+    },
+    {
+     "t": 7.3,
+     "card": [],
+     "visual": "80 ms FREEZE (5 frames, 7.300-7.383): the hall and the HUD stop dead and 'Go bigger.' hard-cuts out.",
+     "counter": "frozen mid-roll at ~281,000,000",
+     "sound": "TRUE silence 0.083 s"
+    },
+    {
+     "t": 7.383,
+     "card": [
+      "H96: 100,000+ [CYAN, SLAM; INK on its first 2 frames]",
+      "S56: GPUs. One AI. [POP 2 frames later]"
+     ],
+     "visual": "THE BIGGEST DROP, at film 33.88 s (61.6%). The hall flashes INK \u2192 CYAN with a radial burst, a CYAN shock ring and a 0.16 s impact shake, and messages race along the trunks. From 8.40 to 9.60 one all-reduce runs (a MAGENTA gather to the hall centre, then a LIME broadcast back out) while the network grid overlay draws on. Then the SCREENSHOT HOLD under a slow push-in; the cover frame is around local 9.0 (film ~35.5).",
+     "counter": "SLAM 1,689,600,000+ \u00b7 LIME '100,000+ GPUs \u00d7 16,896' (7.383-9.183), then CORES WORKING AT ONCE",
+     "sound": "top-tier hit + sub_drop 1.4 s + pad_swell; tick on the gather and on the broadcast"
+    },
+    {
+     "t": 10.3,
+     "card": [
+      "H96: More GPUs\u2026"
+     ],
+     "visual": "Hard-swap. The camera keeps easing back over the humming hall. At 11.30 the last gather pulls into the centre and an outline draws on around the hall window. COLLAPSE at 11.933 into handoff_token('cluster') (E06), settle 12.333, static from 12.45. Kicker and card hard-cut at 12.45.",
+     "counter": "1,689,600,000+ \u00b7 CORES WORKING AT ONCE (rides the cut into E06)",
+     "sound": "a riser that keeps climbing into the cut and never resolves; the twist's glitch cuts it dead"
+    }
+   ]
+  },
+  {
+   "id": "twist",
+   "duration": 12.5,
+   "kicker": "FINAL BOSS: AMDAHL'S LAW",
+   "beats": [
+    {
+     "t": 0,
+     "card": [],
+     "visual": "RECORD SCRATCH (0.00-0.30): the opening glitch (scan tears, CYAN/MAGENTA split, AMBER flicker) tears the cluster token AND the 1,689,600,000+ HUD out to black. This is new: E06 now carries a HUD into b08. No kicker yet.",
+     "counter": "the HUD cracks and is gone by 0.30, never seen dropping",
+     "sound": "glitch 0.30 s + noise_burst as the 'scratch'; the bed cuts out, then a low drone (energy 0.25)"
+    },
+    {
+     "t": 0.033,
+     "card": [
+      "H84: So\u2026 infinite",
+      "H84: speed?"
+     ],
+     "visual": "The question cracks in on story frame 2 and its lines jitter independently on the glitch clock. It sits alone on black until 0.80. From 0.80 to 1.20 one big CYAN job bar captioned 'TIME TO FINISH' wipes in at centre, 'GPUs: 1' pops, and the camera leans in. 1.55-1.90 is the pause.",
+     "counter": "",
+     "sound": "drone; whoosh up on the wipe; true silence 1.55-1.90"
+    },
+    {
+     "t": 1.9,
+     "card": [
+      "KICKER: FINAL BOSS: AMDAHL'S LAW [AMBER, tracking 80, cuts in now]",
+      "H150: No. [AMBER, SLAM]"
+     ],
+     "visual": "Hard-cut SLAM. The bar splits: the left 10% becomes the AMBER serial block and the right 90% stays CYAN. Bar labels arrive at 2.00: '10% can't split' (AMBER) and '90% can split' (CYAN).",
+     "counter": "1.0\u00d7 \u00b7 SPEEDUP (a new meter with its own label, 1.6 s after the old counter vanished)",
+     "sound": "top-tier hit + dark sub_drop 1.6 s"
+    },
+    {
+     "t": 3.05,
+     "card": [
+      "H84: Some work",
+      "H84: can't be split. [\"can't\" AMBER]"
+     ],
+     "visual": "Hard-swap; the serial block breathes on the split bar. Read for 1.0 s. At 4.05 and 4.45 the AMBER block tries to split: an INK crack, the halves fly apart, then snap back. From 5.15 to 5.45 the bar group whips to the top and the SPEEDUP-vs-GPUs graph (log axis) draws in under it.",
+     "counter": "1.0\u00d7 \u00b7 SPEEDUP",
+     "sound": "glitch + low thunk on each crack; whoosh up on the whip"
+    },
+    {
+     "t": 5.45,
+     "card": [
+      "H84: A million",
+      "H84: GPUs? ['GPUs?' CYAN]"
+     ],
+     "visual": "Hard-swap on the empty graph ('GPUs: 1'). Read for 1.0 s.",
+     "counter": "1.0\u00d7 \u00b7 SPEEDUP",
+     "sound": "tick on the swap"
+    },
+    {
+     "t": 6.45,
+     "card": [],
+     "visual": "Four doublings at 6.45, 6.80, 7.15 and 7.50 take the GPU count to 2, 4, 8, then 16. The CYAN 90% splits into ever-thinner rows, the AMBER block never shrinks, and the Amdahl curve grows.",
+     "counter": "1.8\u00d7 \u2192 3.0\u00d7 \u2192 4.7\u00d7 \u2192 6.4\u00d7 \u00b7 SPEEDUP",
+     "sound": "one tick per doubling, pitch rising"
+    },
+    {
+     "t": 7.65,
+     "card": [],
+     "visual": "The GPU count races to 'GPUs: 1,000,000'. The speedup turns AMBER and stalls as the curve flattens onto the dashed wall, and 'THE WALL: 10\u00d7' lands at 8.40. Dead stop from 8.70 to 9.00.",
+     "counter": "races, then STALLS at 9.9\u00d7 (AMBER, floor-truncated)",
+     "sound": "accelerating ticks + a riser that thins out; hit 0.6 on THE WALL label; near-silence on the stall"
+    },
+    {
+     "t": 9,
+     "card": [
+      "H84: 10% serial ['10% serial' AMBER]",
+      "H84: = max 10\u00d7. ['10\u00d7' AMBER]"
+     ],
+     "visual": "'GPUs: \u221e' glitch-snaps in with an AMBER burst and shock ring at the wall, and the takeaway POPs. Axis titles and bar labels fade out 9.00-9.30 and the WALL label steps back to 0.6. Light flows up the curve into the wall. An accelerating heartbeat begins, with lubs at 9.75, 10.35, 10.90 and 11.45; each lub swells the AMBER block with a ring.",
+     "counter": "SLAM 10\u00d7 \u00b7 MAX SPEEDUP \u00b7 10% SERIAL (AMBER)",
+     "sound": "top-tier hit + sub_drop 2.0 s + dark pad chord; lub-dub hits"
+    },
+    {
+     "t": 11.1,
+     "card": [
+      "H96: Forever. [AMBER]"
+     ],
+     "visual": "Hard-swap between lubs. At 11.933 the next lub launches the AMBER block into the bright AMBER serial token (E08), settle 12.333, static from 12.45. Kicker and card hard-cut at 12.45.",
+     "counter": "10\u00d7 \u00b7 MAX SPEEDUP \u00b7 10% SERIAL (rides the cut)",
+     "sound": "final lub + whoosh down; tick on settle"
+    }
+   ]
+  },
+  {
+   "id": "ending",
+   "duration": 3.5,
+   "kicker": "PARALLEL COMPUTING (POPs at 2.40 with the headline; none before)",
+   "beats": [
+    {
+     "t": 0.017,
+     "card": [
+      "H84: Why buy",
+      "H84: 100,000 GPUs? ['100,000' CYAN]"
+     ],
+     "visual": "The card POPs on frame 1. The camera pulls back (ease_out_quart): the AMBER token was cell 0 of the hook grid all along, and within 0.6 s it fills into the lone solid-amber worker, its halo growing.",
+     "counter": "10\u00d7 drops away 0.00-0.12, then nothing",
+     "sound": "pop + whoosh down; bed back to 0.5"
+    },
+    {
+     "t": 0.433,
+     "card": [
+      "S56: Wrong answers only \u2193 [CTA in the STEP_TOP slot]"
+     ],
+     "visual": "The CTA joins with a BG knockout over the settling grid and is fully in by 0.683.",
+     "counter": "",
+     "sound": "tick"
+    },
+    {
+     "t": 1.4,
+     "card": [],
+     "visual": "Count-in: the worker pulses twice (f84, f100) while the CTA arrow nudges down. From f113 (1.883) the worker crawls on b01's exact 3-frame hop clock (locked).",
+     "counter": "",
+     "sound": "two low count-in ticks, then hop ticks"
+    },
+    {
+     "t": 2.4,
+     "card": [
+      "KICKER: PARALLEL COMPUTING [CYAN, POP]",
+      "H96: One at a time."
+     ],
+     "visual": "The question and CTA hard-cut out, and the kicker, headline and AMBER step readout POP in. The worker lands on idx 32 on the last frame (f209), which is exactly film frame 0, so the loop is seamless. On a rewatch, 'One at a time.' now also reads as the serial 10%.",
+     "counter": "step readout STEP 010 / 320 \u2192 STEP 032 / 320 on the last frame",
+     "sound": "hop ticks run straight across the seam"
+    }
+   ]
+  }
+ ],
+ "caption": "1 worker \u2192 16 CPU cores \u2192 16,896 CUDA cores \u2192 1.7 BILLION CUDA cores training ONE AI. Then the final boss shows up: if 10% of the job can't be split, you max out at 10\u00d7 faster. Forever. So why buy 100,000 GPUs? Wrong answers only \u2193",
+ "pinned_comment": "How to beat the final boss: Gustafson's law (1988). Amdahl's 10\u00d7 cap assumes the job stays the same size. AI labs grow the job with the machine (bigger models, more data), so the parallel part keeps growing and 100,000 GPUs still pay off. Nerd notes: a \"CUDA core\" is NVIDIA's name for one tiny FP32 math lane. They run 32 at a time on one instruction (a warp), so they are not CPU-style cores. H100 SXM5 = 132 SMs \u00d7 128 = 16,896. The CPU count is physical cores (a 9950X has 16 cores / 32 threads). The 10% serial share is just an example.",
+ "hashtags": "#parallelcomputing #computerscience #gpu #cpu #nvidia #cuda #datacenter #ai #amdahlslaw #programming #coding #techtok #learnontiktok #stem #manim",
+ "fact_notes": [
+  "DURATIONS: hook 5.0 + CPU 9.5 + GPU 12.0 + data center 12.5 + twist 12.5 + ending 3.5 = 55.0 s (verified in Python). Every slot is a multiple of 0.5. Film cuts land at 5.0 / 14.5 / 26.5 / 39.0 / 51.5 / 55.0, so the ending still starts at 51.5 and its locked clock and f209 seam are unchanged. Every collapse is canonical motif.cut_times() output: CPU 8.933/9.333/9.45, GPU 11.433/11.833/11.95, data center and twist 11.933/12.333/12.45, hook 4.833/4.95. The biggest drop lands at film 33.88 s (61.6%).",
+  "HOOK: the first second is untouched (riser 0.45, freeze f52-f59, hit at 1.00). The only timing change is the card swap, f160 \u2192 f162 (2.70 s), so 'All at once.' gets exactly its 1.70 s floor. 'It scales\u2026 / then stalls.' measures at a full 84 px; the old 'until it doesn't.' was 17 chars and shrank to 69.6. '320 WORKERS \u00b7 1 STEP' is the ideal case, and the twist then shows the real-world limit (facts pitfall).",
+  "TEXT FIT, measured with the repo's real motif.card(), kick(), hud_line_tmpl() and hud_label_tmpl(). Every card passes the effective-size floors (65 for H styles, 39 for S56) and the TTZ check. Tightest cards: 'Why buy / 100,000 GPUs?' 67.1 (same as the current ending), 'That worker? / One CPU core.' 73.0, 'Thousands of / tiny cores.' 75.0, 'Groups of 32.' 77.0, 'can't be split.' 77.4. Full size: 'Same math, / every pixel.' 84, 'For AI? / Not enough.' 84, '16? Cute.' 96 with 'Meet the GPU.' 56, '100,000+' 96 with 'GPUs. One AI.' 56, 'No.' 150. Kickers, max 6.9 wide: 'LEVEL 1/3 \u00b7 ONE CPU' 4.84, 'LEVEL 2/3 \u00b7 ONE GPU' 4.94, 'LEVEL 3/3 \u00b7 DATA CENTER' 6.14 (tracking 150); 'FINAL BOSS: AMDAHL'S LAW' 6.81 at tracking 80 (the ' \u00b7 ' version fails: 6.93 at 80, 7.01 at 150). LIME lines: '16-CORE RYZEN 9 9950X' at a full 40 px, '100,000+ GPUs \u00d7 16,896' at 40, 'H100: 16,896 CUDA CORES' auto-fit to 37.7 (floor 34). HUD labels: 'CORES WORKING AT ONCE' 6.38 and 'CORE WORKING AT ONCE' 6.06. Character limits: H150 'No.' is 3. The longest H84/H96 lines are 'can't be split.' (15, the existing measured line), 'One at a time.' (14, locked), 'One CPU core.' / 'Groups of 32.' / '100,000 GPUs?' (13). The longest S56 is 'Wrong answers only \u2193' (20); the rest are \u2264 18. The longest kicker is 24 and the longest LIME line 23. Only plain Unicode is used (\u2026 \u00b7 \u00d7 \u221e \u2193 \u2192).",
+  "READING FLOORS (0.3 s per word + 0.8 s, from full opacity to exit; a bare '=' and '\u2193' are not counted, as in the current build). All pass, shown as visible / floor. Hook: 'All at once.' 1.70/1.70; 'It scales\u2026' 2.25/2.0. CPU: 'That worker?\u2026' 2.70/2.3; '16 cores\u2026' 2.80/2.3; 'They share\u2026' 2.40/2.0; 'Need more?' 1.55/1.4. GPU: '16? Cute\u2026' 2.45/2.3; 'Thousands of\u2026' 2.50/2.0; 'Groups of 32\u2026' 2.50/2.3; 'Same math\u2026' 2.35/2.0; 'For AI?\u2026' 2.15/2.0. Data center: 'Many boxes\u2026' 2.60/2.3; 'So they pass\u2026' 2.80/2.0; 'Go bigger.' 1.90/1.4; '100,000+ / GPUs. One AI.' 2.92/2.0; 'More GPUs\u2026' 2.15/1.4. Twist: question 1.87/1.7; 'No.' 1.15/1.1; 'Some work\u2026' 2.40/2.3; 'A million GPUs?' 3.55/1.7; takeaway 2.10/2.0; 'Forever.' 1.35/1.1. Ending: question 2.38/2.0; CTA 1.72/1.7. Every card that sets up an animation is read on a calm stage for \u2265 1.0 s before it fires; the exception is the one-word 'Forever.' (0.83 s before the token launch). Payoffs hold 1.2-1.8 s. Every LIME line is up 1.8 s (floor 1.5). No card shows more than 5 words, and the ending shows 7 in total across question + CTA.",
+  "CPU: 'One CPU core' / '16 cores. 16 different jobs.' / LIME '16-CORE RYZEN 9 9950X' come from fact cpu_consumer_amd: Ryzen 9 9950X = 16 cores / 32 threads (phoronix.com/review/amd-zen5-avx-512-9950x). The counter counts physical cores, not threads. Naming the chip avoids the overgeneralisation in '1 CPU = 16 CORES': the most common PC has 8 cores and Intel's flagship has 24 (cpu_typical, cpu_consumer_intel). 'They share one memory.' is true for cores within one CPU (the dc_message_passing pitfall) and sets up 'No shared memory.' in the data center.",
+  "GPU: LIME 'H100: 16,896 CUDA CORES' comes from fact gpu_h100_sxm_fp32 (132 SMs \u00d7 128 FP32 CUDA cores, the SXM5 part; the PCIe card has 14,592). 'CUDA cores' is NVIDIA's own term. 'Thousands of tiny cores.' follows gpu_cuda_core_definition (FP32 lanes with no instruction fetch or scheduler of their own). 'Groups of 32. One instruction.' is the facts' safe phrasing for gpu_warp_size, with 'warps' replaced by the jargon-free 'groups'; 32 is NVIDIA-specific, AMD CDNA uses 64. 'Same math, every pixel.' is true because every pixel runs the same shader program, and the visual paints the image in scattered waves of groups, never in one instant (gpu_pixels pitfall). The old '66\u00d7 ONE CPU' line is dropped, and no CPU-to-GPU ratio appears anywhere. 'For AI? Not enough.' rests on dc_meta_llama: frontier training uses 16K to 100K+ GPUs.",
+  "DATA CENTER: 'Many boxes. No shared memory.' and 'So they pass messages.' come from fact dc_message_passing: across nodes, GPUs sync over InfiniBand/Ethernet with collectives such as all-reduce (docs.nvidia.com/dgx/dgxb300-user-guide). '100,000+ / GPUs. One AI.' is the facts' own safe phrasing (dc_colossus1: '\u2026GPUs. One AI.'), backed by xAI Colossus (100,000 H100s, 2024) and Meta's Llama 4 cluster (more than 100,000 H100s, Oct 2024). It uses the safe '100,000+' and never the unaudited 1M+ claims. 100,000 \u00d7 16,896 = 1,689,600,000 (verified), and the '+' matches '100,000+'. The 56\u00d756 hall visual is representative.",
+  "TWIST: from fact amdahl_law, S(N) = 1/(0.1 + 0.9/N), checked in Python with motif.speedup_str's floor rounding. N=2 gives 1.818 \u2192 1.8\u00d7; 4 gives 3.077 \u2192 3.0\u00d7; 8 gives 4.706 \u2192 4.7\u00d7; 16 gives 6.400 \u2192 6.4\u00d7; 1,000,000 gives 9.99991 \u2192 9.9\u00d7. '10\u00d7' appears only at 'GPUs: \u221e', the limit, with the label 'MAX SPEEDUP \u00b7 10% SERIAL'. 'A million GPUs?' is posed as a hypothetical, not a claim about any real cluster. The 10% serial share is illustrative. 'Forever.' paraphrases the facts' safe phrasing '10% serial = max 10x. Forever.' and holds for a fixed-size job; the ending question and the pinned Gustafson comment (gustafson_law) cover the nuance that parallelism is not pointless.",
+  "ENDING: 'Why buy' replaces 'So why build' because labs buy GPUs and build clusters. It is true that xAI and Meta each bought 100,000+. It measures 67.1 px, the same as the current line, and cuts the question to 4 words, so question + CTA show 7 words. The loop clock, the f209 seam and the end frame ('PARALLEL COMPUTING' + 'One at a time.' + STEP 032 / 320) are unchanged.",
+  "COUNTER PATH: there is no HUD in the hook (the AMBER step readout is a separate element). The CPU opens at 1 \u2192 16 (LIME at 3.70) \u2192 GPU 16,896 (LIME at 3.45) \u2192 data center 1,689,600,000+ (LIME at 7.383). The twist's glitch tears the counter out by 0.30, and the SPEEDUP meter (own label) enters at 1.90 and climbs 1.0\u00d7 \u2192 10\u00d7. Neither meter ever displays a smaller number in its own unit."
+ ],
+ "risks": [
+  "USER DECISION, counter unit. I chose 'CORES WORKING AT ONCE' because every number is a literal spec count. The alternative, 'CALCULATIONS AT ONCE', which the virality judge preferred, would undercount the 9950X about 16\u00d7 (one AVX-512 instruction handles 16 FP32 numbers per core) and inflate the CPU-to-GPU jump by the same factor, now that SIMD is cut. The cost of 'cores': expect 'CUDA cores aren't real cores' comments, softened on screen by 'tiny cores', 'Groups of 32. One instruction.' and the 'CUDA CORES' LIME line, and in the pinned nerd note. If you prefer CALCULATIONS anyway, the only text changes are the HUD label and the CPU LIME line, and that line must not claim '\u00d7 1 EACH'.",
+  "USER DECISION, the twist closer 'Forever.' One judge wanted a final punch before the ending question; another warned that a closer like 'Math wins.' reads as 'parallelism is pointless'. 'Forever.' is the facts file's own safe phrasing and stays scoped to '10% serial = max 10\u00d7'. The longer scoped line 'Even at \u221e GPUs.' fails card() (63.6 < 65 px). Fallback: drop 'Forever.' and hold the takeaway from 9.00 to 12.45.",
+  "USER DECISION, game framing. The kickers use 'LEVEL 1/3 \u00b7 ONE CPU' \u2026 'LEVEL 3/3 \u00b7 DATA CENTER' and 'FINAL BOSS: AMDAHL'S LAW' (colon instead of ' \u00b7 ', since the dot version fails the 6.9 width at tracking 80). Hype voice also shows in '16? Cute. / Meet the GPU.' and 'Go bigger.' If that reads as cringe, the text-only fallbacks are 'SCALE 1/3 \u00b7 ONE CPU' \u2026 and the existing 'THE CATCH \u00b7 AMDAHL'S LAW' (6.86 at 80), plus 'Now, a GPU.' in place of '16? Cute.'.",
+  "USER DECISION, pinned comment timing. The pinned comment gives away the Gustafson answer, which can deflate 'Wrong answers only \u2193'. Consider posting it a few hours after upload, or pinning just the first sentence as a hint.",
+  "'Same math, / every pixel.' plays over a GPU whose stats are an H100, an AI chip with no display outputs, so a pedant may object. The kicker stays generic ('ONE GPU') and only the LIME line names the H100. Measured fallback: 'Same math, / every number.' (72.4 px).",
+  "Implementation is more than re-timing. (1) timeline.py: BEATS = B01 5.0 / B03 9.5 / B04 12.0 / B06 12.5 / B08 12.5 / B09 3.5, with B02Simd, B05Node and B07Planet removed from BEATS and ENERGY; b01 T_SWAP moves from 160 to 162 frames. (2) The motif.py handoff contract: E01 now opens into CPU hero T6 (keep HERO = 5). The E03 HUD becomes '16', and CALC_LABEL becomes 'CORES WORKING AT ONCE', with a singular 'CORE\u2026' at 1. E04 opens into the data-center pod. E06 (cluster token + 1,689,600,000+ HUD) now feeds b08, whose opening glitch must tear both away, because b08 was written for a blank E07. Remove E02, E05 and E07 from _HO_TOKEN, _HO_HUD, BEAT_ENTRY and BEAT_EXIT, then re-run tools/check_handoffs.py at 30 and 60 fps. (3) b03: hide the 16 leftover SIMD lane bars per core, so nobody counts 256 lit lanes under a '16'. (4) b04: roll from 16 (not 256) and replace '66\u00d7 ONE CPU' with the CUDA CORES line. b06: roll from 16,896 (not 135,168). (5) Text must hard-cut at t_exit, never fade.",
+  "Audio uses only instruments that already exist in audio/synth.py. The 'record scratch' is glitch + noise_burst. The never-resolving riser is a riser cut dead by the glitch. The heartbeat uses the existing lub/dub hits. No chime or vinyl sample is needed.",
+  "Tight floors that must POP or SLAM at full opacity (any fade-in frame breaks them): 'All at once.' 1.70/1.70, the CTA 1.72/1.7, 'No.' 1.15/1.1, takeaway 2.10/2.0, 'For AI?' 2.15/2.0, 'Some work' 2.40/2.3, 'Need more?' 1.55/1.4. Re-check them after any re-time.",
+  "C's bar labels '10% one at a time' / '90% all at once' were judged the best definition of serial, but they measure 3.95 + 3.46 wide against a 6.7-wide bar and would overlap. The script keeps the current '10% can't split' / '90% can split', which pass b08's \u2265 0.3 gap assert.",
+  "Undercount, never overclaim: the HUD holds 16,896 while the 64-box pod visibly computes (1.5-6.4 s in the data center), and it only rolls once the camera zooms out to the hall. Also, the hook's '320 WORKERS' readout is followed by a CPU HUD reading '1'. That is a different element, and 'That worker? / One CPU core.' frames it as zooming into one worker, but a viewer could read it as a step down.",
+  "Tail length: 21.1 s run from the biggest drop (film 33.88) to the loop seam. The twist has a text or visual event at least every ~1.2 s (glitch, bar, 'No.', cracks, whip, doublings, race, wall, takeaway, heartbeat, 'Forever.', launch). If analytics show drop-off there, the first lever is to trim the twist to 12.0 s and give the 0.5 s to the data center.",
+  "LIME 'H100: 16,896 CUDA CORES' auto-fits to 37.7 px, about 6% smaller than the other two LIME lines at 40. Every variant that keeps both 'H100' and 'CUDA CORES' is the same width or wider (measured 36.1-37.0). It passes the 34 px floor."
+ ],
+ "user_decisions": {
+  "approved": "2026-10-23: user approved this script as final to build",
+  "counter_label": "CORES WORKING AT ONCE (singular 'CORE WORKING AT ONCE' while the number is 1)",
+  "game_framing": "keep: LEVEL 1/3 \u00b7 ONE CPU, LEVEL 2/3 \u00b7 ONE GPU, LEVEL 3/3 \u00b7 DATA CENTER, FINAL BOSS: AMDAHL'S LAW, '16? Cute.'",
+  "forever_line": "keep 'Forever.' after '10% serial / = max 10\u00d7.'",
+  "every_pixel_line": "REPLACE 'Same math, / every pixel.' with 'Same math, / every number.' (H100 is an AI chip without display outputs)",
+  "pinned_comment": "post as written (no delayed-posting advice requested)",
+  "final_render": "ASK THE USER before the final full-scale (1080x1920 @ 60 fps) render"
+ }
+}
