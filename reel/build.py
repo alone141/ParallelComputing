@@ -187,7 +187,10 @@ def film(quality: str) -> None:
     run(["ffmpeg", "-y", "-v", "error", "-i", str(raw), "-loop", "1", "-i", bg,
          "-filter_complex", GRADE.format(w=w, h=h, fps=q["fps"]),
          "-map", "[v]", "-c:v", "libx264", "-preset", "slow" if quality == "final" else "veryfast",
-         "-crf", "16" if quality == "final" else "23", "-profile:v", "high", "-pix_fmt", "yuv420p",
+         # Final: high quality but capped at ~10 Mb/s (~60 MB), under GitHub's 100 MB file limit and
+         # phone upload caps; the platforms re-encode to far less anyway. Grain is the bit-hungry part.
+         *(["-crf", "18", "-maxrate", "10M", "-bufsize", "20M"] if quality == "final" else ["-crf", "23"]),
+         "-profile:v", "high", "-pix_fmt", "yuv420p",
          "-r", str(q["fps"]), "-movflags", "+faststart", str(silent)])
 
     wav = BUILD / "soundtrack.wav"
