@@ -4,3 +4,4 @@ slides
 *.pyc
 __pycache__/
 reel/build/
+reel/out/*_preview.mp4

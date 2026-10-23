@@ -728,7 +728,7 @@ class Hud(VGroup):
       swap(t, s, dur=0.25, dist=0.35)     slot machine: old slides down+fades, new drops in
     Other channels:
       pulse(t, amp=1.1, dur=0.2)          number scale amp->1 (ease_out_cubic), no change
-      mult(t, s, hold=1.0, fade=0.12)     label->multiplier crossfade 0.12 s, hold, back 0.12 s
+      mult(t, s, hold=1.0, fade=0.12)     label->multiplier swap 0.12 s (label out, then mult in), hold, back
       label(t, s, color=INK, opacity=0.70, fade=0.0)   new label (crossfade if fade > 0)
       fade_to(t0, t1, o0, o1, shift0, shift1, ease)    whole-HUD opacity/offset envelope
       hide_at(t) / show_at(t)             instant envelope 0 / 1
@@ -969,7 +969,11 @@ class Hud(VGroup):
         # label + multiplier
         m, ms, mcol = self._mult_at(now)
         cur, prev, a = self._lab_at(now)
-        la = env * (1 - m)
+        # Sequential swap (integration fix): the label is gone by the half-way point of the
+        # 0.12 s fade and the multiplier only appears after it, so the two strings never
+        # double-expose on the same line (they did at every ×N jump with a plain crossfade).
+        la = env * (1 - ramp(m, 0.0, 0.5))
+        ma = ramp(m, 0.5, 1.0)
         lab_tmpl = _hud_label_tmpl(*cur) if cur[0] else None
         if prev is not None and prev[0]:
             self.s_lab_old.display(_hud_label_tmpl(*prev), la * (1 - a), 1.0, None, shift, tint)
@@ -980,7 +984,7 @@ class Hud(VGroup):
         else:
             self.s_lab.clear_slot()
         if m > 0 and ms:
-            self.s_mult.display(_hud_mult_tmpl(ms, mcol), env * m, 1.0, None, shift, tint)
+            self.s_mult.display(_hud_mult_tmpl(ms, mcol), env * ma, 1.0, None, shift, tint)
         else:
             self.s_mult.clear_slot()
         # RGB split copies (behind)

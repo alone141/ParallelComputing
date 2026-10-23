@@ -372,7 +372,9 @@ class BeatScene(Scene):
     def hold_until(self, local_t: float) -> None:
         """Wait (frame-exact) until the given local time; no-op if already past."""
         n = int(round(local_t * config.frame_rate)) - self._frames
-        if n > 0:
+        if n == 1:
+            self.wait(1 / config.frame_rate)  # x/x == 1.0 exactly -> one frame, no short-wait warning
+        elif n > 1:
             self.wait((n - 0.5) / config.frame_rate)
 
     def construct(self):

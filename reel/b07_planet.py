@@ -5,8 +5,11 @@ globe that settles in from 3x (the widest zoom-out). Volunteer PCs pop up across
 front side; from 1.00 a work unit leaves the hub every 0.10 s (MAGENTA arc + packet),
 the device computes (INK flash + ring) and a LIME result rides back. Job 0 is slowed so
 its 'work unit' / 'result' labels can be read. 1.00: the HUD swaps units like a slot
-machine ('VOLUNTEER GPUs · 2020', counting 0 -> 350,000+); 2.40 SLAM + a light wave
-across every visible device. 4.45 glitch-out, 4.75 hard cut to BG + HUD (E07).
+machine ('VOLUNTEER GPUs · 2020', counting 0 -> 350,000+; sequenced so digits never
+double-expose, with a 0.15 s HUD glitch under the glitch cue); 2.40 SLAM + a light wave
+(CYAN wavefront ring + point band, devices flash INK as it passes, rim flash) across every
+visible device. 4.45 glitch-out (x-jolts, RGB-split ghosts, opacity drops, slice
+displacement + tear bars), 4.75 hard cut to BG + HUD (E07).
 
 Everything that moves is a pure function of self.now (one driver updater). The 900 globe
 points and 300 devices are drawn as a handful of multi-subpath VMobjects (one per
@@ -15,6 +18,7 @@ quantised colour).
 
 from style import *
 from motif import *
+from motif import _hud_label_tmpl, _hud_number_tmpl   # cached HUD templates (read-only)
 import math
 
 # --------------------------------------------------------------------------
@@ -55,6 +59,14 @@ T_PUSH0 = 3.50
 T_GLITCH0, T_GLITCH1 = 4.45, 4.75
 T_TEXT_CUT = 4.50
 COUNT_TO = 350000
+SWAP_DUR = 0.25                                # 1.00-1.25 slot-machine unit swap
+SWAP_DIST = 0.35
+SWAP_GLITCH = 0.15                             # HUD x-jitter + RGB split under the glitch cue
+SWAP_SPLIT = (2, 3, 6, 7)                      # story-frame offsets with RGB-split copies
+OLD_NUM, OLD_LAB = "1,689,600,000+", CALC_LABEL
+NEW_LAB = "VOLUNTEER GPUs · 2020"
+WAVE_DUR = 0.30                                # light wave reaches the rim (d = R) after 0.30 s
+N_TEAR = 9                                     # glitch-out tear bars
 
 # device pop starts: device 0 first, the rest staggered so every pop ends by 2.40
 _prng = np.random.default_rng(71)
@@ -269,6 +281,16 @@ class B07Planet(BeatScene):
         self.pk_out = streak_mob(MAGENTA, 9)
         self.pk_back = streak_mob(LIME, 9)
 
+        # ---------------- light wave front (2.40): radius R*(t-2.40)/0.30, the device-flash delay ----------------
+        self.wave = ShockRing(self, T_WAVE, G, 0.02, R, 6.0, 0.85, WAVE_DUR, CYAN, ease=linear,
+                              w1=2.0, op1=0.35)
+
+        # ---------------- glitch-out tear bars (empty outside 4.45-4.75) ----------------
+        self.sq_unit = Square(side_length=1.0).points.copy()
+        self.tears = VGroup(*[VMobject(stroke_width=0, fill_color=CYAN, fill_opacity=0) for _ in range(N_TEAR)])
+        for t in self.tears:
+            t.points = EMPTY.copy()
+
         # ---------------- glitch ghosts (RGB split copies; empty except on split frames) ----------------
         self.stage = [self.outline, self.points, self.arcs, self.devices, self.rings, self.pk_out,
                       self.pk_back, self.hub]
@@ -294,6 +316,8 @@ class B07Planet(BeatScene):
         self.lab_res = Text("result", font=FONT_BODY, font_size=34, color=LIME, weight=SEMIBOLD)
         for lab in (self.lab_wu, self.lab_res):
             lab.move_to(ORIGIN, aligned_edge=RIGHT).shift(-lab.get_center()[1] * UP)
+            # BG knockout halo: other jobs' packets and arcs cross the labels' path
+            lab.set_stroke(BG, width=7, opacity=0.92, background=True)
         j0 = JOBS[0]
         track.on(self.lab_wu, j0[0], j0[2], shift=lambda now: self._label_anchor(now, out=True))
         track.on(self.lab_res, j0[3], j0[4], shift=lambda now: self._label_anchor(now, out=False))
@@ -310,15 +334,17 @@ class B07Planet(BeatScene):
         track.on(self.chip, T_CHIP0, T_TEXT_CUT, exit="cut", shift=gl)
 
         # ---------------- HUD: slot-machine unit swap, count, SLAM ----------------
-        hud.swap(T_SWAP, "0", dur=0.25, dist=0.35)
-        hud.label(T_SWAP, "VOLUNTEER GPUs · 2020", CYAN, 0.90, fade=0.25)
+        hud.swap(T_SWAP, "0", dur=SWAP_DUR, dist=SWAP_DIST)
+        hud.label(T_SWAP, NEW_LAB, CYAN, 0.90, fade=SWAP_DUR)
         hud.roll(T_COUNT0, T_COUNT1, 0, COUNT_TO, ease=ease_out_cubic, log=False)
-        hud.slam(T_WAVE, "350,000+")
+        # 1.18 (not 1.3): at 1.3 the 6.24-wide number leaves the frame and hits the label
+        hud.slam(T_WAVE, "350,000+", scale=1.18)
+        hud.post = self._hud_swap_post         # sequenced swap (no double-exposed digits) + glitch
 
         # ---------------- z-order: dust, ring, globe, arcs, devices, rings, packets, hub, text, HUD ----------------
         self.remove(self.hub)
-        add_behind(self, self.ghost_c, self.ghost_m, self.outline, self.points, self.arcs, self.devices,
-                   self.rings, self.pk_out, self.pk_back, self.hub)
+        add_behind(self, self.ghost_c, self.ghost_m, self.outline, self.points, self.wave, self.arcs,
+                   self.devices, self.rings, self.pk_out, self.pk_back, self.hub, self.tears)
         entry_ring(self)
         self.add(track)
         self.remove(hud)
@@ -397,17 +423,26 @@ class B07Planet(BeatScene):
         k = glitch_step(now) if now >= T_GLITCH0 - EPS else -1
         drop = 0.3 if (k >= 0 and jitter(k, 0.5, seed=72) + 0.5 < 0.30) else 1.0
 
-        # ---- globe outline
+        # ---- globe outline (the rim flashes when the light wave reaches it)
+        rim = 0.0
+        if now >= T_WAVE + WAVE_DUR - EPS:
+            rim = 1.0 - ease_out_cubic(ramp(now, T_WAVE + WAVE_DUR, T_WAVE + WAVE_DUR + 0.35))
         self.outline.points = (self.outline_rest - G) * s + G + off
-        self.outline.set_stroke(CYAN, width=2, opacity=0.4 * form * drop)
-        self.outline.set_fill(CYAN, opacity=0.03 * form * drop)
+        self.outline.set_stroke(CYAN, width=2 + 2.5 * rim, opacity=min(1.0, 0.4 + 0.6 * rim) * form * drop)
+        self.outline.set_fill(CYAN, opacity=(0.03 + 0.05 * rim) * form * drop)
 
-        # ---- 900 points
+        # ---- 900 points (+ a bright band riding the light-wave front)
         X, Y, Z = sphere_xyz(PT_PHI, PT_LAM, now)
         C = self._to_screen(X, Y, s, off)
         z01 = np.clip(Z, 0, 1)
         rgb = RGB_DIM[None] * (1 - z01[:, None]) + RGB_INK[None] * z01[:, None]
         a = np.where(Z > -0.05, 0.12 + 0.7 * z01, 0.0) * form * drop
+        if T_WAVE - EPS <= now < T_WAVE + WAVE_DUR + 0.12:
+            rho = R * (now - T_WAVE) / WAVE_DUR
+            band = np.clip(1.0 - np.abs(np.hypot(X, Y) * s - rho) / 0.40, 0, 1) * (Z > -0.05)
+            band *= 1.0 - ramp(now, T_WAVE + WAVE_DUR, T_WAVE + WAVE_DUR + 0.12)
+            rgb = rgb * (1 - band[:, None]) + RGB_CYAN[None] * band[:, None]
+            a = np.minimum(1.0, a + 0.75 * band)
         self.points.draw(C, 2 * PT_R * s, np.concatenate([rgb, a[:, None]], axis=1))
 
         # ---- devices
@@ -429,7 +464,7 @@ class B07Planet(BeatScene):
         ink = np.maximum(w_fl, j_fl)
         rgb = RGB_CYAN[None] * (1 - ink[:, None]) + RGB_INK[None] * ink[:, None]
         a = np.maximum(base_a, ink) * limb * (Z > 0) * drop
-        size = DEV_SQ * s * pop * (1 + 0.5 * w_fl + 0.4 * j_fl)
+        size = DEV_SQ * s * pop * (1 + 1.0 * w_fl + 0.4 * j_fl)
         self.devices.draw(D, size, np.concatenate([rgb, a[:, None]], axis=1))
 
         # ---- jobs: arcs, packets, rings
@@ -498,8 +533,93 @@ class B07Planet(BeatScene):
                 m.fill_rgbas = m.fill_rgbas * 0 + rgba(CYAN, 0.65 * drop)
             self._hub_drop = drop
 
-        # ---- glitch ghosts (CYAN / MAGENTA copies at -/+ 0.05)
+        # ---- glitch: slice displacement, ghosts (CYAN / MAGENTA copies at -/+ 0.05), tear bars
+        if k >= 0 and now < T_GLITCH1 - EPS:
+            self._slice_tear(k)
         self._draw_ghosts(now, k)
+        self._draw_tears(now, k)
+
+    def _slice_tear(self, k: int) -> None:
+        """Harsh digital tear: 2-3 seeded horizontal bands per glitch step; every stage point
+        inside a band is displaced sideways (the globe, arcs, packets and hub tear apart)."""
+        rng = np.random.default_rng((92, k))
+        bands = [(rng.uniform(G[1] - R, G[1] + R), rng.uniform(0.07, 0.30),
+                  (1 if rng.random() < 0.5 else -1) * rng.uniform(0.15, 0.45)) for _ in range(3)]
+        bands = bands[:2 + int(rng.random() < 0.5)]
+        mobs = [self.outline, *self.points, *self.arcs, *self.devices, *self.rings, self.pk_out,
+                self.pk_back, *self.hub.family_members_with_points()]
+        for m in mobs:
+            p = m.points
+            if not len(p):
+                continue
+            dx = np.zeros(len(p))
+            for yc, hh, d in bands:
+                dx += np.where(np.abs(p[:, 1] - yc) < hh, d, 0.0)
+            if np.any(dx):
+                p = p.copy()
+                p[:, 0] += dx
+                m.points = p
+
+    def _draw_tears(self, now: float, k: int) -> None:
+        """Glitch-out 'digital tear': thin horizontal CYAN / MAGENTA / INK slivers across the
+        stage, re-drawn every glitch step (1/30 s), seeded by the step."""
+        if k < 0 or now >= T_GLITCH1 - EPS:
+            if getattr(self, "_tears_on", True):
+                for t in self.tears:
+                    t.points = EMPTY.copy()
+                self._tears_on = False
+            return
+        self._tears_on = True
+        rng = np.random.default_rng((91, k))
+        cols = (RGB_CYAN, RGB_MAG, RGB_INK)
+        rgb_bg = np.array(BG.to_rgb())
+        for i, t in enumerate(self.tears):
+            on, y, u_h, u_x, u_w, ci, op = (rng.random(), rng.uniform(G[1] - R + 0.15, G[1] + R - 0.15),
+                                            rng.random(), rng.random(), rng.random(),
+                                            int(rng.integers(0, 3)), rng.uniform(0.35, 0.75))
+            if i < 3:      # drop-out band: a slice of the stage goes missing
+                h, x0, w, col, op, p_on = lerp(0.06, 0.26, u_h), lerp(-3.9, -1.2, u_x), lerp(2.5, 6.5, u_w), rgb_bg, 0.94, 0.70
+            else:          # bright sliver
+                h, x0, w, col, p_on = lerp(0.02, 0.10, u_h), lerp(-3.75, 1.4, u_x), lerp(0.7, 3.6, u_w), cols[ci], 0.65
+            if on > p_on:
+                t.points = EMPTY.copy()
+                continue
+            x1 = min(x0 + w, 3.20)
+            t.points = self.sq_unit * np.array([x1 - x0, h, 1.0]) + np.array([(x0 + x1) / 2, y, 0.0])
+            t.fill_rgbas = np.array([[*col, op]])
+
+    def _hud_swap_post(self, hud: Hud, now: float) -> None:
+        """1.00-1.25 unit swap, sequenced so the two numbers / labels never double-expose:
+        the old number accelerates down and out (gone by 1.11), the '0' drops in from above
+        (from 1.075); the labels do the same with a short drift. Under the 0.15 s glitch cue the
+        HUD x-jitters with CYAN/MAGENTA split copies on a few story frames (frame 1.00 clean)."""
+        d = now - T_SWAP
+        if not (-EPS <= d < SWAP_DUR - EPS):
+            return
+        a = clip01(d / SWAP_DUR)
+        f = story_frame(d)
+        gl = 1 <= f and d < SWAP_GLITCH - EPS
+        sh0 = np.array([jitter(f, 0.05, seed=31) if gl else 0.0, 0.0, 0.0])
+        e_out, e_in = ease_in_cubic(ramp(a, 0.0, 0.45)), ease_out_cubic(ramp(a, 0.3, 1.0))
+        ao, an = 1.0 - ease_in_out_cubic(ramp(a, 0.0, 0.45)), e_in
+        old_n, new_n = _hud_number_tmpl(OLD_NUM, INK), _hud_number_tmpl("0", INK)
+        hud.s_num_old.display(old_n, ao, 1.0, None, sh0 + DOWN * SWAP_DIST * e_out)
+        hud.s_num.display(new_n, an, 1.0, None, sh0 + UP * SWAP_DIST * (1 - e_in))
+        lo = 1.0 - ease_in_out_cubic(ramp(a, 0.0, 0.40))
+        ln = ease_in_out_cubic(ramp(a, 0.30, 1.0))
+        old_l, new_l = _hud_label_tmpl(OLD_LAB, INK, 0.70), _hud_label_tmpl(NEW_LAB, CYAN, 0.90)
+        hud.s_lab_old.display(old_l, lo, 1.0, None, sh0 + DOWN * 0.14 * ease_in_cubic(ramp(a, 0.0, 0.40)))
+        hud.s_lab.display(new_l, ln, 1.0, None, sh0 + UP * 0.14 * (1 - ease_out_cubic(ramp(a, 0.30, 1.0))))
+        if gl and f in SWAP_SPLIT:
+            first = a < 0.45
+            nt, na = (old_n, ao) if first else (new_n, an)
+            lt, la = (old_l, lo) if first else (new_l, ln)
+            for slot, (tm, dx, c, al) in zip(hud.s_split, ((nt, -0.05, CYAN, na), (nt, 0.05, MAGENTA, na),
+                                                         (lt, -0.05, CYAN, la), (lt, 0.05, MAGENTA, la))):
+                slot.display(tm, 0.5 * al, 1.0, None, sh0 + RIGHT * dx, c)
+        else:
+            for slot in hud.s_split:
+                slot.clear_slot()
 
     def _draw_ghosts(self, now: float, k: int) -> None:
         split = k >= 0 and now < T_GLITCH1 - EPS and (jitter(k, 0.5, seed=73) + 0.5) < 0.75

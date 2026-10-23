@@ -54,6 +54,12 @@ def tvec(sec: float) -> np.ndarray:
     return np.arange(n_samples(sec)) / SR
 
 
+def delay(x: np.ndarray, n: int) -> np.ndarray:
+    """Delay by n samples with silence in front (np.roll would wrap the tail
+    onto the start, which clicks at the film's loop seam)."""
+    return np.concatenate([np.zeros(n), x[:-n]]) if n > 0 else x
+
+
 def stereo(x: np.ndarray, pan: float = 0.0) -> np.ndarray:
     """Equal-power pan, pan in [-1, 1]."""
     a = (pan + 1) * np.pi / 4
@@ -102,7 +108,7 @@ def inst_hit(gain=1.0, **_):
     click = butter(RNG.standard_normal(len(t)), "high", 1800) * np.exp(-t * 90) * 0.5
     noise = butter(RNG.standard_normal(len(t)), "band", [200, 3000]) * np.exp(-t * 14) * 0.25
     x = (body + click) * gain
-    air = np.stack([noise, np.roll(noise, 180)], axis=1) * gain  # widen only the noise layer
+    air = np.stack([noise, delay(noise, 180)], axis=1) * gain  # widen only the noise layer
     return stereo(x) + air, 0
 
 
@@ -137,7 +143,7 @@ def inst_riser(gain=1.0, dur=1.5, **_):
     trem = 0.75 + 0.25 * np.sin(2 * np.pi * np.cumsum(4 + 22 * frac ** 2) / SR)
     env = frac ** 2.2
     x = (noise / (np.max(np.abs(noise)) + 1e-9) * 0.5 + tone) * env * trem * gain * 0.8
-    wide = np.stack([x, np.roll(x, 240)], axis=1)
+    wide = np.stack([x, delay(x, 240)], axis=1)
     return wide, 0
 
 
@@ -189,7 +195,7 @@ def inst_glitch(gain=1.0, dur=0.35, **_):
         out[i:i + len(t)] = s
         i += seg
     out = butter(out, "band", [150, 9000])
-    st = np.stack([out, np.roll(out, 90)], axis=1)
+    st = np.stack([out, delay(out, 90)], axis=1)
     return st * gain, 0
 
 
@@ -217,7 +223,7 @@ def inst_pad_swell(gain=1.0, dur=2.0, chord=0, **_):
             x += signal.sawtooth(2 * np.pi * midi_hz(m + 12 + det) * t) * 0.04
     x = swept_bandpass(x, 300, 6000, q=0.5) * 2.0 + butter(x, "low", 800) * 0.4
     env = (t / dur) ** 1.8
-    return np.stack([x, np.roll(x, 300)], axis=1) * env[:, None] * gain, 0
+    return np.stack([x, delay(x, 300)], axis=1) * env[:, None] * gain, 0
 
 
 INSTRUMENTS = {
@@ -290,7 +296,7 @@ def music_bed(total: float, e: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     pad_bright = butter(pad, "low", 3200)
     pad = pad_dark * (1 - e) + pad_bright * e
     pad *= 0.55 + 0.25 * e
-    pad_st = np.stack([pad, np.roll(pad, 420)], axis=1)
+    pad_st = np.stack([pad, delay(pad, 420)], axis=1)
 
     # Arp (16ths) from energy >= 0.3, hats (8ths) from >= 0.5, kick from >= 0.72
     step = SPB / 4

@@ -155,7 +155,8 @@ def handoff(a: str, b: str) -> Path:
     fb = grab(vb, 0.0, PREVIEW_DIR / "_hb.png")
     out = PREVIEW_DIR / f"handoff_{Path(beat_lookup(a)[1]).stem}__{Path(beat_lookup(b)[1]).stem}.png"
     run(["ffmpeg", "-y", "-v", "error", "-i", str(fa), "-i", str(fb), "-filter_complex",
-         "[0][1]blend=all_mode=difference,eq=brightness=0.0:contrast=4[d];[0][1][d]hstack=3",
+         "[0]format=gbrp[a];[1]format=gbrp[b];[a][b]blend=all_mode=difference,"
+         "lutrgb=r=val*4:g=val*4:b=val*4[d];[0]format=gbrp[a2];[1]format=gbrp[b2];[a2][b2][d]hstack=3",
          str(out)])
     print(f"handoff sheet (A exit | B entry | 4x difference): {out}")
     return out
@@ -186,10 +187,13 @@ def film(quality: str) -> None:
          "-r", str(q["fps"]), "-movflags", "+faststart", str(silent)])
 
     wav = BUILD / "soundtrack.wav"
-    run([PYTHON, str(REEL / "audio" / "synth.py"), "--out", str(wav), "--seconds", f"{total:.4f}"])
+    # The timeline length is exact (frame-counted); the probed container duration can
+    # come up a frame short, and trimming the tail would break the loop seam.
+    run([PYTHON, str(REEL / "audio" / "synth.py"), "--out", str(wav), "--seconds", f"{FILM_SECONDS:.4f}"])
     scored = OUT / f"parallel_scales_scored{suffix}.mp4"
     run(["ffmpeg", "-y", "-v", "error", "-i", str(silent), "-i", str(wav), "-map", "0:v", "-map", "1:a",
-         "-c:v", "copy", "-c:a", "aac", "-b:a", "256k", "-shortest", "-movflags", "+faststart", str(scored)])
+         "-c:v", "copy", "-c:a", "aac", "-b:a", "256k", "-t", f"{FILM_SECONDS:.4f}",
+         "-movflags", "+faststart", str(scored)])
     print(f"done:\n  {silent}\n  {scored}")
 
 
