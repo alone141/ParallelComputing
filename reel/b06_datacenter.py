@@ -13,12 +13,16 @@ At 2.45 a second pull-back shrinks the pod into 16 squares of a 56 x 56 hall (3,
 100,352 GPUs; pitch 0.12, the hall overfills the stage window top and bottom) while the HUD
 log-rolls and accelerates toward 1,689,600,000 but is CUT at ~281,000,000 at 3.32: 80 ms freeze
 + silence (the headline cuts out too), then the biggest drop of the film at 3.40: HUD SLAMs
-1,689,600,000+ with the word equation '100,000+ GPUs × 16,896' in the label slot, the hall
-flashes INK, a radial INK burst, a CYAN shock ring (w14, r 0.3 -> 7.0), 0.10 impact shake;
-messages race along the trunks and gather/broadcast all-reduce pulses sweep the hall (the last
-gather pulls into the centre). 5.20 an outline draws on around the hall window, which
-COLLAPSEs (cut_times) into handoff_token('cluster') (E06); the headline stays through the
-collapse.
+1,689,600,000+ with the word equation '100,000+ GPUs × 16,896' in the label slot and the card
+'100,000+' SLAMs in (INK on its first two story frames, then CYAN; start scale capped so it
+never leaves the safe zone x[-4.0, 3.3]: ~1.17, not 1.3). The punch comes from the stage: the
+hall flashes INK, a radial INK burst (0.55 peak + a faint frame tint), a CYAN shock ring (w14,
+r 0.3 -> 7.0) and a 0.16 impact shake; messages race along the trunks and gather/broadcast
+all-reduce pulses sweep the hall (the last gather pulls into the centre). 5.20 an outline draws
+on around the hall window, which COLLAPSEs (cut_times) into handoff_token('cluster') (E06). The
+kicker and the card hold, untouched, through the collapse, the landing and the settle, then
+HARD-CUT at the exit (T_EXIT 5.95, no fade; only the 3 static E06 frames are text-less, as in
+b02-b05): b07's text POPs on its own cut.
 
 Everything that moves is a pure function of self.now (one driver). The hall is a motif.Field
 with fixed quantisation (temporally stable colours); off-frame squares are skipped.
@@ -89,7 +93,10 @@ PULSES = (("gather", 3.60, 3.90), ("bcast", 3.95, 4.25), ("gather", 4.35, 4.65),
 T_MSG_END = 5.35
 T_OUT0, T_OUT1 = 5.20, 5.40                              # outline draws on
 T_COL, T_SET, T_EXIT = cut_times(6.0)                    # 5.433 / 5.833 / 5.95
-T_TEXT_OUT = T_EXIT - 0.20                               # headline + kicker leave during the settle
+T_TEXT_OUT = T_EXIT                                      # 5.95: kicker + card hold to the exit, then hard-cut
+SLAM_BOX = Box(SAFE_LEFT + 0.05, SAFE_RIGHT - 0.05, SAFE_BOTTOM, SAFE_TOP)   # '100,000+' slam stays in here
+SLAM_INK = 2 / 60                                        # the slammed card is INK for 2 story frames
+DROP_SHAKE = (0.16, 0.30)                                # hall impact shake: amplitude, duration
 
 # --------------------------------------------------------------------------
 # Stage-A messages: 16 per SYNC cycle, each hops server -> ToR -> spine -> ToR' -> server' in a
@@ -253,7 +260,8 @@ class B06DataCenter(BeatScene):
         self.trunk_rest = [(ln.get_start().copy(), ln.get_end().copy()) for ln in self.trunks]
         self.msgs = streak_mob(MAGENTA, 6)
         self.ring = ShockRing(self, T_DROP, AC, 0.3, 7.0, 14.0, 0.9, 0.55, CYAN, ease_out_cubic)
-        self.flash = RadialFlash(self, T_DROP, AC, peak=0.40, decay=0.05)
+        # the drop's punch lives on the stage (the card slam is capped to the safe zone)
+        self.flash = RadialFlash(self, T_DROP, AC, peak=0.55, radius=6.5, decay=0.12, tint=0.04)
 
         # ---------------- outline + COLLAPSE (captured now from the full outline) ----------------
         self.outline_full = RoundedRectangle(width=OUT_W, height=OUT_H, corner_radius=0.3, stroke_color=CYAN,
@@ -264,9 +272,9 @@ class B06DataCenter(BeatScene):
 
         # ---------------- text ----------------
         track = TextTrack(self)
-        # the kicker and headline arrive on the cut (frame 0 stays the exact E05) and stay
-        # through the collapse; card swaps are hard (cut + POP on one frame, never a crossfade)
-        track.on(kick("SCALE 5/6 · DATA CENTER"), 0.0, T_TEXT_OUT)
+        # the kicker and headline arrive on the cut (frame 0 stays the exact E05) and hold
+        # through the collapse; every swap and the final exit are hard cuts (never a crossfade)
+        track.on(kick("SCALE 5/6 · DATA CENTER"), 0.0, T_TEXT_OUT, exit="cut")
         c1 = card([("Many boxes.", "H96", INK), ("No shared memory.", "S56", INK)])
         c2 = card([("They pass", "H84"), ("messages.", "H84", MAGENTA)])
         c3 = card([("100,000+", "H96", CYAN), ("GPUs, training one AI.", "S56", INK)])
@@ -276,8 +284,18 @@ class B06DataCenter(BeatScene):
         track.on(c1[1], 0.12, T_CARD2, exit="cut")
         track.on(c2[0], T_CARD2, T_FREEZE, enter="pop", exit="cut")     # the freeze blanks the headline
         track.on(c2[1], T_CARD2, T_FREEZE, enter="pop", exit="cut")
-        track.on(c3[0], T_DROP, T_TEXT_OUT, enter="slam", about=[X_C, CARD_TOP, 0])   # grows down, clear of the kicker
-        track.on(c3[1], 3.50, T_TEXT_OUT)
+        # '100,000+' SLAMs (grows down from its top edge, clear of the kicker) with the start
+        # scale capped to the safe zone; an INK twin carries the first 2 story frames (hit flash)
+        about = np.array([X_C, CARD_TOP, 0.0])
+        s_slam = fit_scale(c3[0], 1.3, about, SLAM_BOX)
+        c3_ink = c3[0].copy().set_color(INK)
+        track.on(c3_ink, T_DROP, T_DROP + SLAM_INK, enter="slam", exit="cut", about=about, scale=s_slam)
+        track.on(c3[0], T_DROP, T_TEXT_OUT, enter="slam", exit="cut", about=about, scale=s_slam,
+                 alpha=lambda now: 0.0 if now < T_DROP + SLAM_INK - EPS else 1.0)
+        track.on(c3[1], 3.50, T_TEXT_OUT, exit="cut")
+        lo = (c3[0].get_left() - about) * s_slam + about
+        hi = (c3[0].get_right() - about) * s_slam + about
+        assert SAFE_LEFT <= lo[0] and hi[0] <= SAFE_RIGHT, (lo, hi)
 
         # ---------------- HUD ----------------
         # The roll aims at 1,689,600,000 by the hit but is CUT at the freeze (~281,000,000): the
@@ -488,7 +506,7 @@ class B06DataCenter(BeatScene):
         e2 = self._zoom2(now)
         k = ZX ** (1 - e2)
         piv = lerp(PIVOT_A, AC, e2)
-        sh = shake(now - T_DROP, 0.10, 0.25, seed=6)
+        sh = shake(now - T_DROP, *DROP_SHAKE, seed=6)
         return k, piv, sh, e2
 
     def _collapse_state(self, now: float):

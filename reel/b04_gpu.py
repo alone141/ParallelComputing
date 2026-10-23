@@ -3,15 +3,20 @@
 The CPU token (E03) card-flips (replacement, not containment) into a GPU token, whose
 base opens into the H100 die. 3,072 pixels (1 pixel = 1 thread, 8x4 blocks = warps of
 32) appear in a radial wave while the HUD rolls 256 -> 16,896 ('66x ONE CPU'). On the 1.30
-slam the LIGHT WAVE races out from the centre (every pixel INK, then CYAN) and the die
-settles into an idle-busy hum: every warp flickers on its own (8 Hz), never dark.
-2.55-2.85 the camera pushes in 4.5x on one warp: its 32 threads run three instructions
-in lockstep (an INK instruction beam fires, all 32 recolour on the SAME frame: CYAN,
-LIME, then each thread its own pixel colour), then the camera pulls back straight into
-six waves of 16 warps scattered over the whole die (stratified, never a top-to-bottom
-scanline), which develop a shaded sphere; 4.55 hit: one full-die INK flash, pop, shock
-ring; the light then sweeps across the ball (all 3,072 colours recomputed every frame).
-The die collapses (cut_times) into handoff_token('gpu') (E04).
+slam the LIGHT WAVE races out from the centre (every pixel INK, then CYAN); 1.70-2.52
+three DISPATCH waves of warps sweep the die (diagonal fronts: each warp fires on one frame,
+INK-hot, then bright CYAN easing back to a low idle-busy hum, every warp flickering on its
+own at 8 Hz). 2.55-2.85 the camera pushes in 4.5x on one warp: its 32 threads run three
+instructions in lockstep (an INK instruction beam fires, all 32 recolour on the SAME frame:
+CYAN, LIME, then each thread its own pixel colour), then the camera pulls back straight
+into six waves of 16 warps scattered over the whole die (stratified, never a top-to-bottom
+scanline), which develop a shaded sphere; 4.55 hit: a burst of light from the ball's
+centre (INK core, CYAN and faint toward the corners, never a solid slab), pop, shock ring.
+4.76-5.84 EVERY FRAME: four more frames are rendered (the light steps across the ball),
+each by a wave of warps sweeping the die (every warp repaints its 32 pixels on one frame
+with a CYAN-white write-flash), so the image visibly updates warp by warp. The die
+collapses (cut_times) into handoff_token('gpu') (E04); kicker + headline hold to the exit
+and hard-cut with the canonical swap.
 
 Everything that moves is a pure function of self.now (one driver updater; the pixel
 field is one vectorised state function drawn through motif.Field, one VMobject per
@@ -66,8 +71,20 @@ STEPS = (2.95, 3.25, 3.55)                            # lockstep instructions (a
 T_WAVE0, WAVE_DT = 4.00, 0.10
 T_HIT = 4.55
 T_COL, T_SET, T_EXIT = cut_times(6.5)                 # 5.933 / 6.333 / 6.45
-T_SWEEP1 = 6.10                                       # light sweep (frozen at T_COL)
-T_TEXT_OUT = T_EXIT - 0.20                            # kicker + headline leave during the settle
+T_TEXT_OUT = T_EXIT                                   # kicker + headline hold to the exit, then hard-cut
+# 1.70-2.55 DISPATCH: after the light wave, waves of warps keep sweeping the die (diagonal
+# fronts, top-left -> bottom-right). A warp fires on ONE frame (all 32 threads together).
+T_DISP = (1.70, 1.96, 2.22)
+DISP_CROSS = 0.30                                     # a front crosses the die in this long
+DISP_DECAY = 0.38                                     # fired warp: bright CYAN -> its idle-busy level
+DISP_HOT = 0.55                                       # INK lift on the 2 fire frames
+# 4.76-5.84 FRAMES: 'every pixel, every frame'. The light steps to a new position per frame and
+# each frame is re-rendered by a wave of warps sweeping the die (each warp repaints its 32 pixels
+# on one frame with a short CYAN-white write-flash), so the image visibly updates warp by warp.
+T_FRAMES = (4.76, 5.02, 5.28, 5.54)
+FR_CROSS = 0.24
+FR_HOT = 0.45                                         # write-flash: CYAN lifted this far toward INK
+FR_GLOW, FR_DECAY = 0.55, 0.12                        # then a short CYAN afterglow
 
 # --------------------------------------------------------------------------
 # Colours / shading (precomputed; per frame only the light direction changes)
@@ -79,7 +96,7 @@ C_LIME = RGB_LIME
 BASE_OP = 0.90
 IMG_OP = 0.95
 IDLE_TINT = 0.07                                      # pre-wave threads: DIMMER lifted 7% toward CYAN
-BUSY0, BUSY1 = 0.25, 0.45                             # idle-busy: CYAN opacity range per warp
+BUSY0, BUSY1 = 0.18, 0.36                             # idle-busy: CYAN opacity range per warp (low, so the sweeps read)
 BUSY_HZ = 8.0
 DIM_K = 0.35                                          # other warps while one is in focus ...
 DIM_BACK = 0.55                                       # ... and how far they come back on the pull-back
@@ -91,7 +108,7 @@ _V = (23.5 - _J) / 21.0
 INSIDE = _U ** 2 + _V ** 2 <= 1.0
 NRM = np.stack([_U, _V, np.sqrt(np.clip(1.0 - _U ** 2 - _V ** 2, 0.0, None))], axis=1)
 OUTSIDE_RGB = lerp(C_DIM[None, :], C_CY[None, :], (0.18 * np.clip((-0.2 - _V) / 1.2, 0, 1))[:, None])
-LX0, LX1 = -1.6, 2.0                                  # light x sweep (wider than cos 2.6 -> cos 0.5)
+LX0, LX1 = -1.6, 2.0                                  # light x range: the hit frame, then stepped per frame
 SPEC_GAIN = 1.6
 
 
@@ -110,12 +127,23 @@ def shade(lx: float) -> np.ndarray:
 
 
 SHADE0 = shade(LX0)
+# frame k (k = 1..4) is lit from FR_LX[k]: the light steps LX0 -> LX1 across the ball
+FR_LX = [lerp(LX0, LX1, (k + 1) / len(T_FRAMES)) for k in range(len(T_FRAMES))]
+SHADES = np.stack([SHADE0, *[shade(lx) for lx in FR_LX]])      # (1 + frames, N_PIX, 3)
 
+# warp-wave fronts: each warp's position along the sweep direction (0 = top-left, 1 = bottom-right)
+_WX = np.array([PX[WARP_ID == w].mean() for w in range(N_WARP)])
+_WY = np.array([PY[WARP_ID == w].mean() for w in range(N_WARP)])
+_proj = _WX * 0.866 - _WY * 0.5
+SWEEP_P = ((_proj - _proj.min()) / (_proj.max() - _proj.min()))[WARP_ID]   # per pixel
+DISP_F = np.rint((np.array(T_DISP)[:, None] + DISP_CROSS * SWEEP_P[None, :]) * 60).astype(int)
+FR_F = np.rint((np.array(T_FRAMES)[:, None] + FR_CROSS * SWEEP_P[None, :]) * 60).astype(int)
 
-def light_x(now: float) -> float:
-    if now < T_HIT:
-        return LX0
-    return lerp(LX0, LX1, ease_in_out_sine(ramp(now, T_HIT, T_SWEEP1)))
+# 4.55 hit flash: a burst of light from the centre of the ball, not a solid INK slab. Pixels go
+# HIT_K toward HIT_RGB: 0.9 toward INK at the centre, ~0.4 at the ball's rim, ~0.05 in the
+# corners, and the burst cools from INK to CYAN toward its edge.
+HIT_K = 0.90 * np.exp(-(DIST / 2.4) ** 2)
+HIT_RGB = lerp(C_CY[None, :], C_INK[None, :], np.exp(-(DIST / 2.0) ** 2)[:, None])
 
 
 # 1.30 light wave: per-pixel arrival (linear in distance from AC beyond LW_R0), 60 fps grid
@@ -179,6 +207,29 @@ def flash_decay(now: float, t: float, dur: float) -> float:
     return 1.0 - ease_out_cubic(ramp(now, t + 2 / 60, t + 2 / 60 + dur))
 
 
+def warp_fires(now: float, f: int, F: np.ndarray, decay: float) -> tuple[np.ndarray, np.ndarray]:
+    """Per pixel, for warp fires at story frames F (sweeps, N_PIX): (hot, glow). hot = on one of the
+    2 fire frames of a sweep; glow = 1 on them, then 1 -> 0 (ease_out_cubic) over decay; the
+    strongest sweep wins. Whole warps share F, so all 32 threads of a warp change on one frame."""
+    hot = np.zeros(N_PIX, bool)
+    glow = np.zeros(N_PIX)
+    for Fk in F:
+        d = f - Fk
+        if d.max() < 0:
+            continue
+        hot |= (d >= 0) & (d < 2)
+        g = 1.0 - ease_out_cubic_arr(ramp_arr(now, (Fk + 2) / 60, (Fk + 2) / 60 + decay))
+        glow = np.maximum(glow, np.where(d >= 0, g, 0.0))
+    return hot, glow
+
+
+def image_at(f: int) -> np.ndarray:
+    """(N_PIX, 3) image each pixel shows at story frame f: SHADE0 until its warp repaints it for
+    frame k (then SHADES[k])."""
+    k = (f >= FR_F).sum(axis=0)
+    return SHADES[k, np.arange(N_PIX)]
+
+
 def field_pop(now: float) -> float:
     if now < T_HIT - EPS:
         return 1.0
@@ -216,6 +267,15 @@ def pixel_state(now: float):
         rgb[ink] = C_INK
         alpha[ink] = 1.0
 
+    # 1.70-2.55 DISPATCH: waves of warps sweep the die (fired warp: INK-hot, then bright CYAN
+    # easing back to its idle-busy level)
+    if T_DISP[0] - EPS <= now < Z_OUT0:
+        hot, glow = warp_fires(now, f, DISP_F, DISP_DECAY)
+        if glow.any():
+            rgb = lerp(rgb, C_CY[None, :], glow[:, None])
+            alpha = lerp(alpha, 1.0, glow)
+            rgb[hot] = lerp(C_CY, C_INK, DISP_HOT)
+
     # warp focus: the others dim; the focus warp goes 'ready', then 3 lockstep steps
     dimk = ease_out_cubic(ramp(now, Z_IN0, Z_IN1)) * (1.0 - DIM_BACK * ease_in_out_sine(ramp(now, Z_OUT0, Z_OUT1)))
     if dimk > 0:
@@ -243,7 +303,7 @@ def pixel_state(now: float):
             size[FOCUS] *= lerp(1.15, 1.0, ease_out_cubic(pp))
 
     # waves of warps 4.00-4.50 (scattered): INK for 2 frames, settles to the image in 0.15 s
-    img = SHADE0 if now < T_HIT else shade(light_x(now))
+    img = image_at(f)
     if now >= T_WAVE0 - EPS:
         on = IN_WAVES & (f >= WAVE_F)
         ink = on & (f - WAVE_F < 2)
@@ -257,15 +317,27 @@ def pixel_state(now: float):
             rgb[FOCUS] = img[FOCUS]
             alpha[FOCUS] = IMG_OP
 
-    # 4.55 HIT: one full-die INK flash (2 frames), then the image comes back up through INK
+    # 4.55 HIT: a 2-frame burst of light from the centre (HIT_K / HIT_RGB: INK at the core, CYAN
+    # and faint toward the corners, so the image still shows through), then it fades back
     if now >= T_HIT - EPS:
         if flash_frames(now, T_HIT, 2):
-            rgb[:] = C_INK
-            alpha[:] = 1.0
+            rgb = lerp(rgb, HIT_RGB, HIT_K[:, None])
+            alpha = lerp(alpha, 1.0, HIT_K)
         else:
-            lift = 0.65 * (1.0 - ease_out_cubic(ramp(now, T_HIT + 2 / 60, T_HIT + 0.28)))
+            lift = 0.70 * (1.0 - ease_out_cubic(ramp(now, T_HIT + 2 / 60, T_HIT + 0.28)))
             if lift > 0:
-                rgb = lerp(rgb, C_INK[None, :], lift)
+                rgb = lerp(rgb, HIT_RGB, (lift * HIT_K)[:, None])
+
+    # 4.76-5.84 FRAMES: each warp repaints its 32 pixels with the next frame (image_at) on one
+    # frame (a 2-frame CYAN-white write-flash, then a short CYAN afterglow) as the front sweeps
+    if now >= T_FRAMES[0] - EPS:
+        hot, glow = warp_fires(now, f, FR_F, FR_DECAY)
+        if glow.any():
+            w = FR_GLOW * glow
+            rgb = lerp(rgb, C_CY[None, :], w[:, None])
+            alpha = lerp(alpha, 1.0, w)
+            rgb[hot] = lerp(C_CY, C_INK, FR_HOT)
+            alpha[hot] = 1.0
 
     # camera: push-in on the focus warp (pixels outside the die window fade / are culled)
     k, c, e = cam_at(now)
@@ -315,7 +387,7 @@ class B04Gpu(BeatScene):
         self.die = RoundedRectangle(width=DIE_W, height=DIE_H, corner_radius=DIE_R, stroke_color=CYAN,
                                     stroke_width=3, fill_color=CYAN, fill_opacity=0.04).move_to(AC)
         assert len(self.die.points) == len(self.tok_gpu.base.points)
-        self.field = Field(_RR, pool=240, qc=24, qa=32, fixed=True)
+        self.field = Field(_RR, pool=360, qc=24, qa=32, fixed=True)   # the radial hit burst needs ~340
         self.outline = RoundedRectangle(width=OUT_W, height=OUT_H, corner_radius=OUT_R, stroke_color=INK,
                                         stroke_width=3, fill_opacity=0).move_to(OUT_C)
         self.outline_rest = self.outline.points.copy()
@@ -323,19 +395,20 @@ class B04Gpu(BeatScene):
         self.beam.cap_style = CapStyleType.ROUND
         self.ring = ShockRing(self, T_HIT, AC, r0=0.5, r1=4.0, w0=8.0, op0=1.0, dur=0.50, color=INK)
 
-        # ---------------- text (kicker + headline in on the cut, out during the settle) ----------------
+        # ---------------- text (kicker + headline in on the cut; they hold through the collapse and
+        # settle and hard-cut at T_EXIT with the canonical E04 swap, so no frame near a cut is bare) ----
         track = TextTrack(self)
-        track.on(kick("SCALE 3/6 · ONE GPU"), 0.0, T_TEXT_OUT)
+        track.on(kick("SCALE 3/6 · ONE GPU"), 0.0, T_TEXT_OUT, exit="cut")
         c1 = card([("Now, a GPU.", "H96", INK),
                    ("H100: 16,896 math lanes", "S56", INK, {"16,896 math lanes": CYAN})])
-        track.on(c1[0], 0.05, 2.45, enter="pop")      # gone by 2.65, when 'Warps of 32.' enters
-        track.on(c1[1], 0.25, 2.45)
+        track.on(c1[0], 1 / 60, 2.45, enter="pop")    # POPs on story frame 1 (frame 0 stays E03);
+        track.on(c1[1], 0.12, 2.45)                    # gone by 2.65, when 'Warps of 32.' enters
         c2 = card([("Warps of 32.", "H96", INK, {"32": CYAN}),
                    ("32 threads, 1 instruction.", "S56", INK)])
         track.on(c2[0], 2.65, T_HIT, exit="cut")        # hard swap on the 4.55 hit
         track.on(c2[1], 2.80, T_HIT, exit="cut")
         c3 = card([("Every pixel,", "H84", INK), ("in parallel.", "H84", CYAN)])
-        track.on(c3, T_HIT, T_TEXT_OUT, enter="pop")
+        track.on(c3, T_HIT, T_TEXT_OUT, enter="pop", exit="cut")
 
         # ---------------- HUD: the roll accelerates into the slam (with its ticks) ----------------
         hud.roll(T_ROLL0, T_LAND, 256, 16896, ease=ease_in_quad)
@@ -360,6 +433,8 @@ class B04Gpu(BeatScene):
         self.cue("whoosh", dt=0.53, dur=0.55, direction="up", note="die opens")
         self.cue("hit", dt=T_LAND, gain=0.8, note="16,896 lands")
         self.cue("shimmer", dt=T_LAND, dur=0.55, gain=0.6, note="light wave across the die")
+        for t in T_DISP:
+            self.cue("tick", dt=t, gain=0.45, freq=2600, note="dispatch wave of warps sweeps the die")
         self.cue("whoosh", dt=2.50, dur=0.40, direction="up", note="push-in on one warp")
         for s in STEPS:
             self.cue("tick", dt=s, gain=0.9, freq=3800, pan=0, note="lockstep step: all 32 threads")
@@ -368,7 +443,9 @@ class B04Gpu(BeatScene):
         self.cue("ticks_burst", dt=T_WAVE0, dur=0.55, rate0=10, rate1=10, note="one tick per warp wave")
         self.cue("hit", dt=T_HIT, note="image complete")
         self.cue("sub_drop", dt=T_HIT, dur=0.9)
-        self.cue("shimmer", dt=T_HIT, dur=1.30, note="rides the light sweep")
+        self.cue("shimmer", dt=T_HIT, dur=1.30, note="rides the re-rendered frames")
+        for t in T_FRAMES:
+            self.cue("tick", dt=t, gain=0.55, freq=3200, note="next frame: a wave of warps repaints the die")
         self.cue("whoosh", dt=round(T_COL - 0.10, 4), dur=0.55, direction="down", note="collapse")
         self.cue("tick", dt=round(T_SET, 4), gain=0.5, note="settle")
 

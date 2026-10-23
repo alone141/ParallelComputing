@@ -3,13 +3,19 @@
 The incoming plain token opens into a CPU core. Sixteen lanes hold the digits of pi
 (A, cyan bars) and e (B, ink bars hanging above), with a '+' between the two operand
 rows. SCALAR first: the other lanes dim and three lanes are added one at a time (each
-lane outlined, its digits popped, one tick each, a lime result; HUD '1' pulses). The
-three results rewind, and at 1.30 ONE instruction (vaddps zmm0,zmm1,zmm2) relights all
-16 lanes and drops every B bar onto its A bar on the same frame, 1.50: the light wave
+lane outlined, its digits popped, one tick each, a lime result; HUD '1' pulses). Then a
+deliberate RESET (1.12 -> 1.30, one eased move on the riser): the three results lift back
+to their hang together, drain back to INK/CYAN and dim with the other 13 lanes, so the
+register is back at its start line exactly when ONE instruction (vaddps zmm0,zmm1,zmm2)
+issues at 1.30, relights all 16 lanes (the reset's apex flows into the drop) and drops
+every B bar onto its A bar on the same frame, 1.50: the light wave
 (16 lane outlines + stacks flash INK, then LIME, '+' becomes '='), HUD 1 -> 16, x16.
 LOCKSTEP: four more literal issues of the same instruction on the next 16 digits of pi
 and e (digits hard-swap, bars re-stage and re-drop, all 16 land on one frame), 'That's
-SIMD.', then the core collapses (cut_times) into handoff_token('core') (E02).
+SIMD.', then the core collapses (cut_times) into handoff_token('core') (E02). The kicker
+and 'That's SIMD.' stay fully visible through the collapse and settle and are hard-cut by
+the canonical exit at 4.95 (like b01), so no frame before the cut is text-less except the
+contract's static E02 hold.
 
 Everything that moves is a pure function of self.now (one driver updater); the scene
 only holds until the structural switch points (collapse capture, canonical exit).
@@ -63,12 +69,15 @@ B_IN0, B_IN_STEP, B_IN_DUR = 0.40, 0.012, 0.22
 T_SIGN = 0.55                       # '+' pops in
 T_DIM0, T_DIM1 = 0.62, 0.72         # scalar spotlight: lanes not being worked on dim to DIM_K
 DIM_K = 0.30
-SCALAR_T = (0.70, 0.88, 1.06)       # one scalar add per tick on lanes 0, 1, 2
-SCALAR_STEP = 0.18
+SCALAR_T = (0.63, 0.77, 0.91)       # one scalar add per tick on lanes 0, 1, 2
+SCALAR_STEP = 0.14
 SCALAR_DROP = 0.10
 N_SCALAR = len(SCALAR_T)
-T_REW0, T_REW1 = 1.18, 1.28         # the scalar results rewind (lift back) before the SIMD issue
 T_SIMD = 1.30                       # instruction issued: every lane relights
+# RESET: the scalar results lift back to their hang (and dim with the rest) in ONE eased move
+# that ends on the issue frame, so the register is at its start line when the instruction fires
+T_REW0, T_REW1 = 1.12, T_SIMD
+T_REW_DIM = 1.20                    # the lifted lanes dim back over the reset's last 0.10 s
 T_LAND = 1.50                       # all 16 lanes land on this frame
 T_LIME = 1.65
 PULSES = (1.95, 2.40, 2.85, 3.30, 3.75)   # same instruction, next data (chunks 1..5)
@@ -77,8 +86,9 @@ PULSE_LIFT = 0.30
 T_CARD1_OUT = PULSES[2] + PULSE_DROP - 0.20     # 2.83: gone exactly when "That's SIMD." pops
 T_CARD2 = PULSES[2] + PULSE_DROP                # 3.03: the 3rd lockstep landing
 T_COL, T_SET, T_EXIT = cut_times(5.0)      # 4.433 / 4.833 / 4.95
-T_TEXT_OUT = T_EXIT - 0.20                 # kicker + headline leave during the settle
+T_TEXT_OUT = T_EXIT                        # kicker + headline hold to the exit, then hard-cut
 
+assert SCALAR_T[-1] + SCALAR_DROP + 2 / 60 + 0.06 < T_REW0     # the 3rd result turns LIME first
 LANE_RANK = np.array([int(abs(i - 7.5) - 0.5) for i in range(N_LANES)])   # 0 = centre pair
 T_A = T_BUILD + PAIR_STAGGER * LANE_RANK
 T_B = B_IN0 + B_IN_STEP * np.arange(N_LANES)
@@ -120,12 +130,18 @@ def chunk_at(now: float) -> int:
 
 
 def lane_dim(i: int, now: float) -> float:
-    """Opacity factor of lane i: the scalar spotlight dims every lane not (yet) worked on."""
+    """Opacity factor of lane i: the scalar spotlight dims every lane not (yet) worked on; the
+    scalar lanes dim back with the reset, so all 16 relight together on the issue."""
     if now < T_DIM0 - EPS or now >= T_SIMD - EPS:
         return 1.0
-    if i < N_SCALAR and now >= SCALAR_T[i] - EPS:
-        return 1.0
+    if i < N_SCALAR and now >= SCALAR_T[i] - EPS:       # (bright while they lift, dim at the top)
+        return lerp(1.0, DIM_K, ease_in_out_cubic(ramp(now, T_REW_DIM, T_REW1)))
     return lerp(1.0, DIM_K, ease_out_cubic(ramp(now, T_DIM0, T_DIM1)))
+
+
+def rewind_at(now: float) -> float:
+    """0..1 progress of the scalar reset (ease_in_out_cubic, T_REW0 -> T_REW1 = T_SIMD)."""
+    return ease_in_out_cubic(ramp(now, T_REW0, T_REW1))
 
 
 def spot_at(i: int, now: float) -> float:
@@ -227,14 +243,15 @@ class B02Simd(BeatScene):
         # ---------------- text ----------------
         track = TextTrack(self)
         # kicker + headline arrive on the cut (frame 0 stays the exact E01 token: 'in' at 0.0
-        # is invisible on frame 0, the POP starts on story frame 1); both stay up through the
-        # collapse and clear during the settle (gone at T_EXIT)
-        track.on(kick("SCALE 1/6 · ONE CORE"), 0.0, T_TEXT_OUT)
+        # is invisible on frame 0, the POP starts on story frame 1); both stay FULLY visible
+        # through the collapse and settle and hard-cut at T_EXIT (the canonical E02 swap), like
+        # b01, so the screen never sits text-less before the cut
+        track.on(kick("SCALE 1/6 · ONE CORE"), 0.0, T_TEXT_OUT, exit="cut")
         c1 = card([("1 instruction.", "H96", INK, {"1": CYAN}), ("16 numbers at once.", "S56", CYAN)])
         track.on(c1[0], 1 / 60, T_CARD1_OUT, enter="pop")
         track.on(c1[1], T_SIMD, T_CARD1_OUT)
         c2 = card([("That's SIMD.", "H96", INK, {"SIMD.": CYAN})])
-        track.on(c2[0], T_CARD2, T_TEXT_OUT, enter="pop")      # on the 3rd lockstep landing
+        track.on(c2[0], T_CARD2, T_TEXT_OUT, enter="pop", exit="cut")   # on the 3rd lockstep landing
 
         # ---------------- HUD (not part of E01: fades up 0.10 -> 0.40) ----------------
         hud = Hud("1", "CALCULATION AT ONCE", scene=self)
@@ -260,7 +277,7 @@ class B02Simd(BeatScene):
         for k, ts in enumerate(SCALAR_T):
             self.cue("tick", dt=ts, gain=0.7, freq=(3200, 3600, 4000)[k], pan=round(-0.55 + 0.1 * k, 2),
                      note=f"scalar add {k + 1} (lane {k})")
-        self.cue("riser", dt=1.00, dur=0.50, note="into the SIMD landing")
+        self.cue("riser", dt=1.00, dur=0.50, note="into the SIMD landing (scores the scalar reset 1.12-1.30)")
         self.cue("tick", dt=T_SIMD, freq=6000, gain=0.8, note="instruction issued")
         self.cue("hit", dt=T_LAND, note="all 16 lanes land on one frame")
         self.cue("sub_drop", dt=T_LAND, dur=0.6)
@@ -369,11 +386,11 @@ class B02Simd(BeatScene):
                     t_land = ts + SCALAR_DROP
                     if now < T_REW0:
                         d = ease_in_cubic(ramp(now, ts, t_land))
-                    else:                               # rewind: the result lifts back to its hang
-                        d = 1.0 - ease_in_out_cubic(ramp(now, T_REW0, T_REW1))
+                    else:                               # reset: the result lifts back to its hang
+                        d = 1.0 - rewind_at(now)
                     if now >= t_land - EPS:
                         res = landed_color(now, t_land)
-                        w = 1.0 - ease_in_out_cubic(ramp(now, T_REW0, T_REW1))
+                        w = 1.0 - rewind_at(now)
                         fa, fb = lerp(A_FILL, res, w), lerp(B_FILL, res, w)
                 elif now >= T_LAND - EPS:
                     fa = fb = landed_color(now, T_LAND)

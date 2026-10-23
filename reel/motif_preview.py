@@ -234,6 +234,7 @@ class LoopSeamTest(BeatScene):
         self.add(track)
         head = card([("One at a time.", "H96", INK)])[0]
         track.on(head, 0.0, None, enter="pop", exit=None)
+        track.on(loop_kicker(), 0.0, None, enter="pop", exit=None)  # LOOP now carries the kicker
         ro = LiveText(lambda now: step_str(b09_worker_idx(sf(now))),
                       lambda s: step_readout_tmpl(s, AMBER), scene=self,
                       scale=lambda now: pop_scale(now))

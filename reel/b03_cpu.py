@@ -8,8 +8,13 @@ core's progress fill rises at the core's own rate while its 16 lanes light), DON
 full core flashes LIME), WRITE BACK (a LIME packet returns; the bar flashes on arrival).
 At 2.20 the power-on light wave: every core flashes INK -> CYAN, all 256 lanes light, a
 CYAN shock ring runs out from the grid centre and the cores pop as it passes, the memory
-bar flashes, HUD 16 -> 256 (x16); traffic doubles. At 3.80 traffic drains, the CPU package
-outline draws on and the chip collapses (cut_times) into handoff_token('cpu') (E03).
+bar flashes, HUD 16 -> 256 (x16); traffic doubles. Hierarchy in the dense powered stretch
+(headline > grid action > labels): the T labels step back to ~0.5 opacity once they have
+done their job, the progress level's INK edge fades out under each label (no strike-through)
+and the LIME done flash is softer (0.60) so the lit lanes still read. At 3.80 traffic drains,
+the CPU package outline draws on and the chip collapses (cut_times) into
+handoff_token('cpu') (E03). Kicker + headline stay fully visible through the collapse and
+settle and are hard-cut by the canonical exit at 4.45 (like b01).
 
 Everything that moves is a pure function of self.now (one driver updater).
 """
@@ -58,7 +63,7 @@ T_POWER = 2.20
 T_DRAIN = 3.80                              # no new fetches; in-flight work fades by T_COL
 T_PKG = 3.80                                # package outline Create 3.80 -> T_COL
 T_COL, T_SET, T_EXIT = cut_times(4.5)       # 3.933 / 4.333 / 4.45
-T_TEXT_OUT = T_EXIT - 0.20                  # kicker + headline leave during the settle
+T_TEXT_OUT = T_EXIT                         # kicker + headline hold to the exit, then hard-cut
 
 # thread cycle, as fractions of a period: fetch | compute | write back | idle
 S_FETCH, S_DONE, S_WB = 0.30, 0.68, 0.96
@@ -80,6 +85,12 @@ GLYPH_IDLE = 0.35
 GLYPH_ON = 0.90
 FILL_REST, FILL_REST_ON = 0.15, 0.25        # unit fill before / after the power-on
 PROG_A = 0.55                               # progress fill opacity (CYAN)
+# hierarchy after the power-on (headline > grid action > labels): the T labels have said
+# 'each runs its own thread' and step back so the doubled traffic + '× 16 lanes each' lead
+LAB_POWERED = 0.55                          # T label opacity factor once powered (0.9 -> ~0.5)
+LAB_RECEDE = 0.40                           # ... eased in over this long from the power-on
+DONE_A, DONE_A_ON = 0.85, 0.60              # LIME completion flash peak before / after the power-on
+                                            # (traffic doubles: softer, so the lit lanes still read)
 MEM_FILL = 0.10
 
 # power-on light wave: a CYAN ring from the grid centre; each core pops as it passes
@@ -217,6 +228,10 @@ class B03Cpu(BeatScene):
             assert lab.width < CORE_U - 0.20
             assert lab.get_bottom()[1] > self.cores[i].glyph.get_top()[1] + 0.03
             self.labels.add(lab)
+        # the progress level's INK edge fades out just under the T label (through the label it
+        # read as a strike-through); measured at rest, relative to the core centre
+        self._edge_y1 = min(lab.get_bottom()[1] - CORE_C[i, 1] for i, lab in enumerate(self.labels)) - 0.03
+        self._edge_y0 = self._edge_y1 - 0.10
         # progress fills (empty at rest: not part of the EXPAND capture), under the cores so the
         # unit stroke, lanes and label stay on top
         self.pfills = VGroup(*[VMobject(stroke_width=0, fill_color=CYAN, fill_opacity=0) for _ in range(N_CORES)])
@@ -252,8 +267,10 @@ class B03Cpu(BeatScene):
         for i, core in enumerate(self.cores):
             mems = [core.unit] + list(core.glyph.submobjects) + list(self.labels[i].family_members_with_points())
             self._core_rest.append([(m, rig.rest[rig.index[id(m)]].p.copy()) for m in mems])
-        self._lab_rest = [(m, rig.rest[rig.index[id(m)]].fr.copy())
-                          for m in self.labels.family_members_with_points() + self.mem_lab.family_members_with_points()]
+        self._lab_rest = [(m, rig.rest[rig.index[id(m)]].fr.copy(), True)
+                          for m in self.labels.family_members_with_points()]
+        self._lab_rest += [(m, rig.rest[rig.index[id(m)]].fr.copy(), False)
+                           for m in self.mem_lab.family_members_with_points()]
         self._unit_sw = rig.rest[rig.index[id(self.cores[0].unit)]].sw
 
         # ---------------- pooled packets, trails, bar flashes (above the cores) ----------------
@@ -277,14 +294,15 @@ class B03Cpu(BeatScene):
         # ---------------- text ----------------
         track = TextTrack(self)
         # kicker + headline arrive on the cut (frame 0 stays the exact E02: 'in' at 0.0 is
-        # invisible on frame 0, the POP starts on story frame 1) and stay through the collapse
-        track.on(kick("SCALE 2/6 · ONE CPU"), 0.0, T_TEXT_OUT)
+        # invisible on frame 0, the POP starts on story frame 1) and stay FULLY visible through
+        # the collapse and settle, hard-cut at T_EXIT by the canonical E03 swap (like b01)
+        track.on(kick("SCALE 2/6 · ONE CPU"), 0.0, T_TEXT_OUT, exit="cut")
         c_a = card([("16 cores.", "H96", INK, {"16": CYAN}), ("Each runs its own thread.", "S56", INK)])
         c_b = card([("16 cores.", "H96", INK, {"16": CYAN}), ("× 16 lanes each", "S56", CYAN)])
-        track.on(c_a[0], 1 / 60, T_TEXT_OUT, enter="pop")
+        track.on(c_a[0], 1 / 60, T_TEXT_OUT, enter="pop", exit="cut")
         # the thread line lifts off 2.15 -> 2.20 so the power-on hard cut lands on a clean line
         track.on(c_a[1], 0.12, 2.15, exit_dur=0.05)
-        track.on(c_b[1], T_POWER, T_TEXT_OUT, enter="pop")
+        track.on(c_b[1], T_POWER, T_TEXT_OUT, enter="pop", exit="cut")
 
         # ---------------- HUD ----------------
         hud.slam(T_POWER, "256", mult="×16")
@@ -421,20 +439,22 @@ class B03Cpu(BeatScene):
                 ev = last_event(i, ci, S_DONE)
                 if ev is not None and 0.0 <= now - ev[1] < DONE_FLASH:
                     prog, pcol = 1.0, LIME
-                    pa = 0.85 * (1.0 - ease_in_quad((now - ev[1]) / DONE_FLASH)) * drain
+                    pa = ((DONE_A_ON if ev[1] >= T_POWER else DONE_A)
+                          * (1.0 - ease_in_quad((now - ev[1]) / DONE_FLASH)) * drain)
             pl = self.plines[i]
             if pa > 0.004 and prog > 0.004:
                 pts = fill_pts(ctr[0], y0, FILL_W, h_full * prog, FILL_R, h_full)
                 pf.points = (pts - ctr) * pop + ctr if pop != 1.0 else pts
                 pf.fill_rgbas = rgba(pcol, pa).reshape(1, 4)
-                if comp and prog < 0.97:          # the rising level: a bright INK edge
-                    ly = y0 + h_full * prog
+                ly = y0 + h_full * prog
+                ek = 1.0 - ramp(ly - ctr[1], self._edge_y0, self._edge_y1)
+                if comp and prog < 0.97 and ek > 0.0:   # the rising level: a bright INK edge
                     dy = max(FILL_R - min(h_full * prog, h_full * (1.0 - prog)), 0.0)   # inside a corner arc
                     inset = 0.02 + FILL_R - math.sqrt(max(FILL_R ** 2 - dy ** 2, 0.0))
                     a_ = np.array([ctr[0] - FILL_W / 2 + inset, ly, 0.0])
                     b_ = np.array([ctr[0] + FILL_W / 2 - inset, ly, 0.0])
                     pl.points = (seg(a_, b_) - ctr) * pop + ctr
-                    pl.stroke_rgbas = rgba(INK, 0.85 * drain).reshape(1, 4)
+                    pl.stroke_rgbas = rgba(INK, 0.85 * drain * ek).reshape(1, 4)
                 elif len(pl.points):
                     pl.points = EMPTY.copy()
             else:
@@ -492,11 +512,12 @@ class B03Cpu(BeatScene):
         self.mem.fill_rgbas = rgba(MAGENTA, mf).reshape(1, 4)
         self.mem.stroke_rgbas = rgba(interpolate_color(MAGENTA, INK, 0.7 * (1.0 if ink_flash else 0.0)), 1.0).reshape(1, 4)
 
-        # ---- T labels + SHARED MEMORY fade out with the drain
+        # ---- T labels step back after the power-on; T labels + SHARED MEMORY fade out with the drain
         la = ease_in_out_sine(drain) if now >= T_DRAIN else 1.0
-        if la < 1.0 or getattr(self, "_lab_a", 1.0) != la:
-            for m, fr in self._lab_rest:
+        lt = la * lerp(1.0, LAB_POWERED, ease_out_cubic(ramp(now, T_POWER, T_POWER + LAB_RECEDE)))
+        if getattr(self, "_lab_a", (1.0, 1.0)) != (lt, la):
+            for m, fr, is_t in self._lab_rest:
                 v = fr.copy()
-                v[:, 3] *= la
+                v[:, 3] *= lt if is_t else la
                 m.fill_rgbas = v
-            self._lab_a = la
+            self._lab_a = (lt, la)

@@ -2,20 +2,28 @@
 
 The cluster token (E06) shrinks into the hub (project server) at the centre of a spinning
 globe (R 2.85, bright points, an atmospheric CYAN rim) that settles in from 3x (the widest
-zoom-out). 'Home PCs. / 350,000+ GPUs, online.' POPs on the cut, so the planet's number sits
-in the SAME unit as b06's '100,000+ GPUs' headline. Volunteer PCs pop up across the front side;
+zoom-out). Once the HUD has gone (0.75) the camera drifts into the room it left: 1.0 -> 1.10x
+and 0.45 lower by 1.55 (ease_in_out_sine; globe y[-3.14, 3.14], hub at y 0.0). 'Home PCs. /
+350,000+ GPUs, online.' POPs on the cut, so the planet's number sits in the SAME unit as b06's
+'100,000+ GPUs' headline. Volunteer PCs pop up across the front side;
 from 1.00 a work unit leaves the hub every 0.10 s (MAGENTA arc + packet), the device computes
 (INK flash + ring) and a LIME result rides back. Job 0 is slowed and drawn bolder so its
 'work unit' / 'result' labels (Inter Bold 44) tell the request/response story.
 
-HUD: the big counter does not count here: from 1.00 '1,689,600,000+ / CALCULATIONS AT ONCE'
-dims to 0.5 (frozen, never falls to 0, never counts up to a smaller number). 2.40 SLAM + a light
-wave (CYAN wavefront ring + point band, devices flash INK as it passes, rim flash) across every
-visible device: the HUD relabels to the number the card already showed, '350,000+ /
-VOLUNTEER GPUs · 2020' (E07), and the jobs speed up (every 0.04 s) so the planet buzzes.
-1.95 hard swap to '2020: they beat / the top 500 combined.'; 2.60 the kicker becomes the
-source, 'FOLDING@HOME'. 4.45 glitch-out (x-jolts, RGB-split ghosts, opacity drops, slice
-displacement + tear bars), 4.75 hard cut to BG + HUD (E07).
+HUD: the counter RETIRES here, it never shows the planet's number: muted viewers would read
+'1,689,600,000+' -> '350,000+' as a drop. While the card brings in '350,000+ GPUs', the frozen
+'1,689,600,000+ / CALCULATIONS AT ONCE' dims to 0.5 (0.10-0.35), then slides down and fades out
+(Hud.retire 0.40-0.75, ease_in_cubic: it accelerates away, nothing new drops in, so it reads as
+leaving, not as a slot-machine count). From 0.75 the beat is HUD-free, like its exit state.
+1.95 hard swap to '2020: they beat / the top 500 / supercomputers combined.' (past tense, dated:
+the 2020 claim vs the TOP500 sum, see facts planet_fah_caveats). 2.40 a light wave (CYAN
+wavefront ring + point band, devices flash INK as it passes, rim flash) crosses every visible
+device and the jobs speed up (every 0.04 s) so the planet buzzes; 2.60 the kicker becomes the
+source, 'FOLDING@HOME'. 4.60 glitch-out (x-jolts, RGB-split ghosts, opacity drops, slice
+displacement + tear bars); the kicker and card stay up through it, jolting with the stage (text
+is held through every cut, never a text-less glitch), and 4.90 hard-cuts everything to BG + dust
+(E07: no token, no HUD), static to 5.00; b08's question pops on its story frame 2, so the black
+pattern-interrupt lasts about 0.13 s.
 
 Everything that moves is a pure function of self.now (one driver). The 900 globe points and
 300 devices are motif.Fields (fixed quantisation: temporally stable colours).
@@ -29,7 +37,10 @@ import math
 # World layout
 # --------------------------------------------------------------------------
 G = AC.copy()                                  # globe centre
-R = 2.85                                       # y[-2.40, 3.30]: clear of the HUD digits and the cards
+R = 2.85                                       # model radius (screen: R * s about G + PAN)
+CAM_SET = 1.10                                 # settled camera scale (the HUD has left: room below)
+PAN = np.array([0.0, -0.45, 0.0])              # settled camera pan: globe y[-3.14, 3.14], clear of the cards
+T_CAM0, T_CAM1 = 0.75, 1.55                    # ... drifted to once the HUD has left (never over its digits)
 BETA = 0.35                                    # tilt
 SPIN = 0.30                                    # rad/s
 N_PTS = 900
@@ -55,18 +66,20 @@ HUB_SIZE = 0.40
 T_FORM = 0.80
 T_POP0, T_POP1 = 0.80, 2.40
 POP_DUR = 0.20
-T_JOBS0, T_JOBS1 = 1.00, 4.30
+T_JOBS0, T_JOBS1 = 1.00, 4.45
 JOB_DT0, JOB_DT1 = 0.10, 0.04                  # before / after the light wave (the planet buzzes)
-T_DIM0, T_DIM1 = 1.00, 1.30                    # the frozen HUD dims to 0.5: 'not counting here'
+T_DIM0, T_DIM1 = 0.10, 0.35                    # the frozen HUD dims to 0.5: 'not counting here' ...
 HUD_DIM = 0.5
+T_RETIRE, RETIRE_DUR = 0.40, 0.35              # ... then slides down and out for good (E07 is HUD-free)
+assert T_RETIRE + RETIRE_DUR <= T_CAM0 + 1e-9  # gone before the camera drifts into its space
+RETIRE_SHIFT = DOWN * 0.60
 T_CARD2 = 1.95                                 # hard card swap
 T_WAVE = 2.40
 T_SRC = 2.60                                   # the kicker becomes the source tag
 T_PUSH0 = 3.50
-T_GLITCH0, T_GLITCH1 = 4.45, 4.75
-T_TEXT_CUT = 4.50
-NEW_NUM, NEW_LAB = "350,000+", "VOLUNTEER GPUs · 2020"
-WAVE_DUR = 0.30                                # light wave reaches the rim (d = R) after 0.30 s
+T_GLITCH0, T_GLITCH1 = 4.60, 4.90             # hard cut 0.10 s before the slot end (E07 is empty)
+T_TEXT_CUT = T_GLITCH1                         # card + kicker ride the glitch (x-jolts) and cut WITH the stage
+WAVE_DUR = 0.30                                # light wave reaches the rim (d = R * CAM_SET) after 0.30 s
 N_TEAR = 9                                     # glitch-out tear bars
 
 # device pop starts: device 0 first, the rest staggered so every pop ends by 2.40
@@ -194,8 +207,9 @@ class B07Planet(BeatScene):
         self.pk0 = streak_mob(MAGENTA, 22)       # job 0's packet (the labelled one)
         self.pk0_core = streak_mob(INK, 8)
 
-        # ---------------- light wave front (2.40): radius R*(t-2.40)/0.30, the device-flash delay ----------------
-        self.wave = ShockRing(self, T_WAVE, G, 0.02, R, 8.0, 0.9, WAVE_DUR, CYAN, ease=linear,
+        # ---------------- light wave front (2.40): radius R*s*(t-2.40)/0.30, the device-flash delay ----------------
+        assert self._cam(T_WAVE)[0] == CAM_SET and np.allclose(self._cam(T_WAVE)[1], PAN)   # camera settled
+        self.wave = ShockRing(self, T_WAVE, G + PAN, 0.02, R * CAM_SET, 8.0, 0.9, WAVE_DUR, CYAN, ease=linear,
                               w1=2.0, op1=0.35)
 
         # ---------------- glitch-out tear bars (empty outside 4.45-4.75) ----------------
@@ -222,13 +236,17 @@ class B07Planet(BeatScene):
         track.on(kick("SCALE 6/6 · THE PLANET"), 0.0, T_SRC, exit="cut")
         track.on(kick("FOLDING@HOME", CYAN), T_SRC, T_TEXT_CUT, enter="pop", exit="cut", shift=gl)
         c1 = card([("Home PCs.", "H96", INK), ("350,000+ GPUs, online.", "S56", INK, {"350,000+ GPUs": CYAN})])
-        c2 = card([("2020: they beat", "H96", INK), ("the top 500 combined.", "S56", INK,
-                                                     {"top 500 combined.": CYAN})])
+        # 'the top 500' alone does not say TOP500 to a layperson: name the supercomputers. Dated
+        # and past tense (true only in April 2020, vs the Nov 2019 TOP500 sum; F@h FLOPS are not HPL)
+        c2 = card([("2020: they beat", "H96", INK), ("the top 500", "S56", INK, {"top 500": CYAN}),
+                   ("supercomputers combined.", "S56", CYAN)])
         track.on(c1[0], 1 / 60, T_CARD2, enter="pop", exit="cut")
         track.on(c1[1], 0.12, T_CARD2, exit="cut")
         track.on(c2[0], T_CARD2, T_TEXT_CUT, enter="pop", exit="cut", shift=gl)
         track.on(c2[1], T_CARD2, T_TEXT_CUT, enter="pop", exit="cut", shift=gl)
-        assert G[1] + R < min(c1.get_bottom()[1], c2.get_bottom()[1]) - 0.3
+        track.on(c2[2], T_CARD2, T_TEXT_CUT, enter="pop", exit="cut", shift=gl)
+        top = G[1] + PAN[1] + (R + RIM[1][0]) * CAM_SET * 1.035          # globe + rim at the push-in peak
+        assert top < min(c1.get_bottom()[1], c2.get_bottom()[1]) - 0.3, top
         # job-0 labels ride the packet: right edge at packet.x - 0.15, centre y = packet.y + 0.36
         self.lab_wu = Text("work unit", font=FONT_BODY, font_size=44, color=MAGENTA, weight=BOLD)
         self.lab_res = Text("result", font=FONT_BODY, font_size=44, color=LIME, weight=BOLD)
@@ -245,14 +263,12 @@ class B07Planet(BeatScene):
                 assert SAFE_LEFT <= c[0] - lab.width and c[0] <= SAFE_RIGHT
                 assert c[1] + lab.height / 2 < TTZ_BOTTOM and c[1] - lab.height / 2 > -2.40
 
-        # ---------------- HUD: frozen + dimmed, then relabelled on the light wave ----------------
-        # (the storyboard's fallback: no fall to '0', no count up to a smaller number; the exit
-        # state E07 fixes the HUD at '350,000+ / VOLUNTEER GPUs · 2020', which the card has
-        # already shown as GPUs, the unit of b06's '100,000+ GPUs')
+        # ---------------- HUD: frozen, dimmed, then retired for good ----------------
+        # The number never changes (no fall, no count to a smaller number): the planet's count
+        # lives on the card only. E07 is HUD-free; b08 brings the HUD back as its SPEEDUP meter.
         hud.fade_to(T_DIM0, T_DIM1, 1.0, HUD_DIM)
-        hud.fade_to(T_WAVE, T_WAVE, 1.0, 1.0)
-        hud.slam(T_WAVE, NEW_NUM)                 # start scale capped (1.15); the guard hides the label
-        hud.label(T_WAVE, NEW_LAB, CYAN, 0.90)    # ... so the unit flips while hidden, then fades in
+        hud.retire(T_RETIRE, RETIRE_DUR, shift=RETIRE_SHIFT)     # reads the 0.5 envelope at 0.40
+        assert hud._env_at(T_RETIRE + RETIRE_DUR)[0] == 0.0
 
         # ---------------- z-order: dust, ring, globe, arcs, devices, rings, packets, hub, text, HUD ----------------
         self.remove(self.hub)
@@ -268,7 +284,7 @@ class B07Planet(BeatScene):
 
         # ---------------- audio ----------------
         self.cue("hit", gain=0.8, note="match-cut")
-        self.cue("whoosh", dt=0.40, dur=0.8, direction="up", note="the widest zoom-out")
+        self.cue("whoosh", dt=0.40, dur=0.8, direction="up", note="the widest zoom-out; the HUD slides away")
         trng = np.random.default_rng(23)
         for j, (t_send, d, t_arr, t_cmp, t_back) in enumerate(JOBS):
             fast = t_send >= T_WAVE - EPS
@@ -279,15 +295,16 @@ class B07Planet(BeatScene):
                     self.cue("tick", dt=round(t, 4), gain=0.10 if fast else 0.15,
                              pan=round(float(trng.uniform(-0.6, 0.6)), 3),
                              note="work unit sent" if t == t_send else "result received")
-        self.cue("hit", dt=T_WAVE, gain=0.8, note="the light wave; HUD relabels to volunteer GPUs")
+        self.cue("hit", dt=T_WAVE, gain=0.8, note="the light wave reaches every device")
         self.cue("shimmer", dt=T_WAVE, dur=1.0)
-        self.cue("riser", dt=T_PUSH0, dur=0.95, note="feels like it should peak higher")
+        self.cue("riser", dt=T_PUSH0, dur=round(T_GLITCH0 - T_PUSH0, 4), note="feels like it should peak higher")
         self.cue("glitch", dt=T_GLITCH0, dur=0.30, note="harsh digital tear")
-        self.cue("silence", dt=T_GLITCH1, dur=0.30, note="pattern interrupt into b08")
+        self.cue("silence", dt=T_GLITCH1, dur=round(5.05 - T_GLITCH1, 4),
+                 note="pattern interrupt into b08 (until its question pops)")
 
         # ---------------- run ----------------
         self.hold_until(T_GLITCH1)
-        exit_to(self)                          # 4.75 HARD CUT: BG + dust + HUD only (E07)
+        exit_to(self)                          # 4.90 HARD CUT: BG + dust only (E07), static to 5.00
         print(f"[b07] jobs {len(JOBS)}; buckets used (max): points {self.points.max_used}, devices "
               f"{self.devices.max_used}; overflow frames: {self.points.overflow + self.devices.overflow}")
 
@@ -299,11 +316,14 @@ class B07Planet(BeatScene):
         return 0.08 * (1 if k % 2 == 0 else -1) * (0.6 + 0.4 * abs(jitter(k, 1.0, seed=71)))
 
     def _cam(self, now: float):
-        """Globe camera: scale about G (FORM 3 -> 1, ease_out_expo; slight push-in under the
-        riser) and the glitch x-offset."""
-        s = lerp(3.0, 1.0, ease_out_expo(clip01(now / T_FORM)))
+        """Globe camera (s, off): scale about G (FORM 3 -> 1, ease_out_expo; then the drift
+        1 -> CAM_SET once the HUD has left; slight push-in under the riser) and the screen
+        offset: the drift pan (0 -> PAN; 0 at frame 0, so it is the exact E06 hub) + the glitch
+        x-offset."""
+        m = ease_in_out_sine(ramp(now, T_CAM0, T_CAM1))
+        s = lerp(3.0, 1.0, ease_out_expo(clip01(now / T_FORM))) * lerp(1.0, CAM_SET, m)
         s *= 1.0 + 0.035 * ease_in_quad(ramp(now, T_PUSH0, T_GLITCH0))
-        return s, np.array([self._glitch_dx(now), 0.0, 0.0])
+        return s, PAN * m + np.array([self._glitch_dx(now), 0.0, 0.0])
 
     def _to_screen(self, X, Y, s, off):
         return np.stack([G[0] + s * X + off[0], G[1] + s * Y + off[1], np.zeros_like(X)], axis=1)
@@ -356,7 +376,7 @@ class B07Planet(BeatScene):
         rgb = RGB_DIM[None] * (1 - z01[:, None]) + RGB_INK[None] * z01[:, None]
         a = np.where(Z > -0.05, PT_BASE + 0.65 * z01, 0.0) * form * drop
         if T_WAVE - EPS <= now < T_WAVE + WAVE_DUR + 0.12:
-            rho = R * (now - T_WAVE) / WAVE_DUR
+            rho = R * s * (now - T_WAVE) / WAVE_DUR
             band = np.clip(1.0 - np.abs(np.hypot(X, Y) * s - rho) / 0.40, 0, 1) * (Z > -0.05)
             band *= 1.0 - ramp(now, T_WAVE + WAVE_DUR, T_WAVE + WAVE_DUR + 0.12)
             rgb = rgb * (1 - band[:, None]) + RGB_CYAN[None] * band[:, None]
@@ -368,9 +388,9 @@ class B07Planet(BeatScene):
         D = self._to_screen(X, Y, s, off)
         limb = np.clip(Z / 0.08, 0, 1)
         pop = np.where(now >= POP_T - EPS, pop_curve((now - POP_T) / POP_DUR), 0.0)
-        # light wave: delayed 0.30 * d / R from the hub
+        # light wave: delayed 0.30 * d / (R s) from the hub
         dist = np.hypot(D[:, 0] - G[0] - off[0], D[:, 1] - G[1] - off[1])
-        t_w = T_WAVE + 0.30 * dist / R
+        t_w = T_WAVE + 0.30 * dist / (R * s)
         waved = now >= t_w - EPS
         w_fl = np.where(waved, 1.0 - np.clip((now - t_w) / 0.28, 0, 1), 0.0) ** 1.5
         base_a = np.where(waved, 1.0, 0.35 + 0.65 * np.clip(Z, 0, 1))
@@ -477,7 +497,8 @@ class B07Planet(BeatScene):
         """Harsh digital tear: 2-3 seeded horizontal bands per glitch step; every stage point
         inside a band is displaced sideways (the globe, arcs, packets and hub tear apart)."""
         rng = np.random.default_rng((92, k))
-        bands = [(rng.uniform(G[1] - R, G[1] + R), rng.uniform(0.07, 0.30),
+        yc, rr = G[1] + PAN[1], R * CAM_SET
+        bands = [(rng.uniform(yc - rr, yc + rr), rng.uniform(0.07, 0.30),
                   (1 if rng.random() < 0.5 else -1) * rng.uniform(0.15, 0.45)) for _ in range(3)]
         bands = bands[:2 + int(rng.random() < 0.5)]
         mobs = [*self.rim, self.outline, *self.points, *self.arcs, *self.devices, *self.rings, self.pk_out,
@@ -506,8 +527,9 @@ class B07Planet(BeatScene):
         self._tears_on = True
         rng = np.random.default_rng((91, k))
         cols = (RGB_CYAN, RGB_MAG, RGB_INK)
+        yc, rr = G[1] + PAN[1], R * CAM_SET
         for i, t in enumerate(self.tears):
-            on, y, u_h, u_x, u_w, ci, op = (rng.random(), rng.uniform(G[1] - R + 0.15, G[1] + R - 0.15),
+            on, y, u_h, u_x, u_w, ci, op = (rng.random(), rng.uniform(yc - rr + 0.15, yc + rr - 0.15),
                                             rng.random(), rng.random(), rng.random(),
                                             int(rng.integers(0, 3)), rng.uniform(0.35, 0.75))
             if i < 3:      # drop-out band: a slice of the stage goes missing

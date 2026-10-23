@@ -1,20 +1,30 @@
 """b08 - THE CATCH: Amdahl's law (8.0 s, film 36.0-44.0).
 
-Frame 0 is E07 (the '350,000+ / VOLUNTEER GPUs · 2020' HUD). The HUD cracks out (glitch)
-and 'So… infinite speed?' POPs in to pay off the hook's open loop. One big CYAN job bar,
-captioned 'TIME TO FINISH', wipes in at frame centre and shimmers, and the camera leans in.
-At 1.50 'No.' hard-cuts in: the bar splits, its left 10% turns into the AMBER serial block,
-and the HUD comes back as a SPEEDUP meter. The serial block tries to split twice (an INK
-crack, the halves fly apart, then snap back with a thunk). At 2.45 the bar group whips up
-to the top and the speedup graph ('SPEEDUP' over 'GPUs →') draws in under it. Four doublings
-of the GPU count halve the parallel rows (1.8×, 3.0×, 4.7×, 6.4×) while the Amdahl curve
-grows on a log axis; then the GPU count races to 1,000,000, the speedup turns AMBER and
-stalls at 9.9×, and the curve flattens onto THE WALL. 5.90: 'GPUs: ∞', the HUD SLAMs '10×'
-with its assumption ('MAX SPEEDUP · 10% SERIAL'), and an AMBER burst + shock ring fire from
-the curve head at the wall. Then a heartbeat: each LUB swells the serial block (1.25x, AMBER
+Frame 0 is E07: BG + dust only (b07 retires its HUD; st.hud is an EMPTY Hud that draws nothing
+until b08 schedules the SPEEDUP meter on it). The cut lands on black and 'So… infinite speed?'
+cracks in on story frame 2 (the opening glitch, 0.00-0.30, now lives on the question: its two
+lines jitter independently on the HUD's 30 Hz glitch clock (glitch_at), flicker AMBER on odd
+steps, split CYAN/MAGENTA on two steps, and thin scan tears flash across the frame). It pays off
+the hook's open loop. One big CYAN job bar, captioned 'TIME TO FINISH', wipes in at frame centre
+and shimmers, and the camera leans in. At 1.50 'No.' hard-cuts in: the bar splits, its left 10%
+turns into the AMBER serial block, and the HUD comes in as the SPEEDUP meter ('1.0×'). The serial
+block tries to split twice (an INK crack, the halves fly apart, then snap back with a thunk). At
+2.45 the bar group whips up to the top and the speedup graph ('SPEEDUP' over 'GPUs →') draws in
+under it. Four doublings of the GPU count halve the parallel rows (1.8×, 3.0×, 4.7×, 6.4×) while
+the Amdahl curve grows on a log axis; then the GPU count races to 1,000,000, the speedup turns
+AMBER and stalls at 9.9×, and the curve flattens onto THE WALL. 5.90: 'GPUs: ∞', the HUD SLAMs
+'10×' with its assumption ('MAX SPEEDUP · 10% SERIAL'), and an AMBER burst + shock ring fire from
+the curve head at the wall.
+The takeaway (5.95, '10% serial / = max 10×.') clears the deck: the axis titles and the bar
+labels fade out and 'TIME TO FINISH' stays gone, so the frame carries 7 text items (kicker, the
+two takeaway lines, 'GPUs: ∞', 'THE WALL: 10×' (held back to 0.60), the 10× meter + its label).
+Then the stage never sits still until the token lands: a slow lean-in (1.0 -> 1.05 about AC),
+light flowing up the curve into the wall, and a heartbeat that speeds up into the morph (lubs at
+6.20 / 6.67 / 7.07, each interval 0.88x the last): each LUB swells the serial block (1.25x, AMBER
 ring), a light pulse runs up the curve, and the DUB lands on the wall (head flare + ring, wall
-flash, the meter pulses). On the fourth beat the block grows into the amber token (E08) that
-b09 opens back into the lone hook worker.
+flash, the meter pulses). The fourth beat (7.43, ring + lub) launches the block into the bright
+AMBER serial token (E08: token_fill(AMBER) 0.58, #FFD27A rim) that b09 opens back into the lone
+hook worker.
 
 Everything that moves is a pure function of self.now (one driver), so 30-fps previews and
 the 60-fps final show the same story frames.
@@ -88,8 +98,15 @@ C_CY, C_AM, C_INK, C_DIM = RGB_CYAN, RGB_AMBER, RGB_INK, RGB_DIM
 # --------------------------------------------------------------------------
 # Timeline (beat-local seconds)
 # --------------------------------------------------------------------------
-T_GLITCH1 = 0.30                               # HUD cracks out 0.00-0.30
-T_Q_IN = 0.05                                  # 'So… infinite / speed?' POP (story frame 3)
+T_GLITCH1 = 0.30                               # opening glitch 0.00-0.30 (on the question + scan tears)
+T_Q_IN = 2 / 60                                # 'So… infinite / speed?' POP on story frame 2: the glitch
+                                               # clock's first live step (frame 1 of a 30-fps preview)
+GL_AMP = 0.09                                  # glitch x-jitter (per line, own seeds: the lines tear apart)
+GL_SEEDS = (8, 9)
+GL_SPLIT = (6, 14)                             # story frames with the CYAN/MAGENTA split copies
+GL_SPLIT_DX, GL_SPLIT_A = 0.05, 0.5
+TEAR_N = 3                                     # scan tears: thin bands flashing across the frame
+TEAR_SEED = 83
 T_WIPE0, T_WIPE1 = 0.30, 0.75                  # bar wipe (ease_out_cubic)
 T_CAP_IN = 0.35                                # 'TIME TO FINISH'
 T_N_IN = 0.45                                  # 'GPUs: 1' POP
@@ -110,25 +127,37 @@ DBL_DUR = 0.30
 T_SOME_IN, T_SOME_GONE = 2.60, 4.45
 T_RAMP0, T_RAMP1 = 4.30, 5.90
 T_DIM0, T_DIM1 = 4.45, 4.60
-T_CAP_OUT0, T_CAP_OUT1 = 4.30, 4.45            # caption steps aside while N spins wide ...
-T_CAP_BACK = 5.95                              # ... and returns beside 'GPUs: ∞'
+T_CAP_OUT0, T_CAP_OUT1 = 4.30, 4.45            # caption steps aside while N spins wide (and stays
+                                               # out: the takeaway frame has no room for it)
 T_WALL0, T_WALL1 = 4.90, 5.15
 T_HIT = 5.90                                   # 'GPUs: ∞', '10×'
 T_TAKE = 5.95                                  # '10% serial / = max 10×.'
+T_DECL0, T_DECL1 = T_TAKE, T_TAKE + 0.30       # declutter: axis titles + bar labels fade out
+WALL_LAB_TAKE = 0.60                           # 'THE WALL: 10×' steps back under the takeaway (3rd '10×')
 T_COL, T_SET, T_EXIT = cut_times(8.0)          # 7.433 / 7.833 / 7.95: block -> E08 token
 # Heartbeat (5.90 -> T_COL): LUB on the serial block (scale 1.25 + AMBER ring), a light pulse runs
 # up the curve into the wall, DUB at the wall (head flare + ring, wall flash, the meter pulses).
-# The serial part is what caps the speedup, and the picture says so twice a second.
-HB_PER = (T_COL - T_HIT) / 3                   # 0.511 s: lubs at 5.90 (the hit), 6.41, 6.92; the 4th is the morph
-T_LUBS = tuple(T_HIT + k * HB_PER for k in range(3))
+# The serial part is what caps the speedup, and the picture says so with every beat. The first
+# lub is the hit; three more follow once the takeaway has landed, each interval HB_ACCEL x the
+# last, so the heart speeds up into the morph (the 4th beat, T_COL) instead of idling.
+T_HB0 = 6.20
+HB_ACCEL = 0.88
+_HB_I0 = (T_COL - T_HB0) / sum(HB_ACCEL ** k for k in range(3))
+HB_INT = tuple(_HB_I0 * HB_ACCEL ** k for k in range(3))                 # 0.465, 0.409, 0.360
+T_LUBS = (T_HIT,) + tuple(T_HB0 + sum(HB_INT[:k]) for k in range(3))   # 5.90 | 6.200, 6.665, 7.073
 HB_AMP = 0.25                                  # block scale 1.0 -> 1.25 per lub
 LUB_DUR = 0.22
-HB_TRAVEL = 0.24                               # pulse run time, block beat -> wall
-DUB_DUR = 0.24
-T_DUBS = tuple(t + HB_TRAVEL for t in T_LUBS[1:])   # 6.65, 7.16 (over by 7.40 < T_COL)
+HB_TRAVELS = tuple(0.45 * i for i in HB_INT)   # pulse run time, block beat -> wall (shrinks with the beat)
+T_DUBS = tuple(t + d for t, d in zip(T_LUBS[1:], HB_TRAVELS))           # 6.409, 6.849, 7.235
+DUB_DURS = tuple(0.55 * i for i in HB_INT)     # each dub ends exactly on the next lub (the last on T_COL)
 T_CLEAR0, T_CLEAR1 = T_COL, T_COL + 0.25
 MORPH_FILL0 = 0.95                             # the block's fill, held high while it flies to AC
 T_TEXT_OUT = 7.85
+# Never static after the hit: the stage (graph, bar, stage text; never the cards or the HUD) leans
+# in 1.0 -> 1.05 about AC (where the token will land) over T_HIT -> T_CAM1 (ease_in_out_sine: its
+# fastest stretch is the heartbeat), and light flows up the curve into the wall.
+CAM_K, T_CAM1 = 0.05, T_CLEAR1 + 0.30
+FLOW_N, FLOW_PER, FLOW_W, FLOW_A = 3, 1.35, 0.40, 0.38   # glints, s per run, width (log10 N), strength
 
 LOG16 = math.log10(16)
 
@@ -274,18 +303,40 @@ def lub(now: float) -> float:
 
 
 def dub(now: float) -> float:
-    """Wall DUB envelope (0..1) where each heartbeat pulse lands; 0 from 7.40."""
-    return max(bump((now - t) / DUB_DUR) for t in T_DUBS)
+    """Wall DUB envelope (0..1) where each heartbeat pulse lands; 0 from T_COL."""
+    return max(bump((now - t) / d) for t, d in zip(T_DUBS, DUB_DURS))
 
 
 def hb_pulse(now: float):
     """Where the heartbeat pulse is along the curve (0 = origin .. 1 = the head at the wall;
     ease_in_quad: it accelerates into the wall), or None."""
-    for t in T_LUBS[1:]:
-        p = (now - t) / HB_TRAVEL
+    for t, d in zip(T_LUBS[1:], HB_TRAVELS):
+        p = (now - t) / d
         if -EPS <= p < 1.0:
             return ease_in_quad(max(p, 0.0))
     return None
+
+
+def stage_cam(now: float) -> tuple[float, np.ndarray]:
+    """(k, b) of the post-hit stage lean-in p -> k*p + b (identity before T_HIT)."""
+    e = ease_in_out_sine(ramp(now, T_HIT, T_CAM1))
+    k = 1.0 + CAM_K * e
+    return k, AC * (1.0 - k)
+
+
+def flow(now: float, u, L: float):
+    """Continuous light flowing up the curve after the hit: FLOW_N soft glints at constant speed
+    in log10 N (fast up the slope, crawling along the wall), tapered to 0 at both ends so the
+    wrap-around never pops. u: positions (log10 N) -> 0..FLOW_A."""
+    a = ease_out_cubic(ramp(now, T_HIT + 0.10, T_HIT + 0.45))
+    u = np.asarray(u, float)
+    if a <= 0 or L <= 0:
+        return np.zeros_like(u)
+    out = np.zeros_like(u)
+    for j in range(FLOW_N):
+        q = ((now - T_HIT) / FLOW_PER + j / FLOW_N) % 1.0
+        out = np.maximum(out, math.sin(math.pi * q) * np.exp(-((u - q * L) / FLOW_W) ** 2))
+    return FLOW_A * a * out
 
 
 def row_r(h: float, w: float) -> float:
@@ -332,7 +383,7 @@ def caption(text: str, opacity: float = 0.70) -> MarkupText:
 
 class B08Amdahl(BeatScene):
     def beat(self):
-        # ---------------- entry: E07 (HUD only) ----------------
+        # ---------------- entry: E07 (BG + dust; st.hud is an EMPTY Hud, zero pixels) ----------------
         st = enter(self)
         hud = self.hud = st.hud
 
@@ -397,11 +448,19 @@ class B08Amdahl(BeatScene):
         for s in ("GPUs: 1", "GPUs: 16", "GPUs: ∞"):           # widest steady states vs the caption
             assert self._ntmpl(s).get_left()[0] - cap_t.get_right()[0] > 0.28, s
 
+        # ---------------- the opening question (driver-drawn: it carries the opening glitch) -----
+        q = self.t_q = card([("So… infinite", "H84", INK), ("speed?", "H84", INK)])
+        self.q_about = [ln.get_center() for ln in q]
+        self.q_s0 = [fit_scale(ln, 1.08, c) for ln, c in zip(q, self.q_about)]     # POP, capped
+        for ln in q:
+            ln._glyphs = ln.family_members_with_points()
+        self.s_q = VGroup(TextSlot(), TextSlot())
+        self.s_qc, self.s_qm = VGroup(TextSlot(), TextSlot()), VGroup(TextSlot(), TextSlot())
+        self.tears = VGroup(*[vm() for _ in range(TEAR_N)])
+        self.open_g = VGroup(self.tears, self.s_qc, self.s_qm, self.s_q)
+
         # ---------------- cards + kicker (frame-exact schedule) ----------------
         tr = TextTrack(self)
-        q = card([("So… infinite", "H84", INK), ("speed?", "H84", INK)])
-        for ln in q:                               # POPs on story frame 3, under the HUD crack-out
-            tr.on(ln, T_Q_IN, T_NO, enter="pop", exit="cut")
         no = card([("No.", "H150", AMBER)])[0]
         # The H150 'No.' sits ~0.1 under the kicker, so a centre SLAM (1.3x) and CARD_OUT's
         # 0.15 upward drift both pushed it into 'THE CATCH · AMDAHL'S LAW': SLAM about the top
@@ -421,11 +480,7 @@ class B08Amdahl(BeatScene):
         for ln in (*q, *some, *take):              # the stage never reaches into a card
             assert ln.get_bottom()[1] - self._ntmpl("GPUs: 1,000,000").get_top()[1] > 0.15
 
-        # ---------------- HUD schedule ----------------
-        hud.show_at(0.0)
-        hud.glitch(0.0, T_GLITCH1, amp=0.06, tint=AMBER, split_frames=(6, 14), seed=8)
-        hud.hide_at(T_GLITCH1)
-        hud.show_at(T_NO)
+        # ---------------- HUD schedule (empty until 'No.': the SPEEDUP meter comes in from nothing) ----
         hud.cut(T_NO, "1.0×", INK)
         hud.pop(T_NO)
         hud.label(T_NO, "SPEEDUP", INK, 0.70)
@@ -440,18 +495,24 @@ class B08Amdahl(BeatScene):
         hud.label(T_HIT, "MAX SPEEDUP · 10% SERIAL", AMBER, 0.85)
         for t in T_DUBS:                           # the meter beats as each pulse hits the wall
             hud.pulse(t, 1.10, 0.25)
+        hud.pulse(T_COL, 1.06, 0.25)               # ... and once more on the 4th beat (the launch)
 
-        # ---------------- effects ----------------
+        # ---------------- effects (centres follow the stage lean-in at each ring's start) -------
+        def cam_pt(t, p):
+            k, b = stage_cam(t)
+            return p * k + b
         head_wall = P(GX1, WALL_Y)
+        blk = P(SER_CX, BAR_YC1)
         rings = [ShockRing(self, T_HIT, head_wall, 0.2, 5.0, 12.0, 0.9, 0.55, AMBER)]
-        rings += [ShockRing(self, t, P(SER_CX, BAR_YC1), 0.5, 2.4, 8.0, 0.9, 0.38, AMBER)
-                  for t in T_LUBS[1:]]                                  # lub: from the block
-        rings += [ShockRing(self, t, head_wall, 0.15, 1.4, 6.0, 0.9, 0.30, AMBER)
+        rings += [ShockRing(self, t, cam_pt(t, blk), 0.5, 2.4, 8.0, 0.9, 0.38, AMBER)
+                  for t in (*T_LUBS[1:], T_COL)]                        # lub: from the block (4th = launch)
+        rings += [ShockRing(self, t, cam_pt(t, head_wall), 0.15, 1.4, 6.0, 0.9, 0.30, AMBER)
                   for t in T_DUBS]                                      # dub: at the wall
 
-        # ---------------- z-order: dust, rings, graph, bar, stage text, cards, HUD, flash -------
+        # ---------------- z-order: dust, rings, graph, bar, stage text, cards, question, HUD, flash
         add_behind(self, *rings, self.graph, self.barg, self.stage_txt)
         self.add(tr)
+        self.add(self.open_g)
         self.remove(hud)
         self.add(hud)
         self.add(RadialFlash(self, T_HIT, head_wall, peak=0.40, color=AMBER))
@@ -460,7 +521,8 @@ class B08Amdahl(BeatScene):
         drive(self, self._draw)
 
         # ---------------- audio ----------------
-        self.cue("glitch", dt=0.0, gain=0.8, dur=0.30, note="the counter cracks out of the silence")
+        self.cue("glitch", dt=0.0, gain=0.8, dur=0.30,
+                 note="the question cracks in out of the black (glitch on its lines + scan tears)")
         self.cue("whoosh", dt=0.52, dur=0.45, direction="up", note="bar wipe")
         self.cue("silence", dt=1.00, dur=0.50, note="duck the bed under 'So… infinite speed?'")
         self.cue("hit", dt=T_NO, gain=1.0, note="'No.'")
@@ -480,8 +542,9 @@ class B08Amdahl(BeatScene):
         self.cue("sub_drop", dt=T_HIT, dur=2.0)
         self.cue("pad_swell", dt=T_TAKE, dur=1.6, chord=1, note="dark chord under the takeaway")
         for t, d in zip(T_LUBS[1:], T_DUBS):
-            self.cue("hit", dt=round(t, 4), gain=0.35, note="heartbeat lub: the block + ring")
+            self.cue("hit", dt=round(t, 4), gain=0.35, note="heartbeat lub: the block + ring (speeding up)")
             self.cue("hit", dt=round(d, 4), gain=0.22, note="heartbeat dub: the pulse hits the wall")
+        self.cue("hit", dt=round(T_COL, 4), gain=0.35, note="4th lub: ring, the block launches into the token")
         self.cue("whoosh", dt=round((T_COL + T_SET) / 2, 4), dur=0.45, direction="down",
                  note="the serial block becomes the token")
         self.cue("tick", dt=round(T_SET, 4), gain=0.5, note="settle")
@@ -502,10 +565,74 @@ class B08Amdahl(BeatScene):
         sh = shake(now - T_NO, 0.06, 0.15, seed=81) + shake(now - T_HIT, 0.06, 0.20, seed=82)
         clear = 1.0 - smooth(ramp(now, T_CLEAR0, T_CLEAR1))
         y0, y1 = bar_pose(now)
+        self._k, self._b = stage_cam(now)
         self._draw_bar(now, f, sh, clear, y0, y1)
         self._draw_graph(now, f, sh, clear)
         self._draw_labels(now, f, sh, clear, y0, y1)
         self._draw_readout(now, f, sh, clear, y1)
+        self._draw_open(now)
+        self._apply_cam()
+
+    # ---------------- stage camera (post-hit lean-in) ----------------
+    def _apply_cam(self) -> None:
+        """Lean-in on the stage VMobjects, applied on top of this frame's geometry (every one of
+        them is redrawn from scratch each frame, so nothing compounds). The serial block is left
+        alone once the Collapse owns it (it captured the leaned-in block at T_COL)."""
+        k, b = self._k, self._b
+        if k == 1.0:
+            return
+        mobs = [*self.graph.family_members_with_points(), self.bar, *self.rows, self.finish,
+                *self.halves, self.crack]
+        if self.collapse is None:
+            mobs.append(self.serial)
+        for m in mobs:
+            if len(m.points):
+                m.points = m.points * k + b
+
+    def _show(self, slot: TextSlot, tmpl, alpha, scale=1.0, about=None, shift=None, tint=None) -> None:
+        """slot.display(...) seen through the stage camera: p -> k*(about + s*(p - about) + shift) + b."""
+        k, b = self._k, self._b
+        if k != 1.0:
+            ab = np.asarray(about if about is not None else getattr(tmpl, "_about", tmpl.get_center()), float)
+            sh = np.zeros(3) if shift is None else np.asarray(shift, float)
+            shift, scale, about = k * (ab + sh) + b - ab, scale * k, ab
+        slot.display(tmpl, alpha, scale, about, shift, tint)
+
+    # ---------------- opening: the question cracks in (E07 is empty) ----------------
+    def _draw_open(self, now: float) -> None:
+        live = T_Q_IN - EPS <= now < T_NO - EPS
+        if not live:
+            for sl in (*self.s_q, *self.s_qc, *self.s_qm):
+                sl.clear_slot()
+        else:
+            for i, (ln, ab, s0, seed) in enumerate(zip(self.t_q, self.q_about, self.q_s0, GL_SEEDS)):
+                dx, tint, split = glitch_at(now, 0.0, T_GLITCH1, GL_AMP, seed, GL_SPLIT)
+                sc = pop_scale(now - T_Q_IN, s0)
+                sh = np.array([dx, 0.0, 0.0])
+                self.s_q[i].display(ln, 1.0, sc, ab, sh, tint)
+                if split:
+                    self.s_qc[i].display(ln, GL_SPLIT_A, sc, ab, sh + LEFT * GL_SPLIT_DX, CYAN)
+                    self.s_qm[i].display(ln, GL_SPLIT_A, sc, ab, sh + RIGHT * GL_SPLIT_DX, MAGENTA)
+                else:
+                    self.s_qc[i].clear_slot()
+                    self.s_qm[i].clear_slot()
+        # scan tears: thin bands across the frame, re-drawn on every 30 Hz glitch step
+        g = story_frame(now) // 2
+        on = EPS < now < T_GLITCH1 - EPS and g >= 1
+        for k, m in enumerate(self.tears):
+            rng = np.random.default_rng((TEAR_SEED, g, k))
+            r = rng.random(7)
+            if not on or r[0] > 0.70:
+                m.points = EMPTY.copy()
+                continue
+            # mostly through the question (behind its glyphs), sometimes across the empty stage
+            y = lerp(3.30, 6.00, r[1]) if r[6] < 0.65 else lerp(-3.5, 3.0, r[1])
+            h = lerp(0.03, 0.10, r[2])
+            x0 = lerp(-4.6, 0.0, r[3])
+            x1 = min(x0 + lerp(3.0, 8.0, r[4]), 4.6)
+            m.points = poly_pts([P(x0, y - h / 2), P(x1, y - h / 2), P(x1, y + h / 2), P(x0, y + h / 2)])
+            rgb = (C_CY, RGB_MAGENTA, C_INK)[(g + k) % 3]
+            set_style(m, [*rgb, lerp(0.30, 0.60, r[5])])
 
     # ---------------- job bar / serial block / parallel rows ----------------
     def _draw_bar(self, now, f, sh, clear, y0, y1) -> None:
@@ -543,10 +670,10 @@ class B08Amdahl(BeatScene):
         if self.collapse is not None:
             # cubic, not the default expo: the block travels ~3.4 units to AC and expo teleported it
             self.collapse.render(now, T_COL, T_SET, T_EXIT, ease=ease_in_out_cubic)
-            if now < T_SET - EPS:              # keep the amber punch in flight; land on E08's 0.32
+            if now < T_SET - EPS:              # keep the amber punch in flight; land on E08's 0.58
                 e = ease_in_out_cubic(ramp(now, T_COL, T_SET))
                 fr = self.serial.fill_rgbas.copy()
-                fr[:, 3] = lerp(MORPH_FILL0, TOKEN_FILL, e ** 2.5)
+                fr[:, 3] = lerp(MORPH_FILL0, token_fill(AMBER), e ** 2.5)
                 self.serial.fill_rgbas = fr
             for m in (*self.halves, self.crack):
                 m.points = EMPTY.copy()
@@ -666,8 +793,12 @@ class B08Amdahl(BeatScene):
             uk = np.linspace(0.0, L, K)
             rgb = curve_rgb(amdahl(10 ** uk))
             pp = hb_pulse(now)
-            glint = (lambda uu: np.zeros_like(uu)) if pp is None else (
+            beat = (lambda uu: np.zeros_like(uu)) if pp is None else (
                 lambda uu: np.exp(-((uu - pp * L) / 0.45) ** 2) * min(1.0, 4.0 * pp + 0.25))
+            glint = lambda uu: np.maximum(beat(uu), flow(now, uu, L))     # noqa: E731
+            # the area under the curve lifts with the beat at full strength, with the flow at
+            # half (its 40 strips read as blocky columns at full strength)
+            area_gl = lambda uu: np.maximum(beat(uu), 0.5 * flow(now, uu, L))  # noqa: E731
             rgb = lerp(rgb, C_INK[None, :], 0.85 * glint(uk)[:, None])
             set_style(self.curve, None, np.column_stack([rgb, np.full(K, clear)]), CURVE_W)
             # the glow under the curve: one strip per 1/40 of the curve, fading to 0 at the axis
@@ -676,7 +807,7 @@ class B08Amdahl(BeatScene):
             us = ue[:-1, None] + (ue[1:] - ue[:-1])[:, None] * np.linspace(0.0, 1.0, 4)[None, :]
             tx, ty = gx(us) + sh[0], gy(amdahl(10 ** us)) + sh[1]
             srgb = curve_rgb(amdahl(10 ** ((ue[:-1] + ue[1:]) / 2)))
-            ak = (1.0 + 0.8 * dd + 1.6 * glint((ue[:-1] + ue[1:]) / 2)) * clear
+            ak = (1.0 + 0.8 * dd + 1.6 * area_gl((ue[:-1] + ue[1:]) / 2)) * clear
             yb = GY0 + sh[1]
             for i, m in enumerate(self.area):
                 xs = np.concatenate([[tx[i, 0]], tx[i], [tx[i, -1], tx[i, 0]]])
@@ -705,8 +836,8 @@ class B08Amdahl(BeatScene):
             self.s_lab_a.clear_slot()
             self.s_lab_b.clear_slot()
         else:
-            dim = 1.0 - 0.45 * ramp(now, T_DIM0, T_DIM1) if now < T_HIT - EPS else 1.0
-            a = dim * clear
+            # dim to 0.55 for the ramp, then leave as the takeaway lands (it says '10% serial')
+            a = (1.0 - 0.45 * ramp(now, T_DIM0, T_DIM1)) * (1.0 - smooth(ramp(now, T_DECL0, T_DECL1))) * clear
             sc = pop_scale(now - T_LABELS)
             sh_a, tint_a = sh + lab_dy, None
             phase, df = crack_state(f)             # '10% can't split' flinches with the block
@@ -715,15 +846,12 @@ class B08Amdahl(BeatScene):
             elif phase == "snap":
                 sh_a = sh_a + np.array([CRACK_SHAKE[df], 0.0, 0.0])
             # POP about the inner edges so the gap between the labels never closes
-            self.s_lab_a.display(self.t_lab_a, a, sc, self.t_lab_a.get_right() + lab_dy, sh_a, tint_a)
-            self.s_lab_b.display(self.t_lab_b, a, sc, self.t_lab_b.get_left() + lab_dy, sh + lab_dy)
-        # 'TIME TO FINISH' (rides the bar; the lean-in camera too)
+            self._show(self.s_lab_a, self.t_lab_a, a, sc, self.t_lab_a.get_right() + lab_dy, sh_a, tint_a)
+            self._show(self.s_lab_b, self.t_lab_b, a, sc, self.t_lab_b.get_left() + lab_dy, sh + lab_dy)
+        # 'TIME TO FINISH' (rides the bar; the lean-in camera too). Out for good at 4.30-4.45: the
+        # takeaway frame keeps only 'GPUs: ∞' on that row.
         ca = ease_out_cubic(ramp(now, T_CAP_IN, T_CAP_IN + 0.25))
-        if now < T_HIT - EPS:
-            ca *= 1.0 - smooth(ramp(now, T_CAP_OUT0, T_CAP_OUT1))
-        else:
-            ca = ease_out_cubic(ramp(now, T_CAP_BACK, T_CAP_BACK + 0.25))
-        ca *= clear
+        ca *= (1.0 - smooth(ramp(now, T_CAP_OUT0, T_CAP_OUT1))) * clear
         if ca <= 0:
             self.s_cap.clear_slot()
         else:
@@ -731,20 +859,21 @@ class B08Amdahl(BeatScene):
             row = self.t_cap.get_center() + np.array([0.0, y1 - BAR_Y1F, 0.0])
             c = P(BAR_CX, (y0 + y1) / 2)
             shift = np.array([0.0, y1 - BAR_Y1F - 0.12 * (1 - ca), 0.0]) + (row - c) * (k - 1) + sh
-            self.s_cap.display(self.t_cap, ca, k, self.t_cap.get_center(), shift)
-        # axis titles
-        aa = ease_out_cubic(ramp(now, T_AXLAB, T_AXLAB + 0.25)) * clear
+            self._show(self.s_cap, self.t_cap, ca, k, self.t_cap.get_center(), shift)
+        # axis titles (taught by 2.70; gone under the takeaway)
+        aa = ease_out_cubic(ramp(now, T_AXLAB, T_AXLAB + 0.25)) * (1.0 - smooth(ramp(now, T_DECL0, T_DECL1))) * clear
         for slot, t in ((self.s_ax_y, self.t_ax_y), (self.s_ax_x, self.t_ax_x)):
             if aa <= 0:
                 slot.clear_slot()
             else:
-                slot.display(t, aa, 1.0, None, sh)
-        # THE WALL: 10×
+                self._show(slot, t, aa, 1.0, None, sh)
+        # THE WALL: 10× (steps back to WALL_LAB_TAKE under the takeaway, which says '= max 10×.')
         if now < T_WALL1 - EPS:
             self.s_wall.clear_slot()
         else:
             ab = np.array([self.t_wall.get_right()[0], self.t_wall.get_center()[1], 0.0])
-            self.s_wall.display(self.t_wall, clear, slam_scale(now - T_WALL1, s0=1.2), ab, sh)
+            wa = lerp(1.0, WALL_LAB_TAKE, smooth(ramp(now, T_DECL0, T_DECL1))) * clear
+            self._show(self.s_wall, self.t_wall, wa, slam_scale(now - T_WALL1, s0=1.2), ab, sh)
 
     # ---------------- N readout (right-aligned on the caption row) ----------------
     def _ntmpl(self, s: str) -> Text:
@@ -783,10 +912,10 @@ class B08Amdahl(BeatScene):
         df = f - story_frame(T_HIT)
         if 0 <= df <= 6:
             shift = shift + np.array([jitter(df, 0.07 * (1 - df / 7), seed=59), 0.0, 0.0])
-        self.s_n.display(tm, clear, pop * k, ab, shift)
+        self._show(self.s_n, tm, clear, pop * k, ab, shift)
         if 0 <= df <= 4:
-            self.s_nc.display(tm, 0.55 * clear, pop * k, ab, shift + np.array([-0.06, 0, 0]), CYAN)
-            self.s_nm.display(tm, 0.55 * clear, pop * k, ab, shift + np.array([0.06, 0, 0]), MAGENTA)
+            self._show(self.s_nc, tm, 0.55 * clear, pop * k, ab, shift + np.array([-0.06, 0, 0]), CYAN)
+            self._show(self.s_nm, tm, 0.55 * clear, pop * k, ab, shift + np.array([0.06, 0, 0]), MAGENTA)
         else:
             self.s_nc.clear_slot()
             self.s_nm.clear_slot()

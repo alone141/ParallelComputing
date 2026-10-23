@@ -1,11 +1,16 @@
 """b01 HOOK: one at a time vs all at once (4.5 s, film 0.0-4.5).
 
-Frame 0 is handoff_state('LOOP') (== b09's last frame): the amber worker is mid-crawl on
-idx 32; the 'PARALLEL COMPUTING' kicker fades in from frame 1 (topic legible within 0.15 s)
-and stays to the cut. It crawls on the integer frame clock to idx 49, freezes for 8 frames (headline
-jitter, silence), then at 1.00 s every other cell lights up in a radial INK->CYAN wave
-(white radial burst + CYAN shock ring from the worker) while the lone worker stays AMBER.
-The camera then never sits still: a slow linear push-in about the worker (1.00 -> 1.06,
+Frame 0 is handoff_state('LOOP') (== b09's last frame): the x1.4 amber worker with its soft
+halo is mid-crawl on idx 32 (10-cell bright trail, #2E3445 idle field), under the
+'PARALLEL COMPUTING' kicker, which is part of the LOOP frame (b09 POPs it in at 2.40): on
+screen from frame 0 with no fade-in, it stays to the cut. The worker crawls on the integer
+frame clock to idx 49 while the camera creeps in about it (1.0 -> 1.035, ease_in_quad) and,
+with the audio riser (0.45), the idle field charges (outlines DIM -> CYAN 0.45). Both stop
+dead on the 8-frame micro-freeze (headline jitter, silence); at 1.00 s every other cell
+lights up in a radial INK->CYAN wave (white radial burst + CYAN shock ring from the worker)
+while the lone worker stays AMBER, drawn on the grid's top layer with its halo (above the
+1.3x flashing neighbours); the halo fades out during the push-in, before the token lands.
+The camera then never sits still: a slow linear push-in about the worker (1.035 -> 1.06,
 1.30-3.40) carries straight into the ease_in_out_expo push-in (3.40-4.33), with a second,
 softer diagonal light pulse on the open-loop card (2.35). The worker morphs into the cyan
 E01 token and settles (cut_times(4.5): land 4.333, settle 0.12 s, static E01 f267-f269).
@@ -30,8 +35,13 @@ FLASH_SETTLE = 0.25             # INK flash -> LIT
 T_HOOK_OUT = 2.15               # hook cards leave (gone by 2.35, no overlap with the next card)
 T_CARDS = 2.35                  # open-loop card in (+ the second light pulse)
 T_RO_OUT = 2.85                 # '320 WORKERS · 1 STEP' out
+CREEP_S = 1.035                 # camera creeps in about the worker during the crawl (1.0 -> 1.035,
+                                # ease_in_quad from f0, stops dead on the micro-freeze, holds)
+T_CHARGE0 = 0.45                # visual riser (with the audio riser): the idle field charges,
+CHARGE_STROKE = rgba(CYAN, 0.45)   # outline only: DIM 0.35 -> CYAN 0.45 by the freeze (the fill
+                                # stays idle grey: the cyan fill is the hit's reveal)
 T_DRIFT0, T_DRIFT1 = 1.30, 3.40 # slow push-in about the worker (linear) ...
-DRIFT_S = 1.06                  # ... 1.00 -> 1.06, handing its speed to the push-in
+DRIFT_S = 1.06                  # ... CREEP_S -> 1.06, handing its speed to the push-in
 T_PUSH0 = T_DRIFT1              # push-in on the worker (ease_in_out_expo)
 _, T_PUSH1, T_SETTLE1 = cut_times(4.5)   # 4.3333 (f260) lands, 4.45 (f267) settled
 T_FADE0, T_FADE1 = 3.55, 4.20   # non-worker cells fade out
@@ -58,7 +68,8 @@ _INK1 = rgba(INK, 1.0)
 _CYAN_RGB = rgba(CYAN)[:3]
 _LIT_RGB_HOT = lerp(_CYAN_RGB, rgba(INK)[:3], 0.30)             # pulse peak: cyan lifted toward INK
 _FLASH_SW = 1.5
-_V_DRIFT = (DRIFT_S - 1.0) / (T_DRIFT1 - T_DRIFT0)              # drift speed carried into the push
+_V_DRIFT = (DRIFT_S - CREEP_S) / (T_DRIFT1 - T_DRIFT0)          # drift speed carried into the push
+_IDLE49 = np.arange(HOOK_N) > W_IDX                             # cells still IDLE at the hit
 
 
 _HOT = 0.42                     # worker morph passes through hot INK (no muddy olive midpoint)
@@ -73,8 +84,22 @@ def _morph_fill(mo: float) -> np.ndarray:
 
 
 def _cam_scale(now: float) -> float:
-    """Camera scale about the worker before the push-in: 1.0 until 1.30, then linear to 1.06."""
-    return 1.0 + (DRIFT_S - 1.0) * ramp(now, T_DRIFT0, T_DRIFT1)
+    """Camera scale about the worker before the push-in: exactly 1.0 on frame 0, creeps in to
+    CREEP_S (ease_in_quad) by the micro-freeze, holds through the hit, then linear to 1.06."""
+    if now < T_FREEZE0 - EPS:
+        return 1.0 + (CREEP_S - 1.0) * ease_in_quad(ramp(now, 0.0, T_FREEZE0))
+    return CREEP_S + (DRIFT_S - CREEP_S) * ramp(now, T_DRIFT0, T_DRIFT1)
+
+
+def _charge(now: float) -> float:
+    """Visual riser 0..1: the idle field charges T_CHARGE0 -> freeze (ease_in_quad), then holds."""
+    return ease_in_quad(ramp(now, T_CHARGE0, T_FREEZE0))
+
+
+def _charge_idle(stroke: np.ndarray, sel: np.ndarray, c: float) -> None:
+    """Charge the outlines of the IDLE cells `sel` by c (in place)."""
+    if c > 0.0 and np.any(sel):
+        stroke[sel] = lerp(HOOK_IDLE_STROKE, CHARGE_STROKE, c)
 
 
 def _pulse(now: float) -> np.ndarray:
@@ -102,21 +127,33 @@ class B01Hook(BeatScene):
     def beat(self):
         st = enter(self)                         # LOOP: grid(32) + card + readout, exact
         grid = st.grid
-        self.remove(st.card, st.readout)         # re-drawn below by the frame-exact tracks
+        self.remove(st.card, st.readout, st.kicker)   # re-drawn below by the frame-exact tracks
 
         # ---------------------------------------------------------------- grid
         def render_grid(m, dt):
             now = self.now
             if now < T_HIT - EPS:                # crawl, then the micro-freeze (idx 49)
                 w = b01_worker_idx(sframe(self))
-                if m.worker_idx != w:
-                    m.set_crawl(w)
+                s, c = _cam_scale(now), _charge(now)
+                if s == 1.0 and c == 0.0:        # frame 0: exactly the LOOP frame
+                    if m.worker_idx != w:
+                        m.set_crawl(w)
+                    return
+                m.worker_idx = None              # creep + charge: the crawl styles, re-posed
+                a = HookGrid.crawl_arrays(w)
+                _charge_idle(a["stroke"], np.arange(HOOK_N) > w, c)
+                not_w = np.arange(HOOK_N) != w
+                a["sw"][not_w] *= s              # (the worker keeps its own stroke, as below)
+                a["size"] = a["size"] * s
+                m.draw(centers=W_PT + s * (HOOK_CENTERS - W_PT), **a)
                 return
             m.worker_idx = None
             fill = _BASE49["fill"].copy()
             stroke = _BASE49["stroke"].copy()
             sw = _BASE49["sw"].copy()
             size = _BASE49["size"].copy()
+            # the charged idle field holds until the wave front reaches each cell
+            _charge_idle(stroke, _IDLE49 & (now - _T_FLASH < -EPS), _charge(now))
 
             # radial flash -> LIT (diagonal shimmer); the worker stays AMBER
             lit_op = 0.62 + 0.25 * np.sin(TAU * now / 0.9 - _PHASE)
@@ -141,6 +178,7 @@ class B01Hook(BeatScene):
                 size[hit] = lerp(1.3, lit_sz, e[:, 0])
             jolt = shake(now - T_HIT, 0.06, 0.20, SHAKE_SEED)
             corner = None
+            halo = 1.0
 
             if now <= T_PUSH0 + EPS:             # slow push-in about the worker (camera)
                 s = _cam_scale(now)
@@ -168,7 +206,9 @@ class B01Hook(BeatScene):
                     k *= lerp(SETTLE_FROM, 1.0, ease_out_back(p)) / SETTLE_FROM
                 size[W_IDX] = k
                 corner = {W_IDX: lerp(HOOK_CORNER_RATIO, TOKEN_CORNER, mo)}
-            m.draw(centers=centers, size=size, fill=fill, stroke=stroke, sw=sw, corner=corner)
+                halo = 1.0 - ease_in_out_sine(ramp(now, T_PUSH0, T_MORPH0 + 0.25))
+            m.draw(centers=centers, size=size, fill=fill, stroke=stroke, sw=sw, corner=corner,
+                   hero=W_IDX, halo=halo)
 
         grid.add_updater(render_grid)
 
@@ -200,9 +240,9 @@ class B01Hook(BeatScene):
         allc = pair[1]
         tr.on(allc, T_HIT, T_HOOK_OUT, enter="slam", exit="out",
               scale=fit_scale(allc, 1.3, box=SAFE_BOX), cap=False)
-        # The topic is on screen from the first second (CARD_IN from t 0.0 is invisible on frame 0,
-        # so the LOOP frame stays exact) and simply stays when the open-loop card arrives.
-        tr.on(kick("PARALLEL COMPUTING", CYAN), 0.0, T_TXT_OUT, exit="cut")
+        # The topic is part of the LOOP frame (b09 POPs it in at 2.40), so it is on screen from
+        # frame 0 with no fade-in, stays when the open-loop card arrives and cuts with the token.
+        tr.on(st.kicker, 0.0, T_TXT_OUT, enter="cut", exit="cut")
         ol = card([("It scales…", "H84", INK), ("until it doesn't.", "H84", AMBER)])
         tr.on(ol[0], T_CARDS, T_TXT_OUT, exit="cut")
         tr.on(ol[1], T_CARDS, T_TXT_OUT, exit="cut")
@@ -229,7 +269,7 @@ class B01Hook(BeatScene):
         # ---------------------------------------------------------------- audio
         for k in range(17):                      # one tick per hop: f2, f5, ... f50
             self.cue("tick", dt=(2 + 3 * k) * F, gain=0.6, freq=3800, pan=0)
-        self.cue("riser", dt=0.45, dur=0.42)
+        self.cue("riser", dt=T_CHARGE0, dur=0.42, note="visual riser: the idle field charges")
         self.cue("silence", dt=T_FREEZE0, dur=0.133)
         self.cue("hit", dt=T_HIT, gain=1.0)
         self.cue("sub_drop", dt=T_HIT, dur=1.4)

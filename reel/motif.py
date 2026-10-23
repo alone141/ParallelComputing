@@ -10,20 +10,25 @@ adjacent beats match by construction (see handoff_state()).
 
 Contents (details in each docstring):
   constants ........ AC, X_C, STAGE, TTZ, KICKER_Y, HUD_NUM_TOP, HUD_LABEL_Y, STEP_TOP,
-                     TOKEN_SIZE/FILL/STROKE, COLLAPSE_TIME, SETTLE_TIME, EXPAND_TIME, RGB_* ...
+                     TOKEN_SIZE/FILL/STROKE, SERIAL_TOKEN_FILL/STROKE_COLOR (the AMBER E08 token),
+                     COLLAPSE_TIME, SETTLE_TIME, EXPAND_TIME, RGB_* ...
   math/easing ...... lerp, ramp, clip01, story_frame, shake, rgba, ease_in_cubic, ease_*_quart,
                      vector easings (*_arr), envelopes (bump, decay, flash_env, mix), flash_frames
   paths ............ seg/line_pts, polyline, poly_pts, rrect_pts/rrect_c, seg_points, streak_mob, Field
   text ............. kick, card, below, hud_number, hud_label, hud_mult, step_readout, step_str,
                      hud_number_tmpl / hud_label_tmpl / hud_line_tmpl / hud_pill_tmpl (cached, read-only)
   animations ....... Drive, CARD_IN, CARD_OUT, SLAM, POP, slam_scale, pop_scale, fit_scale
-  frame-exact text . TextSlot, LiveText, TextTrack, Hud
-  units/tokens ..... unit, token_glyph, unit_with_glyph, handoff_token (Token)
+  frame-exact text . TextSlot, LiveText, TextTrack, Hud (+ Hud.retire), glitch_at (the HUD glitch clock
+                     for any element)
+  units/tokens ..... unit, token_glyph, unit_with_glyph, handoff_token (Token), token_fill,
+                     token_stroke_color, token_rgbas
   camera ........... expand_cam, EXPAND / Expand / expand_rig, CamRig, Collapse / COLLAPSE, drift
   effects .......... ShockRing, entry_ring, RadialFlash, FrameFlash, add_behind, ink_stroke
   scene helpers .... hold_floor, cut_times, drive
-  hook grid ........ HookGrid, hook_state, b01_worker_idx, b09_worker_idx
-  handoffs ......... handoff_state, enter, exit_to, BEAT_ENTRY, BEAT_EXIT
+  hook grid ........ HookGrid (cells + top layer: halo, hero), hook_state, HOOK_* (WORKER_SCALE 1.4,
+                     HALO_*, TRAIL_*, IDLE #2E3445), b01_worker_idx, b09_worker_idx
+  handoffs ......... handoff_state, enter, exit_to, BEAT_ENTRY, BEAT_EXIT, loop_kicker, loop_headline,
+                     LOOP_KICKER / LOOP_HEADLINE / LOOP_WORKER
   (reel/tools/check_handoffs.py verifies every boundary bit-exactly at 30 and 60 fps.)
 
 Typical beat (b03-like):
@@ -129,6 +134,12 @@ TOKEN_STROKE = 6.0
 TOKEN_GLYPH_K = TOKEN_SIZE / TOKEN_REF      # 1.4167: token glyph geometry scale vs the storyboard spec
 TOKEN_GLYPH_STROKE_K = 1.4                  # the token's glyph strokes are x1.4 a unit glyph's ...
 TOKEN_GLYPH_FILL = 0.90                     # ... and its primary glyph fill 0.90 (unit glyphs: 0.65)
+# The AMBER token is the serial token (E08, b08 -> b09 only; it becomes the lone hook worker).
+# At the shared 0.32 fill amber over BG reads as muddy brown: it gets its own brighter fill and a
+# crisp, lighter rim (half way to the worker's INK outline). handoff_token(kind, AMBER) and
+# COLLAPSE(..., color=AMBER) pick these up by default (token_fill / token_stroke_color).
+SERIAL_TOKEN_FILL = 0.58
+SERIAL_TOKEN_STROKE_COLOR = ManimColor("#FFD27A")
 SETTLE_FROM = 0.94                          # collapse lands at 0.94, settles to 1.0
 COLLAPSE_SIZE = TOKEN_SIZE * SETTLE_FROM    # 1.598
 
@@ -1128,6 +1139,24 @@ class TextTrack(VGroup):
                     setattr(m, attr, v)
 
 
+def glitch_at(now: float, t0: float, t1: float, amp: float = 0.06, seed: int = 8,
+              split_frames: Sequence[int] = (), tint=AMBER):
+    """The HUD's glitch, as a pure function for ANY element (b08 cracks its opening text/bar with
+    it now that E07 has no HUD): (dx, tint_or_None, split) at local time now for a glitch over
+    (t0, t1). 30 Hz clock g = story_frame(now - t0) // 2 (same pattern at 30 and 60 fps):
+    x-jitter jitter(2g, amp, seed) per step, `tint` on odd steps, split=True on the steps that
+    contain a listed story frame (draw CYAN/MAGENTA copies at -/+0.05 then); nothing on step 0 or
+    outside (t0, t1). Hud.glitch() renders exactly this."""
+    if t0 + EPS < now < t1 - EPS:
+        g = story_frame(now - t0) // 2
+        if g <= 0:
+            return 0.0, None, False
+        f = 2 * g
+        return (jitter(f, amp, seed), (tint if (tint is not None and g % 2 == 1) else None),
+                (f in split_frames or f + 1 in split_frames))
+    return 0.0, None, False
+
+
 _SLOT_TOP: list = []
 
 
@@ -1188,11 +1217,15 @@ class Hud(VGroup):
                                           new label (crossfade if fade > 0; sequenced = out, then in)
       fade_to(t0, t1, o0, o1, shift0, shift1, ease)    whole-HUD opacity/offset envelope
       hide_at(t) / show_at(t)             instant envelope 0 / 1
+      retire(t, dur=0.30, shift=DOWN*0.25, ease=ease_in_cubic)
+                                          the HUD leaves for good (current envelope -> 0, drifting);
+                                          b07 retires it so E07 is HUD-free
       glitch(t0, t1, amp=0.06, tint=AMBER, split_frames=(), seed=8)  x-jitter + tint + RGB split
                                           on a 30 Hz clock (g = story_frame(now - t0) // 2): jitter
                                           per step, tint on odd steps, RGB-split copies on the steps
                                           containing a listed story frame; nothing on step 0. Same
-                                          pattern in 30-fps previews and the 60-fps final.
+                                          pattern in 30-fps previews and the 60-fps final
+                                          (module-level glitch_at() is the same clock for any element).
     Collision guard: whenever a slam/pop/pulse would bring the scaled number within 0.04 of the
     label slot, the label (and a mult line) is hard-hidden from the hit frame until the number has
     shrunk clear, then fades back in over 0.08 s (a comma number slammed 1.3x used to print its
@@ -1368,6 +1401,17 @@ class Hud(VGroup):
     def show_at(self, t):
         return self.fade_to(t, t, 1.0, 1.0)
 
+    def retire(self, t, dur=0.30, shift=DOWN * 0.25, ease=None):
+        """Take the whole HUD off screen for good from t: opacity (whatever the envelope is at t,
+        e.g. b07's 0.5 dim) -> 0 and offset -> +shift over dur (ease_in_cubic: it leaves, it does
+        not count down). After t + dur it draws nothing (every slot cleared), which is what a
+        HUD-free exit state (E07) needs. Schedule earlier envelope events (fade_to/hide_at)
+        BEFORE calling retire: it reads the envelope at t when called."""
+        o0, sh0 = self._env_at(t)
+        sh0 = np.zeros(3) if sh0 is None else np.asarray(sh0, float)
+        return self.fade_to(t, t + dur, o0, 0.0, sh0, sh0 + np.asarray(shift, float),
+                            ease or ease_in_cubic)
+
     def glitch(self, t0, t1, amp=0.06, tint=AMBER, split_frames=(), seed=8):
         self._ins(self._gl, (t0, t1, amp, tint, tuple(split_frames), seed))
         return self
@@ -1475,13 +1519,8 @@ class Hud(VGroup):
 
     def _glitch_at(self, now: float):
         for t0, t1, amp, tint, split, seed in self._gl:
-            if t0 + EPS < now < t1 - EPS:
-                g = story_frame(now - t0) // 2          # 30 Hz glitch clock (fps independent)
-                if g <= 0:
-                    return 0.0, None, False
-                f = 2 * g
-                return (jitter(f, amp, seed), (tint if (tint is not None and g % 2 == 1) else None),
-                        (f in split or f + 1 in split))
+            if t0 + EPS < now < t1 - EPS:               # 30 Hz glitch clock (fps independent)
+                return glitch_at(now, t0, t1, amp, seed, split, tint)
         return 0.0, None, False
 
     # ---- render
@@ -1705,11 +1744,41 @@ class Token(VGroup):
     (never assign .color on a mobject: it is a property that recolours the family)."""
 
 
-def handoff_token(kind: str = "plain", color=CYAN) -> Token:
-    """The handoff unit at AC: base = style.token(TOKEN_SIZE 1.7, color, fill 0.32, stroke 6,
+def _is_amber(color) -> bool:
+    return _hex(color) == _hex(AMBER)
+
+
+def token_fill(color=CYAN) -> float:
+    """Base fill opacity of the handoff token in `color`: SERIAL_TOKEN_FILL (0.58) for the AMBER
+    serial token (E08), TOKEN_FILL (0.32) for every other colour."""
+    return SERIAL_TOKEN_FILL if _is_amber(color) else TOKEN_FILL
+
+
+def token_stroke_color(color=CYAN):
+    """Rim colour of the handoff token in `color`: SERIAL_TOKEN_STROKE_COLOR for AMBER, else
+    `color` itself."""
+    return SERIAL_TOKEN_STROKE_COLOR if _is_amber(color) else color
+
+
+def token_rgbas(color=CYAN) -> tuple[np.ndarray, np.ndarray]:
+    """(fill (4,), stroke (4,)) RGBA rows of handoff_token(kind, color).base, for vectorised morphs
+    that start or land on a token (b08's block -> E08, b09's E08 -> worker: use these instead of
+    rgba(AMBER, TOKEN_FILL) / rgba(AMBER, 1.0))."""
+    return rgba(color, token_fill(color)), rgba(token_stroke_color(color), 1.0)
+
+
+def handoff_token(kind: str = "plain", color=CYAN, fill: float | None = None,
+                  stroke_color=None) -> Token:
+    """The handoff unit at AC: base = style.token(TOKEN_SIZE 1.7, color, fill, stroke 6,
     corner 0.22 -> radius 0.374) with token_glyph(kind, bold=True) drawn above it.
+    fill defaults to token_fill(color) (0.32; 0.58 for the AMBER serial token), the rim to
+    token_stroke_color(color) (= color; #FFD27A for AMBER).
     kinds: plain, core, cpu, gpu, node, cluster (glyph colour = `color`, node spine MAGENTA)."""
-    base = token(TOKEN_SIZE, color, TOKEN_FILL, TOKEN_STROKE, corner=TOKEN_CORNER).move_to(AC)
+    fill = token_fill(color) if fill is None else fill
+    base = token(TOKEN_SIZE, color, fill, TOKEN_STROKE, corner=TOKEN_CORNER).move_to(AC)
+    sc = token_stroke_color(color) if stroke_color is None else stroke_color
+    if _hex(sc) != _hex(color):
+        base.set_stroke(color=sc)
     glyph = token_glyph(kind, color, bold=True)
     t = Token(base, glyph)
     t.base, t.glyph, t.kind, t.token_color = base, glyph, kind, color
@@ -2285,7 +2354,7 @@ HOOK_CELL = 0.27
 HOOK_CORNER = 0.05
 HOOK_CORNER_RATIO = HOOK_CORNER / HOOK_CELL  # 0.185
 HOOK_PITCH = 0.34
-HOOK_WORKER_SCALE = 1.15
+HOOK_WORKER_SCALE = 1.4                     # the lone worker: 0.378 wide (was 1.15), reads on a phone
 HOOK_PUSH_SCALE = COLLAPSE_SIZE / HOOK_CELL  # 5.919: b01 push-in end scale (cell -> collapsed token)
 
 
@@ -2307,17 +2376,33 @@ def hook_center(idx: int) -> np.ndarray:
     return HOOK_CENTERS[idx].copy()
 
 
-HOOK_IDLE_FILL = rgba(DIMMER, 0.9)
+HOOK_IDLE = ManimColor("#2E3445")           # waiting task (was DIMMER #262B38: the 320 sank into BG)
+HOOK_IDLE_FILL = rgba(HOOK_IDLE, 0.9)
 HOOK_IDLE_STROKE = rgba(DIM, 0.35)
 HOOK_DONE_STROKE = rgba(AMBER, 0.5)
 HOOK_WORKER_FILL = rgba(AMBER, 1.0)
 HOOK_WORKER_STROKE = rgba(INK, 1.0)
 HOOK_LIT_STROKE = rgba(CYAN, 0.6)
+HOOK_TRAIL_LEN = 10                         # DONE comet trail: cells from peak to floor (was 6)
+HOOK_TRAIL_PEAK = 1.0                       # fill opacity of the cell just done (was 0.83)
+HOOK_TRAIL_FLOOR = 0.28                     # fill opacity of every older DONE cell
+# The worker's soft AMBER halo: drawn on the grid's top layer, UNDER the worker and OVER every
+# other cell (so it spills onto the neighbours like light), centred on the worker. Layers are
+# (side at rest, fill opacity), outermost first; no stroke. At rest (worker x1.4 = 0.378 wide)
+# the three stacked layers read as one soft glow ~0.55-0.6 wide (~0.30 opacity at the core,
+# 0.72 at its outer edge); it scales with the worker (size[hero] / HOOK_WORKER_SCALE) unless
+# the caller passes halo_scale. HOOK_HALO_SIZE = the outermost side.
+HOOK_HALO_LAYERS = ((0.72, 0.07), (0.60, 0.11), (0.50, 0.16))   # stepped falloff: ~0.30 at the core
+HOOK_HALO_SIZE = HOOK_HALO_LAYERS[0][0]
+HOOK_HALO_CORNER = 0.40                     # corner radius / side (round: a glow, not a selection box)
+HOOK_HALO_COLOR = AMBER
 
 
 def hook_trail_opacity(age):
-    """DONE-cell fill opacity for age = worker_idx - idx (>= 1): 0.28 + 0.55*max(0, 1-(age-1)/6)."""
-    return 0.28 + 0.55 * np.maximum(0.0, 1.0 - (np.asarray(age, float) - 1.0) / 6.0)
+    """DONE-cell fill opacity for age = worker_idx - idx (>= 1):
+    FLOOR + (PEAK - FLOOR) * max(0, 1 - (age-1)/LEN) = 0.28 + 0.72*max(0, 1-(age-1)/10)."""
+    return HOOK_TRAIL_FLOOR + (HOOK_TRAIL_PEAK - HOOK_TRAIL_FLOOR) * np.maximum(
+        0.0, 1.0 - (np.asarray(age, float) - 1.0) / HOOK_TRAIL_LEN)
 
 
 _RR_TMPL: dict = {}
@@ -2333,20 +2418,38 @@ def _rr_unit(ratio: float) -> np.ndarray:
 
 
 class HookGrid(VGroup):
-    """320 RoundedRectangle cells in WORK ORDER (self[idx]); one vectorised draw().
+    """320 RoundedRectangle cells in WORK ORDER (self[idx] == self.cells[idx]), then the top
+    layer: self.halo (VGroup of soft AMBER rounded squares) and self.hero (one cell). One
+    vectorised draw().
 
-    draw(centers=None, size=None, fill=None, stroke=None, sw=None, corner=None):
+    draw(centers=None, size=None, fill=None, stroke=None, sw=None, corner=None,
+         hero=None, halo=1.0, halo_scale=None):
       centers (320,3) (default HOOK_CENTERS), size (320,) multiplier of the 0.27 cell,
       fill/stroke (320,4) RGBA rows, sw (320,) stroke widths,
       corner {idx: corner_ratio} overrides (default 0.05/0.27; the token is 0.22).
-    crawl_arrays(w) -> dict(fill, stroke, sw, size) for the crawl rule (DONE trail / WORKER /
-    IDLE); edit the copies (LIT, flashes, push-in) and draw() them.
+      hero: index of the cell drawn on the TOP layer (above every other cell, e.g. the
+        worker while flashing neighbours grow 1.3x, or the token cell); its own slot is left
+        empty, so it is drawn exactly once, with exactly the geometry/style of row `hero`.
+        None (default): no top layer, every cell in its slot (the pre-halo behaviour).
+      halo: halo strength 0..1 (multiplies every layer's opacity; 0 = not drawn), only with a
+        hero. halo_scale: halo size multiplier (default size[hero] / HOOK_WORKER_SCALE, so it
+        rides the worker's own scale AND the caller's camera scale).
+    crawl_arrays(w) -> dict(fill, stroke, sw, size, hero, halo) for the crawl rule (DONE trail /
+    WORKER / IDLE); edit the copies (LIT, flashes, push-in) and draw(**them).
     set_crawl(w) == draw(**crawl_arrays(w)) at rest: exactly hook_state(w)."""
 
     def __init__(self):
         super().__init__(*[RoundedRectangle(width=HOOK_CELL, height=HOOK_CELL, corner_radius=HOOK_CORNER)
                            for _ in range(HOOK_N)])
+        self.cells = list(self.submobjects)
+        self.halo = VGroup(*[VMobject(stroke_width=0, fill_color=HOOK_HALO_COLOR, fill_opacity=op)
+                             for _, op in HOOK_HALO_LAYERS])
+        self.hero = RoundedRectangle(width=HOOK_CELL, height=HOOK_CELL, corner_radius=HOOK_CORNER)
+        for m in (*self.halo, self.hero):
+            m.points = EMPTY.copy()
+        self.add(self.halo, self.hero)
         self.worker_idx = None
+        self.hero_idx = None
 
     @staticmethod
     def crawl_arrays(worker_idx: int) -> dict:
@@ -2360,19 +2463,22 @@ class HookGrid(VGroup):
             fill[done, :3] = rgba(AMBER)[:3]
             fill[done, 3] = hook_trail_opacity(worker_idx - idx[done])
             stroke[done] = HOOK_DONE_STROKE
+        hero = None
         if 0 <= worker_idx < HOOK_N:
             fill[worker_idx] = HOOK_WORKER_FILL
             stroke[worker_idx] = HOOK_WORKER_STROKE
             sw[worker_idx] = 2.0
             size[worker_idx] = HOOK_WORKER_SCALE
-        return {"fill": fill, "stroke": stroke, "sw": sw, "size": size}
+            hero = int(worker_idx)
+        return {"fill": fill, "stroke": stroke, "sw": sw, "size": size, "hero": hero, "halo": 1.0}
 
-    def draw(self, centers=None, size=None, fill=None, stroke=None, sw=None, corner=None) -> "HookGrid":
+    def draw(self, centers=None, size=None, fill=None, stroke=None, sw=None, corner=None,
+             hero=None, halo=1.0, halo_scale=None) -> "HookGrid":
         centers = HOOK_CENTERS if centers is None else np.asarray(centers, float)
         size = np.ones(HOOK_N) if size is None else np.asarray(size, float)
         base = _rr_unit(HOOK_CORNER_RATIO)
         corner = corner or {}
-        for i, cell in enumerate(self.submobjects):
+        for i, cell in enumerate(self.cells):
             P = base if i not in corner else _rr_unit(corner[i])
             cell.points = P * (HOOK_CELL * size[i]) + centers[i]
             if fill is not None:
@@ -2381,6 +2487,28 @@ class HookGrid(VGroup):
                 cell.stroke_rgbas = stroke[i:i + 1].copy()
             if sw is not None:
                 cell.stroke_width = float(sw[i])
+        self.hero_idx = None if hero is None else int(hero)
+        if self.hero_idx is None:
+            self.hero.points = EMPTY.copy()
+            for m in self.halo:
+                m.points = EMPTY.copy()
+            return self
+        h = self.hero_idx
+        src = self.cells[h]
+        self.hero.points = src.points
+        self.hero.fill_rgbas = src.fill_rgbas.copy()
+        self.hero.stroke_rgbas = src.stroke_rgbas.copy()
+        self.hero.stroke_width = src.stroke_width
+        src.points = EMPTY.copy()
+        a = float(halo) if halo is not None else 0.0
+        k = (size[h] / HOOK_WORKER_SCALE) if halo_scale is None else float(halo_scale)
+        P = _rr_unit(HOOK_HALO_CORNER)
+        for m, (side, op) in zip(self.halo, HOOK_HALO_LAYERS):
+            if a <= 0.0 or k <= 0.0:
+                m.points = EMPTY.copy()
+                continue
+            m.points = P * (side * k) + centers[h]
+            m.fill_rgbas = rgba(HOOK_HALO_COLOR, op * min(a, 1.0)).reshape(1, 4)
         return self
 
     def set_crawl(self, worker_idx: int) -> "HookGrid":
@@ -2390,7 +2518,8 @@ class HookGrid(VGroup):
 
 def hook_state(worker_idx: int) -> HookGrid:
     """Pure function: the hook grid at rest with the crawl styles for worker_idx
-    (idx < w DONE amber comet trail, w = WORKER (x1.15, AMBER, INK w2), rest IDLE)."""
+    (idx < w DONE amber comet trail (peak 1.0, 10 cells), w = WORKER (x1.4, AMBER, INK w2, on the
+    top layer over its soft AMBER halo), rest IDLE #2E3445)."""
     return HookGrid().set_crawl(worker_idx)
 
 
@@ -2409,16 +2538,22 @@ def b09_worker_idx(f: int) -> int:
 # ==========================================================================
 HANDOFF_NAMES = ("E01", "E02", "E03", "E04", "E05", "E06", "E07", "E08", "LOOP")
 CALC_LABEL = "CALCULATIONS AT ONCE"
+LOOP_KICKER = "PARALLEL COMPUTING"          # the topic, on the film's very first frame (and the replay's)
+LOOP_HEADLINE = "One at a time."
+LOOP_WORKER = 32                            # the LOOP frame's worker idx (b09 f209 == b01 f0)
 
 _HO_TOKEN = {"E01": ("plain", CYAN), "E02": ("core", CYAN), "E03": ("cpu", CYAN),
              "E04": ("gpu", CYAN), "E05": ("node", CYAN), "E06": ("cluster", CYAN),
              "E08": ("plain", AMBER)}
+# E07 is deliberately HUD-free: muted viewers read '1,689,600,000+' -> '350,000+' as a DROP, so b07
+# retires the counter once its card says '350,000+ GPUs' and b08 brings the HUD back as its
+# SPEEDUP meter. E07's Handoff still carries an EMPTY Hud (draws nothing) for b08 to schedule on.
 _HO_HUD = {"E02": ("16", INK, CALC_LABEL, INK, 0.70),
            "E03": ("256", INK, CALC_LABEL, INK, 0.70),
            "E04": ("16,896", INK, CALC_LABEL, INK, 0.70),
            "E05": ("135,168", INK, CALC_LABEL, INK, 0.70),
            "E06": ("1,689,600,000+", INK, CALC_LABEL, INK, 0.70),
-           "E07": ("350,000+", INK, "VOLUNTEER GPUs · 2020", CYAN, 0.90),
+           "E07": (None, INK, None, INK, 0.70),
            "E08": ("10×", AMBER, "MAX SPEEDUP · 10% SERIAL", AMBER, 0.85)}
 
 BEAT_ENTRY = {"B01Hook": "LOOP", "B02Simd": "E01", "B03Cpu": "E02", "B04Gpu": "E03",
@@ -2429,9 +2564,21 @@ BEAT_EXIT = {"B01Hook": "E01", "B02Simd": "E02", "B03Cpu": "E03", "B04Gpu": "E04
              "B08Amdahl": "E08", "B09Loop": "LOOP"}
 
 
+def loop_kicker() -> MarkupText:
+    """kick('PARALLEL COMPUTING', CYAN): the LOOP frame's kicker (b01 keeps it from frame 0, b09
+    POPs it in with 'One at a time.'). Build it with this so both sides match bit for bit."""
+    return kick(LOOP_KICKER, CYAN)
+
+
+def loop_headline() -> Text:
+    """card([('One at a time.', 'H96', INK)])[0]: the LOOP frame's headline."""
+    return card([(LOOP_HEADLINE, "H96", INK)])[0]
+
+
 class Handoff(VGroup):
     """A boundary frame. Attributes (None when absent): name, token (Token), hud (Hud,
-    unbound), grid (HookGrid), card (Card), headline (card[0]), readout (Text)."""
+    unbound), grid (HookGrid), card (Card), headline (card[0]), readout (Text),
+    kicker (MarkupText)."""
 
 
 def handoff_state(name: str) -> Handoff:
@@ -2446,21 +2593,26 @@ def handoff_state(name: str) -> Handoff:
       E04  token('gpu')     + HUD '16,896'         / ...
       E05  token('node')    + HUD '135,168'        / ...
       E06  token('cluster') + HUD '1,689,600,000+' / ... (fit to 6.9 wide)
-      E07  no token; HUD '350,000+' / 'VOLUNTEER GPUs · 2020' (CYAN 0.90)
-      E08  token('plain', AMBER) + HUD '10×' AMBER / 'MAX SPEEDUP · 10% SERIAL' (AMBER 0.85)
-      LOOP hook_state(32) + card 'One at a time.' (H96 INK) + step_readout('STEP 032 / 320', AMBER)
-    Z-order: token, then HUD (grid, card, readout for LOOP)."""
+      E07  NOTHING (BG + dust): no token, no HUD number/label. st.hud is an EMPTY Hud (number and
+           label None, zero pixels) so the next beat can schedule its own HUD on it.
+      E08  token('plain', AMBER) (the serial token: fill 0.58, rim #FFD27A)
+           + HUD '10×' AMBER / 'MAX SPEEDUP · 10% SERIAL' (AMBER 0.85)
+      LOOP hook_state(32) (worker x1.4 + halo) + kicker 'PARALLEL COMPUTING' (kick, CYAN)
+           + card 'One at a time.' (H96 INK) + step_readout('STEP 032 / 320', AMBER)
+    Z-order: token, then HUD (grid, card, readout, kicker for LOOP)."""
     key = {"E09": "LOOP", "E00": "LOOP"}.get(name, name)
     if key not in HANDOFF_NAMES:
         raise ValueError(f"unknown handoff state {name!r}; known: {HANDOFF_NAMES}")
     st = Handoff()
     st.name, st.token, st.hud, st.grid, st.card, st.headline, st.readout = key, None, None, None, None, None, None
+    st.kicker = None
     if key == "LOOP":
-        st.grid = hook_state(32)
-        st.card = card([("One at a time.", "H96", INK)])
+        st.grid = hook_state(LOOP_WORKER)
+        st.card = card([(LOOP_HEADLINE, "H96", INK)])
         st.headline = st.card[0]
-        st.readout = step_readout(step_str(32), AMBER)
-        st.add(st.grid, st.card, st.readout)
+        st.readout = step_readout(step_str(LOOP_WORKER), AMBER)
+        st.kicker = loop_kicker()
+        st.add(st.grid, st.card, st.readout, st.kicker)
         return st
     if key in _HO_TOKEN:
         st.token = handoff_token(*_HO_TOKEN[key])

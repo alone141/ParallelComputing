@@ -2,15 +2,19 @@
 
 The GPU token (E04) is one of the 8 GPUs of an HGX H100 node: the camera pulls back
 (EXPAND, 0.50 s, INK charge on the hero outline). Three all-reduce cycles: every GPU
-computes its own slice (its texture rewrites itself to a different partial result),
-MAGENTA packets (with long trails) converge on the NVSwitch and stop at its edge, the
-switch body flashes (its label turns INK so it stays readable), LIME packets carry the
-combined result back and every GPU flashes LIME and now shows the SAME texture (every GPU
-holds the full answer). Cycle 2 runs under a slow 1.0 -> 1.04 stage push-in. The third
-arrival (3.45) is the light wave: GPUs, links and switch flash INK, then the GPUs go
-LIME (results) while the switch and links glow MAGENTA (data movement), and a MAGENTA
-shock ring leaves the switch. The chassis then collapses (cut_times) into
-handoff_token('node') (E05).
+computes its own slice (its texture rewrites itself to a different partial result), then
+every GPU sends a packet GPU-to-GPU THROUGH the NVSwitch to its partner on the other side
+(~2.75 units: along its NVLink, across the switch, along the partner's link; full duplex,
+left->right just above the link, right->left just below, so each pair passes inside the
+switch). Packets carry long, bright comet trails with a hot INK core; they are MAGENTA (data
+in flight) until they enter the switch, flash white-hot in it as the switch body lights up
+(its label turns INK so it stays readable) and leave it LIME (the reduced result); on
+arrival every GPU flashes LIME and now shows the SAME texture (every GPU holds the full
+answer). Cycle 2 runs under a slow 1.0 -> 1.04 stage push-in. The third arrival (3.45) is
+the light wave: GPUs, links and switch flash INK, then the GPUs go LIME (results) while the
+switch and links glow MAGENTA (data movement), and a MAGENTA shock ring leaves the switch.
+The chassis then collapses (cut_times) into handoff_token('node') (E05); kicker + headline
+hold to the exit and hard-cut with the canonical swap.
 
 Everything that moves is a pure function of self.now (one driver updater + the drift);
 the scene only holds until the structural switch points (collapse capture, canonical exit).
@@ -35,17 +39,32 @@ SW_W, SW_H, SW_R = 0.9, 4.8, 0.2
 SW_EDGE_X = np.where(SIDE < 0, SW_C[0] - SW_W / 2, SW_C[0] + SW_W / 2)        # -0.80 / 0.10
 CH_W, CH_H, CH_R = 6.4, 5.5, 0.30
 LINK_W, LINK_OP = 4.0, 0.80
+SW_X0, SW_X1 = SW_C[0] - SW_W / 2, SW_C[0] + SW_W / 2                       # -0.80 / 0.10
+# all-reduce traffic: every GPU sends a packet GPU-to-GPU THROUGH the NVSwitch to its partner on
+# the other side (same row). Full duplex: left->right rides just above the link, right->left
+# just below, so the two packets of a pair pass each other inside the switch.
+PARTNER = np.arange(N_GPU) ^ 1
+DIRN = -SIDE                                                                 # +1 = moving right
 PKT = 0.22
-TRAIL = 0.50
+LANE = 0.10
+LANE_Y = GPU_C[:, 1] + DIRN * LANE
+X_FROM = INNER_X + DIRN * PKT / 2                                            # leaves its GPU's edge ...
+X_TO = INNER_X[PARTNER] - DIRN * PKT / 2                                     # ... lands on the partner's
+TRAIL = 1.50                                                                 # long, bright comet trail
+TRAIL_A = (0.0, 0.30, 0.65, 1.0)                                             # trail alpha stops, tail -> head
+CORE_A = (0.0, 0.0, 0.45, 0.90)                                              # its hot INK core (front half)
+PKT_CORE = 0.30                                                              # packet fill lifted toward INK
 
 # --------------------------------------------------------------------------
 # Timeline (beat-local seconds)
 # --------------------------------------------------------------------------
-CYCLES = (0.75, 1.70, 2.65)          # c0: compute; +0.25..0.50 out; +0.50 switch; +0.55..0.80 back; +0.80 LIME
+CYCLES = (0.75, 1.70, 2.65)          # c0: compute; +0.22..0.80 GPU -> switch -> GPU; +0.80 LIME
+T_DEP, T_ARR = 0.22, 0.80            # packet flight inside a cycle (c0 + ...): inside the switch +0.45..0.57
+T_SW = 0.45                          # the switch flashes as the packets enter it
 T_WAVE = 3.45                        # third arrival = light wave
 T_DRIFT0, T_DRIFT1 = CYCLES[1], CYCLES[1] + 0.80   # cycle 2: slow stage push-in 1.0 -> 1.04
 T_COL, T_SET, T_EXIT = cut_times(4.5)               # 3.933 / 4.333 / 4.45
-T_TEXT_OUT = T_EXIT - 0.20                          # kicker + headline leave during the settle
+T_TEXT_OUT = T_EXIT                                 # kicker + headline hold to the exit, then hard-cut
 
 # --------------------------------------------------------------------------
 # GPU textures: partial results differ per GPU, the all-reduced result is shared
@@ -97,21 +116,23 @@ class B05Node(BeatScene):
         EXPAND(self.world, GPU_C[HERO], GPU_U, 0.0, **self._exp_kw)
 
         # ---------------- pooled packets + gradient trails ----------------
-        self.packets = VGroup(*[VMobject(stroke_width=0, fill_color=MAGENTA if k < N_GPU else LIME,
-                                         fill_opacity=0) for k in range(2 * N_GPU)])
-        self.trails = VGroup(*[VMobject(stroke_width=0, fill_opacity=0) for _ in range(2 * N_GPU)])
-        for m in [*self.packets, *self.trails]:
+        self.packets = VGroup(*[VMobject(stroke_width=0, fill_color=MAGENTA, fill_opacity=0)
+                                for _ in range(N_GPU)])
+        self.trails = VGroup(*[VMobject(stroke_width=0, fill_opacity=0) for _ in range(N_GPU)])
+        self.cores = VGroup(*[VMobject(stroke_width=0, fill_opacity=0) for _ in range(N_GPU)])
+        for m in [*self.packets, *self.trails, *self.cores]:
             m.points = EMPTY.copy()
-        self.fx = VGroup(self.trails, self.packets)
+        self.fx = VGroup(self.trails, self.cores, self.packets)
 
-        # ---------------- text (kicker + headline in on the cut, out during the settle) ----------------
+        # ---------------- text (kicker + headline in on the cut; they hold through the collapse and
+        # settle and hard-cut at T_EXIT with the canonical E05 swap, so no frame near a cut is bare) ----
         track = TextTrack(self)
-        track.on(kick("SCALE 4/6 · ONE SERVER"), 0.0, T_TEXT_OUT)
+        track.on(kick("SCALE 4/6 · ONE SERVER"), 0.0, T_TEXT_OUT, exit="cut")
         c1 = card([("8 GPUs.", "H96", INK, {"8": CYAN}), ("Wired together by NVLink.", "S56", MAGENTA)])
-        track.on(c1[0], 0.05, 2.45, enter="pop")      # gone by 2.65, when 'Share results.' enters
-        track.on(c1[1], 0.25, 2.45)
+        track.on(c1[0], 1 / 60, 2.45, enter="pop")    # POPs on story frame 1 (frame 0 stays E04);
+        track.on(c1[1], 0.12, 2.45)                    # gone by 2.65, when 'Share results.' enters
         c2 = card([("Share results.", "H96", INK, {"results.": LIME})])
-        track.on(c2, 2.65, T_TEXT_OUT)
+        track.on(c2, 2.65, T_TEXT_OUT, exit="cut")
 
         # ---------------- HUD: the jump explains its own multiplication ----------------
         hud.slam(CYCLES[0], "135,168")
@@ -143,10 +164,11 @@ class B05Node(BeatScene):
         self.cue("whoosh", dt=0.05, dur=0.50, direction="up", note="GPUs fly in")
         self.cue("hit", dt=CYCLES[0], gain=0.6, note="x8 compute")
         for c0 in CYCLES:
-            self.cue("whoosh", dt=round(c0 + 0.375, 4), dur=0.25, direction="up", note="packets converge")
-            self.cue("tick", dt=round(c0 + 0.50, 4), note="switch flash")
+            self.cue("whoosh", dt=round(c0 + T_DEP, 4), dur=0.55, direction="up",
+                     note="packets fly GPU -> NVSwitch -> partner GPU")
+            self.cue("tick", dt=round(c0 + T_SW, 4), note="packets cross the switch (flash)")
         for c0 in CYCLES[:2]:
-            self.cue("pop", dt=round(c0 + 0.80, 4), note="results return")
+            self.cue("pop", dt=round(c0 + T_ARR, 4), note="results land: every GPU flashes LIME")
         self.cue("riser", dt=2.25, dur=1.2, note="into the third cycle")
         self.cue("hit", dt=T_WAVE, gain=0.8, note="all 8 flash together")
         self.cue("shimmer", dt=T_WAVE, dur=0.8)
@@ -155,7 +177,7 @@ class B05Node(BeatScene):
 
         # ---------------- run ----------------
         self.hold_until(T_COL)
-        for m in [*self.packets, *self.trails]:
+        for m in [*self.packets, *self.trails, *self.cores]:
             m.points = EMPTY.copy()
         self.drift.release()                          # the collapse starts from the drifted pose
         self.collapse = COLLAPSE(self.chassis, VGroup(self.links, self.switch, self.sw_label, self.gpus), "node")
@@ -192,7 +214,7 @@ class B05Node(BeatScene):
         for c0 in CYCLES:
             if now >= c0 - EPS:
                 comp = max(comp, 1.0 - ease_out_quad(ramp(now, c0, c0 + 0.30)))
-        swf = max(flash_env(now - (c0 + 0.50), 0.04, 0.25) for c0 in CYCLES)
+        swf = max(flash_env(now - (c0 + T_SW), 0.06, 0.30) for c0 in CYCLES)   # while the packets cross it
         transit = max(ramp(now, c0 + 0.20, c0 + 0.30) * (1 - ramp(now, c0 + 0.78, c0 + 0.90)) for c0 in CYCLES)
 
         # ---- GPU units
@@ -255,39 +277,49 @@ class B05Node(BeatScene):
             ln.stroke_rgbas = l_stroke.reshape(1, 4).copy()
             ln.stroke_width = (LINK_W + 2.0 * wave) * sw_k
 
-    # ---- all-reduce packets (pure function of now): GPU edge <-> switch edge
+    # ---- all-reduce packets (pure function of now): GPU -> NVSwitch -> partner GPU
     def _draw_packets(self, now: float) -> None:
         for g in range(N_GPU):
-            y = GPU_C[g, 1]
-            d = 1.0 if SW_EDGE_X[g] > INNER_X[g] else -1.0          # toward the switch
-            near_gpu, near_sw = INNER_X[g] + d * PKT / 2, SW_EDGE_X[g] - d * PKT / 2
-            for k, (leg, x0, x1, edge0, color) in enumerate((("out", near_gpu, near_sw, INNER_X[g], C_MAG),
-                                                              ("back", near_sw, near_gpu, SW_EDGE_X[g], C_LIME))):
-                pk = self.packets[g + k * N_GPU]
-                tr = self.trails[g + k * N_GPU]
-                q, live = None, False
-                for c0 in CYCLES:
-                    ta = c0 + (0.25 if leg == "out" else 0.55)
-                    if ta - EPS <= now < ta + 0.25 - EPS:
-                        q, live = ramp(now, ta, ta + 0.25), True
-                if not live:
-                    pk.points = EMPTY.copy()
-                    tr.points = EMPTY.copy()
-                    continue
-                dirn = 1.0 if x1 > x0 else -1.0
-                x = lerp(x0, x1, ease_in_out_cubic(q))
-                al = ramp(q, 0.0, 0.10) * (1 - ramp(q, 0.90, 1.0))
-                sc = lerp(0.6, 1.0, ease_out_cubic(ramp(q, 0.0, 0.25)))
-                pk.points = _RECT * np.array([PKT * sc, PKT * sc, 1.0]) + np.array([x, y, 0.0])
-                pk.fill_rgbas = np.array([[*color, al]])
-                # fading trail behind the packet (never longer than the path travelled)
-                near = x - dirn * PKT * sc / 2
-                far = near - dirn * min(TRAIL, max(0.0, dirn * (near - edge0)))
-                if abs(near - far) < 1e-3:
-                    tr.points = EMPTY.copy()
-                    continue
-                h = PKT * sc * 0.72
-                tr.points = poly_pts([[far, y - h / 5, 0], [near, y - h / 2, 0],
-                                      [near, y + h / 2, 0], [far, y + h / 5, 0]])
-                tr.sheen_direction = np.array([dirn, 0.0, 0.0])
-                tr.fill_rgbas = np.array([[*color, 0.0], [*color, 0.85 * al]])
+            pk, tr, co = self.packets[g], self.trails[g], self.cores[g]
+            q = None
+            for c0 in CYCLES:
+                if c0 + T_DEP - EPS <= now < c0 + T_ARR - EPS:
+                    q = ramp(now, c0 + T_DEP, c0 + T_ARR)
+            if q is None:
+                for m in (pk, tr, co):
+                    m.points = EMPTY.copy()
+                continue
+            dirn, y, x0 = DIRN[g], LANE_Y[g], X_FROM[g]
+            x = lerp(x0, X_TO[g], ease_in_out_sine(q))
+            al = ramp(q, 0.0, 0.06) * (1 - ramp(q, 0.94, 1.0))
+            sc = lerp(0.6, 1.0, ease_out_cubic(ramp(q, 0.0, 0.20)))
+            col = pkt_rgb(x, dirn)
+            pk.points = _RECT * np.array([PKT * sc, PKT * sc, 1.0]) + np.array([x, y, 0.0])
+            pk.fill_rgbas = np.array([[*lerp(col, C_INK, PKT_CORE), al]])
+            # comet trail behind the packet (never longer than the path travelled), coloured by
+            # where each part of it is: MAGENTA before the switch, LIME after it
+            near = x - dirn * PKT * sc / 2
+            far = near - dirn * min(TRAIL, max(0.0, dirn * (near - x0)))
+            if abs(near - far) < 1e-3:
+                tr.points = EMPTY.copy()
+                co.points = EMPTY.copy()
+                continue
+            us = np.linspace(0, 1, len(TRAIL_A))
+            for m, hk, stops, tint in ((tr, 1.0, TRAIL_A, 0.0), (co, 0.34, CORE_A, 0.75)):
+                h = PKT * sc * hk
+                m.points = poly_pts([[far, y - h / 8, 0], [near, y - h / 2, 0],
+                                     [near, y + h / 2, 0], [far, y + h / 8, 0]])
+                m.sheen_direction = np.array([dirn, 0.0, 0.0])
+                m.fill_rgbas = np.array([[*lerp(pkt_rgb(lerp(far, near, u), dirn), C_INK, tint), a * al]
+                                         for u, a in zip(us, stops)])
+
+
+def pkt_rgb(x: float, dirn: float) -> np.ndarray:
+    """Packet colour at x: MAGENTA (data in flight) until it enters the NVSwitch, white-hot in
+    the middle of the switch (where it is combined), LIME (the reduced result) once it leaves."""
+    u = clip01((x - SW_X0) / (SW_X1 - SW_X0))
+    if dirn < 0:
+        u = 1.0 - u
+    if u < 0.5:
+        return lerp(C_MAG, C_INK, 0.8 * ease_in_out_sine(2 * u))
+    return lerp(C_INK, C_LIME, lerp(0.2, 1.0, ease_in_out_sine(2 * u - 1)))
