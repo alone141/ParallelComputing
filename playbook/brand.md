@@ -41,7 +41,9 @@ end: *you are here*. Its colouring runs from lavender to cyan across the mark, a
   - Profile pictures, the YouTube banner and watermark, the *Start here* highlight, and stills
     outside the films (collaborations, press).
   - **Never** as a sign-off inside a film (`film-style.md` §1), and never on a cover (a cover is a film frame).
-  - A film MAY use the mark's geometry as story content (e.g. doubling rings), built from `MARK`.
+  - A film MAY show the mark's geometry as story content (e.g. the open rings and the cyan dot drawn as
+    an object in the story), built from `MARK`. The faint full-circle warp rings of `film-style.md` §3
+    are a film device, not the mark, and are not built from `MARK`.
   - Use the stacked lockup in square-ish spaces and the horizontal one in wide spaces.
 - **Wordmark:** "LUMIERA" in Inter Display Medium, capitals, with 0.32 em of space between letters
   (none after the last letter, so it stays centred).
@@ -54,7 +56,9 @@ end: *you are here*. Its colouring runs from lavender to cyan across the mark, a
 - **Backgrounds:** deep space or any dark, calm background. On light backgrounds, use the wordmark
   in Deep Space and no glowing mark.
 - **MUST NOT:** recolour single rings, close the open ring, move or remove the cyan dot, stretch it,
-  or add shadows, outlines or bevels. This applies to every frame where the full mark is shown.
+  or add shadows, outlines or bevels. This applies to every full-colour mark. The one exception is the
+  white mono mark (below the minimum size, and the YouTube watermark): it is drawn with
+  `draw_mark(mono=…)` in a single colour and has no you-are-here dot. Never add one by hand.
 
 ---
 
@@ -66,9 +70,9 @@ end: *you are here*. Its colouring runs from lavender to cyan across the mark, a
 | Night | `#120D2E` | Raised backgrounds, gradients |
 | Space Glow | `#1C1450` | Soft centre glow of **brand stills only** (profile picture, banner, highlight covers, on-dark plates), fading to Deep Space at the edges. Films don't use it |
 | Starlight | `#F5F7FF` | Main text, the core of the mark |
-| Lavender | `#B9A6FF` | Primary accent; the start of every journey |
+| Lavender | `#B9A6FF` | Primary accent; the start of every journey (the mechanic, and the starting object unless that is you) |
 | Cyan | `#6CF2FF` | Means **you**: the YOU pin and tags, the you-are-here dot, copies of people, your distance to an answer, and the hook's target word. Never a general highlight or another subject's accent |
-| Magenta | `#FF6FD8` | Big reveals, the universe, the finale |
+| Magenta | `#FF6FD8` | The observable universe, and the outro counter's glow in every film. Never a mid-film reveal (`film-style.md` §3) |
 | Amber | `#FFB547` | Warm accent (life, warmth). In films, the Sun's accent is `#FFB13B` (`film-style.md` §3) |
 | Mist Light | `#C9D1E6` | Readable secondary lines |
 | Mist | `#8A93A8` | Small labels and hints |
@@ -91,7 +95,8 @@ fixed colour meanings for films are in `film-style.md` §3.
 - **Powers of ten:** write them as "1.6 × 10⁻³⁵ m" (a multiplication sign and a raised exponent) in
   every caption, description, asset and frame. Never use `^`, e-notation or "x". In JetBrains Mono,
   draw the exponent as raised, smaller digits, as the HUD readout does, because the font has no
-  superscript minus.
+  superscript minus. Static film text that needs an exponent (a stop's size text) is set in Inter
+  Medium with Unicode superscripts instead (`film-style.md` §5).
 - **Fonts:** Inter 4.0 or later (the Inter Display family exists only from 4.0) and JetBrains Mono 2.x.
   Both are free and open-source. Don't substitute other fonts. Renderers replace a missing family
   without warning, so check the fonts are installed before rendering.
@@ -105,8 +110,9 @@ Calm, precise, awe-filled. The scale does the shouting; we don't.
 1. **Open an honest loop and close it in the same video.** Ask a question the viewer can answer in
    their head. Never hold the answer back for "part 2" or a follow.
 2. **Give the guess room.** Ask, then let the counter run.
-3. **Numbers are sacred.** Every figure comes from the film's sizes table and is identical across the
-   video, caption, title and comments. Round as in `film-style.md` §6: to the nearest value, with
+3. **Numbers are sacred.** Every figure comes from the film's sizes table. A figure the film shows is
+   written the same way in the caption, title and comments; lists of sizes quote the table
+   (`film-style.md` §6). Round as in `film-style.md` §6: to the nearest value, with
    "about" or "≈" when a figure is more than ~2% off. Never round because a number sounds bigger.
 4. **Keep the qualifiers:** *observable* universe, *where known physics runs out*, *on average*,
    *in theory*. Flag any simplification in one plain line. An outro MAY use a poetic phrase ("to the

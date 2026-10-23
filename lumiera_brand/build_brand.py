@@ -215,9 +215,10 @@ def youtube_banner() -> Image.Image:
     L.rgb *= (1 - 0.9 * np.exp(-((x / 820) ** 2 + ((y + 20) / 210) ** 2)))[..., None]  # keep the text area clean
     paste_light(base, L)
     # everything important stays inside YouTube's 1546x423 all-device safe area
-    lock = lockup(270, stacked=False, on_dark=False)
-    base.paste(lock, ((W - lock.width) // 2, H // 2 - lock.height // 2 - 52), lock)
-    draw_tracked(base, (W / 2, H // 2 + 158), TAGLINE, font("body", 70), PALETTE["mist"], 0.01)
+    # keep a quarter of the ring's diameter clear between the mark and the tagline (brand §2)
+    lock = lockup(250, stacked=False, on_dark=False)
+    base.paste(lock, ((W - lock.width) // 2, H // 2 - lock.height // 2 - 66), lock)
+    draw_tracked(base, (W / 2, H // 2 + 168), TAGLINE, font("body", 64), PALETTE["mist"], 0.01)
     return base
 
 
@@ -231,8 +232,8 @@ def palette_sheet() -> Image.Image:
         x0 = i * cw
         d.rounded_rectangle((x0 + 16, 24, x0 + cw - 16, 270), radius=22, fill=hx,
                             outline="#2A2550" if name == "deep_space" else None, width=3)
-        d.text((x0 + cw / 2, 310), name.replace("_", " ").title(), font=font("body", 30), fill=PALETTE["starlight"], anchor="mm")
-        d.text((x0 + cw / 2, 356), hx.upper(), font=font("mono", 28), fill=PALETTE["mist"], anchor="mm")
+        d.text((x0 + cw / 2, 310), name.replace("_", " ").title(), font=font("body", 24), fill=PALETTE["starlight"], anchor="mm")
+        d.text((x0 + cw / 2, 356), hx.upper(), font=font("mono", 24), fill=PALETTE["mist"], anchor="mm")
     return img
 
 

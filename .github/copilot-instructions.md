@@ -2,6 +2,9 @@
 
 This file mirrors `../AGENTS.md`. Edit `AGENTS.md` and the `playbook/` files, then copy the change here, prefixing relative links with `../`.
 
+This repository is the baseline for **Lumiera**, a science-explained-visually channel on TikTok,
+Instagram Reels and YouTube Shorts. It holds the films, the brand and the guide that keeps them consistent.
+
 ## Read first
 
 **[`playbook/`](../playbook/README.md) is the source of truth for style.** Before any creative work
@@ -14,8 +17,8 @@ If anything here or elsewhere conflicts with the playbook, the playbook wins.
 
 ## The essentials (summary of the playbook)
 
-- **Format:** vertical 9:16, 1080×1920, 60 fps. No text below y = −4.8 (the bottom ~20%) or in the
-  right button column; centred text ≤ 6.8 units wide on a 9×16-unit frame. No logo or end card
+- **Format:** vertical 9:16, 1080×1920, 60 fps. No text baseline below y = −4.8 (the bottom ~20%; descenders may dip
+  to ≈ −4.9) or in the right button column; centred text ≤ 6.8 units wide on a 9×16-unit frame. No logo or end card
   inside films; the loop is the sign-off.
 - **Look:** glowing light on near-black deep space (`#07061A`). One accent colour per scene. Cyan
   `#6CF2FF` means "you" (never another subject's accent). Fonts: Inter Display (titles, CAPS),

@@ -604,7 +604,7 @@ class SolarSystem(Visual):
             dot = Dot(radius=rpx / 120, color=col)
             self.planets.append((dot, a, au, a0, name))
             if name in ("Uranus", "Neptune"):
-                self.labels.append((text(name, 17, color="#AFC0E0"), name))
+                self.labels.append((text(name, 17, color="#C9D1E6"), name))
         ring = Ellipse(width=0.17, height=0.05, stroke_color="#F2DDA8", stroke_width=1.6, fill_opacity=0)
         self.saturn_ring = ring
         belts = sprite("belts", D0 * 1.6, "#FFFFFF", alpha=0.32)

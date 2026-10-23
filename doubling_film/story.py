@@ -93,11 +93,11 @@ MILESTONES: list[Milestone] = [
     ),
     Milestone(
         "proton", 1.68e-15, "A PROTON", "0.0000000000000017 m",
-        "About [100 quintillion] Planck lengths wide", "#FF8A5B", 3.2,
+        "[≈100 quintillion] Planck lengths wide", "#FF8A5B", 3.2,
         row=Row(1e20, "Planck lengths", (-0.5, 0.0), (0.5, 0.0), "#B9A6FF"),
     ),
     Milestone(
-        "atom", 1.06e-10, "A HYDROGEN ATOM", "0.1 nanometres",
+        "atom", 1.06e-10, "A HYDROGEN ATOM", "0.106 nanometres",
         "[≈60,000×] wider than its proton", "#5CC8FF", 3.2,
         row=Row(60_000, "protons", (-0.5, 0.0), (0.5, 0.0), "#FF8A5B"),
     ),

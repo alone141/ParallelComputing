@@ -63,7 +63,7 @@ Title (58 / 100):
 Planck length to a galaxy: how many doublings? Guess first
 ```
 
-Description (944 / 5,000):
+Description (946 / 5,000):
 
 ```
 Start at the Planck length (1.6 × 10⁻³⁵ m), where known physics runs out, and keep doubling. How many doublings until you reach a galaxy? Guess before it ends, then put your number in the comments.
@@ -83,7 +83,7 @@ The stops:
 ??? · the Milky Way (your guess)
 205 · the observable universe
 
-Step numbers are rounded to whole doublings. Sizes used: Planck length 1.616 × 10⁻³⁵ m · proton 1.68 fm · hydrogen atom 0.106 nm · virus 100 nm · red blood cell 7.5 µm · ant 4 mm · you 1.7 m · Everest 8,849 m · Earth 12,742 km · Sun 1.39 million km · solar system 60 AU (Neptune's orbit) · Proxima Centauri 4.25 light-years · Milky Way 100,000 light-years · observable universe 93 billion light-years.
+Step numbers are rounded to whole doublings. Sizes used: Planck length 1.616 × 10⁻³⁵ m · proton 1.68 fm · hydrogen atom 0.106 nm · virus 100 nm · red blood cell 7.5 µm · ant 4 mm · you 1.7 m · Everest 8,849 m · Earth 12,742 km · Sun 1.39 million km · solar system 60.1 AU (Neptune's orbit) · Proxima Centauri 4.25 light-years · Milky Way 100,000 light-years · observable universe 93 billion light-years.
 
 Lumiera: science, drawn in light. A new film every week.
 

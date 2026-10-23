@@ -14,20 +14,22 @@ from PIL import Image, ImageDraw, ImageFont
 
 # --------------------------------------------------------------------------- palette
 PALETTE = {
-    "deep_space": "#07061A",  # background
-    "night": "#120D2E",  # raised background / gradients
-    "starlight": "#F5F7FF",  # primary text and the core of the mark
-    "lavender": "#B9A6FF",  # primary accent (the Planck dot)
-    "cyan": "#6CF2FF",  # "you are here", highlights
-    "magenta": "#FF6FD8",  # the observable universe, big reveals
-    "amber": "#FFB547",  # warm accent (Sun, life)
-    "mist": "#8A93A8",  # secondary text
+    "deep_space": "#07061A",  # backgrounds
+    "night": "#120D2E",  # raised backgrounds, gradients
+    "space_glow": "#1C1450",  # soft centre glow of brand stills only, never films
+    "starlight": "#F5F7FF",  # main text, the core of the mark
+    "lavender": "#B9A6FF",  # primary accent; the start of every journey
+    "cyan": "#6CF2FF",  # means you: the you-are-here dot, YOU tags; never a general highlight
+    "magenta": "#FF6FD8",  # the observable universe, the outro counter's glow
+    "amber": "#FFB547",  # warm accent (life, warmth); the films' Sun is #FFB13B
+    "mist_light": "#C9D1E6",  # readable secondary lines
+    "mist": "#8A93A8",  # small labels and hints
 }
 
 FONT_DIR = Path("/usr/share/fonts/opentype/inter")
 MONO_DIR = Path("/usr/share/fonts/truetype/jetbrains-mono")
 FONTS = {
-    "display": FONT_DIR / "InterDisplay-SemiBold.otf",
+    "display": FONT_DIR / "InterDisplay-Bold.otf",  # titles and the hook (brand §4)
     "display_medium": FONT_DIR / "InterDisplay-Medium.otf",
     "display_light": FONT_DIR / "InterDisplay-Light.otf",
     "body": FONT_DIR / "Inter-Medium.otf",
@@ -114,14 +116,14 @@ def draw_mark(light: Light, cx: float, cy: float, radius: float, variant: str = 
     """The Lumiera mark: a light point with rings whose radii double.
 
     ``radius`` is the outer ring radius in pixels.  ``variant`` picks the colouring:
-    "gradient" (lavender to cyan, by angle), "tri" (one colour per ring), "white".
+    "gradient" (lavender to cyan, by angle) or "white".
     ``mono`` forces a single colour (for watermarks).
     """
     x, y = light.grid(cx, cy, radius)
     r = np.hypot(x, y)
     th = np.arctan2(y, x)
     px = 1.0 / radius
-    lav, cyan, mag, white = rgb(PALETTE["lavender"]), rgb(PALETTE["cyan"]), rgb(PALETTE["magenta"]), rgb(PALETTE["starlight"])
+    lav, cyan, white = rgb(PALETTE["lavender"]), rgb(PALETTE["cyan"]), rgb(PALETTE["starlight"])
     # light comes from the upper left: blend lavender -> cyan across the mark
     t = np.clip((np.cos(th - math.radians(135)) * -0.5 + 0.5), 0, 1)[..., None]
     grad = lav[None, None, :] * (1 - t) + cyan[None, None, :] * t
@@ -129,8 +131,6 @@ def draw_mark(light: Light, cx: float, cy: float, radius: float, variant: str = 
     def colour(i):
         if mono is not None:
             return rgb(mono)[None, None, :]
-        if variant == "tri":
-            return (lav, cyan, mag)[i][None, None, :]
         if variant == "white":
             return white[None, None, :]
         return grad
@@ -165,7 +165,7 @@ def draw_mark(light: Light, cx: float, cy: float, radius: float, variant: str = 
 
 # --------------------------------------------------------------------------- backgrounds
 def space_background(w: int, h: int, cx=None, cy=None, stars: int = 140, seed: int = 7,
-                     glow_color="#1C1450", glow_radius=None) -> np.ndarray:
+                     glow_color=PALETTE["space_glow"], glow_radius=None) -> np.ndarray:
     """Deep-space gradient with a soft central glow and faint stars (float RGB)."""
     cx = w / 2 if cx is None else cx
     cy = h / 2 if cy is None else cy

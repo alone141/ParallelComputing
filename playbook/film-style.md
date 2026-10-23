@@ -47,12 +47,17 @@ and therefore to every cover, since a cover is a film frame.
 
 Every film is **one honest question, answered on screen**.
 
-1. **Hook (0–~2.5 s).** A question the viewer can answer in their head, with the signature
+1. **Hook (0–2.75 s; the first step starts at 2.75 s, `HOOK` in `story.py`).** A question the viewer can answer in their head, with the signature
    sub-line "Guess before it ends." (see `brand.md` §1).
    - The glyphs rise in from frame 0, 0.32 s each with a 0.011 s stagger, so the whole question is in by ≈ 0.8 s.
    - The sub-line enters at ≈ 0.85 s.
    - Both leave from 2.1 s and MUST be fully gone before the HUD fades in (2.5–2.95 s).
    - The starting object (e.g. the Planck dot with its dashed reticle) is visible underneath from frame 0.
+   - The starting object is **not a stop**. Its label block rises in from ≈ 0.45 s at the usual
+     positions (§5): size text in its accent with **no STEP chip**, the title and one line. It has no
+     measuring row. It starts leaving at ≈ 3.3 s, just before the mechanic's phase label (3.45 s), so
+     it is part of the hook frame and the cover. The HUD shows 0 when it fades in. When the start is
+     you, the YOU pin fades in with the HUD (2.5–2.95 s), never under the hook.
    - **The hook frame** is the moment the question and sub-line are both fully on screen and not yet
      leaving (1.9 s in The Doubling). Frame 0 is **not** the hook frame.
 2. **Teach the mechanic (~3 s).** Show the rule slowly before speeding up. The Doubling counts its
@@ -79,11 +84,11 @@ The answer to the hook MUST NOT appear in the cover or any post text (full list:
 |---|---|
 | Hold at a stop | **~3.2 s**. Use up to ~3.8 s when a note follows, ~5.4 s for the payoff stop and ~4.6 s for the final stop |
 | Transition between stops | `0.5 + 0.028 × (steps travelled)` seconds (≈ 0.7–1.1 s) |
-| First sprint (end of teaching → first stop) | ≈ 2.5 s |
+| First sprint (end of teaching → first stop) | ≈ 2.5 s when it crosses a stretch with no stop (The Doubling's desert, steps 9–66). If the first stop follows the teaching directly, it is an ordinary transition (row above) |
 | Labels | Enter 0.3 s **before** the object settles; exit when the next transition starts |
 | Note (a second line that replaces the comparison) | Enters 1.2–2.5 s into the hold, after the comparison has been read |
 | Comparison row | Starts 0.5 s after arrival and fills in **1.5 s** (ease-in-out). A row that belongs to a note starts as the note enters |
-| Motion | Never fully stops. During a hold the camera keeps drifting slowly in the direction of travel: from `n_i − 0.15` to `n_i + 0.25` |
+| Motion | Never fully stops. During a hold the camera keeps drifting slowly in the direction of travel: from `n_i − 0.15` to `n_i + 0.25` (when `n` falls: from `n_i + 0.15` to `n_i − 0.25`) |
 
 ---
 
@@ -94,9 +99,10 @@ additive glows, and procedural textures for the Sun, galaxies and so on. Backgro
 
 - **Background.** The film base is near-black indigo (`#08061A`; brand Deep Space `#07061A`). It MAY
   shift subtly in hue by scene (warm near the Sun, blue near Earth), but it MUST stay near-black, with
-  no channel above `0x14`. The Doubling's per-scene ramp is `BG_KEYS` in `doubling_film/film.py`.
-- A soft **nebula glow** (≈ 20% strength) sits behind the featured object, tinted with its accent.
-  Dial it down (to ~25–60%) where it would read as mud, e.g. empty frames between two stars.
+  no channel above `0x1A` (the base's own blue; every `BG_KEYS` entry is within it). The Doubling's per-scene ramp is `BG_KEYS` in `doubling_film/film.py`.
+- A soft **nebula glow** (≈ 20% opacity) sits behind the featured object, tinted with its accent.
+  Where it would read as mud or wash out the subject, scale it by a factor of ~0.25–0.8, never above 1
+  (The Doubling: star 0.25, solar system 0.6, Everest 0.7, Earth 0.8; `NEBULA` in `film.py`).
 - Glows MUST add like light ("screen" blend) and MUST fade to zero before the edge of their sprite.
   A visible square edge on a glow is a defect.
 - A light vignette is fine. Banding is avoided by the encode-time grain.
@@ -110,11 +116,14 @@ additive glows, and procedural textures for the Sun, galaxies and so on. Backgro
     It's never the accent of any other subject.
   - **Measuring rows** take the colour of **the thing being counted** (§4), lightened where it would
     not read against the current subject.
-  - **Lavender `#B9A6FF`** is the start: the starting object, the mechanic phase, the ×2 pops, and the
-    mechanic word in the hook ("double").
-  - **Magenta `#FF6FD8`** is the finale glow and the outro counter's glow.
+  - **Lavender `#B9A6FF`** is the start: the starting object, the mechanic phase, the ×2 / ÷2 pops,
+    and the mechanic word in the hook ("double"). When the starting object is you, cyan wins: the
+    human stays cyan, and lavender marks only the mechanic (the phase, the pops and the mechanic word).
+  - **Magenta `#FF6FD8`** is the observable universe's accent and the outro counter's glow in every
+    film. It is never used for a mid-film reveal. A final stop other than the universe keeps its own accent.
   - The **progress meter** fill is a gradient from the start accent to the final accent
-    (lavender → cyan → magenta in The Doubling).
+    (lavender → cyan → magenta in The Doubling). It starts from the starting object's colour (cyan
+    in a film that starts at you).
 - **Text colours.** Starlight `#F5F7FF` for titles and main text. Mist Light `#C9D1E6` for readable
   secondary lines (comparisons, notes, size text beside a chip, captions inside drawings, the outro
   label). Mist `#8A93A8` for small labels and hints (HUD label, hook sub-line, the meter's "0").
@@ -136,7 +145,7 @@ additive glows, and procedural textures for the Sun, galaxies and so on. Backgro
 | Solar system | `#8FB8FF` |
 | Stars | `#FF8C6B` |
 | Galaxy | `#C7A6FF` |
-| Universe / finale | `#FF6FD8` magenta |
+| Universe | `#FF6FD8` magenta |
 
 A **new subject** gets its accent once: at least ~30° of hue away from neighbouring stops, never cyan
 or magenta. Add it to this table in the same pull request, and reuse it in every later film.
@@ -152,9 +161,12 @@ Drawing style per subject (SHOULD):
 ### Movement
 - **Zoom by scale.** An object at stop `i` is drawn at `2^(n_i − n)` of its reference size (a
   diameter of 5.2 units, centred at y = +0.22).
-  - It's fully visible from about 1/10 to about 1.5× its reference size.
-  - It fades in between 3× and 1.5× (`n_i − 1.6` to `n_i − 0.55` when growing).
-  - It fades out between 1/10 and 1/85 (`n_i + 3.4` to `n_i + 6.4`).
+  - It's fully visible from about 1/10 to about 1.5× its reference size (`n_i + 3.4` to `n_i − 0.55`)
+    and fades to zero by 1/85 (`n_i + 6.4`) and by 3× (`n_i − 1.6`). The window is defined on `n`, so
+    it is the same in both directions; only the order changes.
+  - When growing (`n` rises): it fades in from 3× to 1.5× and fades out from 1/10 to 1/85.
+  - When zooming in (`n` falls): it fades in from 1/85 to 1/10 (arriving as a point) and fades out
+    from 1.5× to 3×.
   - Nothing pops in at full size.
 - **Direction.** These rules are defined on `n`, so they hold both ways. In a film that zooms in
   (`n` falls; e.g. The Halving):
@@ -181,11 +193,11 @@ Reuse these. They are what makes a film recognisably ours. The geometry and code
 |---|---|
 | **HUD counter** | Big number at top centre (JetBrains Mono Bold, size 104, y = +5.6, white `#FFFFFF`). Above it, a label at y = +6.55 (Inter Medium 19, CAPS, Mist, tracked +0.09 units) names the film's unit ("DOUBLINGS", "HALVINGS"). It fades in over 2.5–2.95 s, after the hook. While a stop holds, it shows that stop's step. On arrival it **punches** (+16% and back over 0.5 s) and flashes 85% toward the accent, decaying over ~0.45 s |
 | **Size readout + ruler** | A live scientific readout ("1.7 × 10⁰ m"): JetBrains Mono Medium 30, `#9FB3D9`, y = +4.5, mantissa to one decimal, with the exponent drawn as raised 0.6× digits and a true minus. It stays live during holds, because it labels the ruler; the stop's nominal size is the label's size text. Below it, a ruler at y = +4.12 (`#5D6B8C`, 1.6 px) whose width equals the reference size (5.2 units) |
-| **STEP chip** | At every stop, a pill ("STEP 116") left of the size text and above the title. JetBrains Mono Bold 22 in the accent, on an accent fill at 16% with a 1.6 px accent outline. **Step number = `round(|n_stop − n_start|)` on unrounded values**, in the film's own unit counted from its own start. The HUD shows the same number during the hold. Never subtract rounded steps taken from another film |
+| **STEP chip** | At every stop after the start (§2), a pill ("STEP 116") left of the size text and above the title. JetBrains Mono Bold 22 in the accent, on an accent fill at 16% with a 1.6 px accent outline. **Step number = `round(|n_stop − n_start|)` on unrounded values**, in the film's own unit counted from its own start. The HUD shows the same number during the hold. Never subtract rounded steps taken from another film |
 | **Measuring row** (acted-out comparison) | Copies of the **smaller of two neighbouring stops** line up across the larger one at its stop, or stack for heights, while a live counter climbs ("0 → 425 ants"). When the film grows, that's the previous stop; when it shrinks, it's the next one. Draw individual dots (radius 0.46 × spacing) when each copy is at least ~4 px (row length in px ÷ count); otherwise draw a glowing line (core 3.2 px, glow 10 px at 22%) with ~90 white beads (radius 0.022 units) and a small star at the growing end. The finished count MUST equal the number in the line on screen while it fills (the comparison, or the note at a final stop). The row fades out with its counter |
 | **Live counter** | JetBrains Mono Bold 21, in the row colour mixed 40% toward white, with a black halo (8 px stroke, 78%, round joins so there are no spikes). The format is commas for counts, plus a noun ("4,500 solar systems"), and words for totals of ten million or more ("100 quintillion Planck lengths"). For horizontal rows it rides the middle of the filled part, 0.3 units above or below the row (further if captions are in the way), clamped to x ∈ [−3.4, +3.3]. For vertical rows it sits beside the growing end. It MUST NOT collide with the YOU pin, the meter or other text |
-| **YOU pin** | A cyan capsule (0.9 × 0.4 units) reading "YOU" (Inter Display Bold 21, `#03121A`), with a stem and a small target ring, marking the viewer's position. Show it only while that position is inside the frame and the human is no bigger than ~1.2× the reference size: from the human stop onward when the film grows, or until the human leaves the frame when it shrinks. The meter's YOU tag remains throughout |
-| **Progress meter** | A **size axis** at the left edge: x = −3.95, from y = −2.45 (the smallest size shown) to y = +3.45 (the largest). The base line is `#27304A`, 2 px; ticks at each stop are in that stop's accent, at 30% opacity until passed. The fill runs from the start stop toward the current `n` (downward in a film that shrinks), with the accent gradient from §3. A "0" in Mist sits at the start, and a "YOU" tag (Inter Display Bold 16, cyan) sits at the viewer's step. For the payoff, brackets go to the right of the YOU tag (x = −3.21): mono bold 20, the part below "you" in Mist Light, the part above in cyan ("116" / "69"). They appear with the punchline and stay until 0.6 s into the next stop |
+| **YOU pin** | A cyan capsule (0.9 × 0.4 units) reading "YOU" (Inter Display Bold 21, `#03121A`), with a stem and a small target ring, marking the viewer's position. Show it only while that position is inside the frame. Its opacity is set on `n`, so it works in both directions: full while the human is at most ~1.2× its reference size (`n ≥ n_human − 0.25`), fading to zero by ~1.5× (`n_human − 0.6`). So it appears as the human arrives when the film grows, and it leaves as the human grows from 1.2× to 1.5× when the film shrinks. The meter's YOU tag remains throughout |
+| **Progress meter** | A **size axis** at the left edge: x = −3.95, from y = −2.45 (the smallest size shown) to y = +3.45 (the largest). The base line is `#27304A`, 2 px; ticks at each stop are in that stop's accent, at 30% opacity until passed. The fill runs from the start stop toward the current `n` (downward in a film that shrinks), with the accent gradient from §3. A "0" in Mist sits at the start, and a "YOU" tag (Inter Display Bold 16, cyan) sits at the viewer's step. For the payoff, two brackets go to the right of the YOU tag (x = −3.21), mono bold 20: a cyan bracket from you to the answer, labelled with your distance to it ("69"), and a Mist Light bracket for the distance the reframing line compares it with ("116", the start to you, in The Doubling). Each spans its own stretch of the axis, above or below YOU as the film's direction puts it. They appear with the punchline and stay until 0.6 s into the next stop |
 | **Answer ring** | When the payoff stop arrives, a thin ring in its accent grows around the HUD counter (1.4 → 5.0 units over 1.2 s, ease-out) and fades |
 | **×2 / ÷2 pops** | While the mechanic is taught, "×2" (Inter Display Bold 40, lavender) pops beside the counter at (+1.55, +5.62): +25% scale, then fading over ~0.3 s. It happens together with the digit change and the pluck |
 
@@ -200,7 +212,7 @@ Reuse these. They are what makes a film recognisably ours. The geometry and code
 | Stop / phase title | Inter Display Bold, CAPS | 60, fit to ≤ 6.8 units | "THE MILKY WAY" |
 | Comparison / note line | Inter Medium | 31 (29 when two lines) | Sentence case, Mist Light. The `[bracketed]` number is in the accent. Fit down to ≤ 6.8 units, never below 26; if it still doesn't fit, shorten the line. Only notes may use two lines |
 | STEP chip | JetBrains Mono Bold | 22 | See §4 |
-| Size text | JetBrains Mono Medium | 25 | In Mist Light beside a chip, or in the accent when there's no chip (phase labels). If it contains Unicode superscript exponents ("1.6 × 10⁻³⁵ m"), set it in Inter Medium 27, because JetBrains Mono has no superscript minus |
+| Size text | JetBrains Mono Medium | 25 | In Mist Light beside a chip, or in the accent when there's no chip (phase labels and the start). If it contains Unicode superscript exponents ("1.6 × 10⁻³⁵ m"), set it in Inter Medium 27, because JetBrains Mono has no superscript minus |
 | Small captions inside drawings | Inter | 17–20 | "Sun", "Proxima Centauri", planet names. Mist Light |
 | HUD label | Inter Medium, CAPS | 19 | Tracked **+0.09 units per glyph** (≈ +33% of the em) |
 
@@ -232,15 +244,17 @@ Text MUST NOT overlap other text, the YOU pin or the meter at any time. Check wi
 ## 6. Numbers & claims
 
 - **One source of sizes.** Each film's README holds a "The numbers" table, and its code (`story.py`)
-  is the only source of its sizes. Captions, descriptions, sources pages and comments quote from that
-  table, to at least 3 significant figures (1.68 fm, 0.106 nm, 4.25 ly). A later film reuses the same
+  is the only source of its sizes. Post text (captions, titles, descriptions, comments) that repeats a
+  figure shown on screen writes it exactly as the film shows it ("1.6 × 10⁻³⁵ m"). Lists of sizes (the
+  YouTube "Sizes used" line, a sources page) quote the table to at least 3 significant figures, or as
+  the table gives it when it has fewer (1.616 × 10⁻³⁵ m, 1.68 fm, 0.106 nm, 60.1 AU, 4.25 ly; 4 mm, 1.7 m). A later film reuses the same
   size for the same subject (you 1.7 m, hydrogen atom 0.106 nm, proton 1.68 fm).
 - **Rounding.** Round to the nearest value, choosing precision for readability:
   - Prefer **2 significant figures** (533 → 530, 5,205 → 5,200, 6,460 → 6,500, 4,465 → 4,500). A third
     MAY be kept (23,549 → 23,500).
   - Whole counts below 1,000 MAY be exact (109, 425).
   - A rounder figure MAY be used when the line says **"about" or "≈"** (943 → "about 1,000";
-    63,095 → "≈ 60,000×"; 1.04 × 10²⁰ → "about 100 quintillion").
+    63,095 → "≈ 60,000×"; 1.04 × 10²⁰ → "≈ 100 quintillion").
   - Any figure more than ~2% off the computed value MUST carry "about" or "≈", on screen included.
   - Never choose the direction or the precision because the result sounds bigger.
 - **Comparisons** are between a stop and its smaller neighbour ("75 viruses side by side"), so they
@@ -269,7 +283,7 @@ The score is generated from the same timeline as the picture, so it's always in 
 | Plucks | A rising pentatonic pluck (E4 G4 A4 C5 D5 E5 G5 A5) on each step of the mechanic phase |
 | Whoosh | Filtered noise that follows the zoom speed. Keep it under the bells, never harsh |
 | Stop bell | A bell on each regular stop's arrival, climbing an A-minor pentatonic scale, over a small sub thump (120 → 60 Hz) |
-| Big reveals | No bell. Instead, a sub-bass boom (95 → 34 Hz) plus a chord. "You" is A major (A3 E4 A4 C♯5), the payoff is A minor add9 (A2 E3 A3 C4 E4 B4) and the finale is F major 7/9 (F2 C3 A3 E4 G4 C5). These are the loudest moments |
+| Big reveals | No bell. Instead, a sub-bass boom (95 → 34 Hz) plus a chord. "You" is A major (A3 E4 A4 C♯5), the payoff is A minor add9 (A2 E3 A3 C4 E4 B4) and the finale (the film's final stop, whatever its subject; the universe in The Doubling) is F major 7/9 (F2 C3 A3 E4 G4 C5). If the payoff stop is also the final stop, it takes the payoff chord. These are the loudest moments |
 | Answer shimmer | Four quiet high bells (E5 A5 B5 E6) as the payoff line lands |
 | Counter ratchet | ~22 soft clicks (1.5 → 3.2 kHz) that follow the row's easing, plus a quiet E6 chime when it lands |
 | Outro | A filtered swell into the counter's flight, then a boom and an A-minor chord (A2 E3 B3 C4 E4 A4) |
@@ -277,7 +291,9 @@ The score is generated from the same timeline as the picture, so it's always in 
 | Master | **−14 to −16 LUFS integrated, true peak ≤ −1.0 dBTP, measured on the final MP4** (ffmpeg `ebur128=peak=true`). Master the WAV to about −1.5 dBFS sample peak so AAC encoding stays under −1 dBTP. Convolution reverb |
 
 In a film that shrinks, the plucks and stop bells still rise with **progress**, while the pad follows
-**size**. When the film starts at you, the frame-0 bloom is the "you" moment.
+**size**. When the film starts at you, the frame-0 hook layer is the "you" moment: the soft bloom
+(70 → 40 Hz) stays, the A4 bell becomes the "You" chord (A3 E4 A4 C♯5) at the bell's level, and
+there is no 95 → 34 Hz boom and no later "you" reveal.
 
 ---
 

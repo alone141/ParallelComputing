@@ -26,6 +26,6 @@ python build_brand.py        # writes assets/ (the Reels covers need ../doubling
 | `assets/instagram/highlight_*.png` | Instagram story highlight covers | 1080×1920; the icon sits inside the circle Instagram crops |
 | `assets/posts/the_doubling_cover_hook.jpg` | Cover for the first video on TikTok and Reels | 1080×1920; the question stays inside Instagram's 3:4 grid crop |
 | `assets/logo/lumiera_mark_*.png` | The mark on its own (transparent, on dark, white mono) | 2048×2048 |
-| `assets/logo/lumiera_lockup_*` | Mark + wordmark, horizontal or stacked | For end cards, thumbnails, collaborations |
+| `assets/logo/lumiera_lockup_*` | Mark + wordmark, horizontal or stacked | The YouTube banner and stills outside the films (collaborations, press). Never in a film, an end card, a cover or a thumbnail (`../playbook/brand.md` §2) |
 | `assets/logo/lumiera_wordmark_*.png` | "LUMIERA" wordmark, white or dark | Transparent |
 | `assets/brand/brand_sheet.png`, `palette.png` | One-page overview of the brand | |
