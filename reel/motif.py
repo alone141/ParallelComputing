@@ -11,24 +11,30 @@ adjacent beats match by construction (see handoff_state()).
 Contents (details in each docstring):
   constants ........ AC, X_C, STAGE, TTZ, KICKER_Y, HUD_NUM_TOP, HUD_LABEL_Y, STEP_TOP,
                      TOKEN_SIZE/FILL/STROKE, SERIAL_TOKEN_FILL/STROKE_COLOR (the AMBER E08 token),
-                     COLLAPSE_TIME, SETTLE_TIME, EXPAND_TIME, RGB_* ...
-  math/easing ...... lerp, ramp, clip01, story_frame, shake, rgba, ease_in_cubic, ease_*_quart,
-                     vector easings (*_arr), envelopes (bump, decay, flash_env, mix), flash_frames
+                     COLLAPSE_TIME, SETTLE_TIME, EXPAND_TIME, FLIP_TIME, MOVE_TIME (+ *_V2), RGB_* ...
+  math/easing ...... lerp, ramp, clip01, story_frame, rgba, ease_in_cubic, ease_*_quart, ease_*_sine,
+                     vector easings (*_arr), envelopes (bump, decay, flash_env, mix), flash_frames,
+                     COLLAPSE_EASE / SETTLE_EASE / EXPAND_EASE / CALM_EASE (+ *_V2)
+  calm motion ...... CALM_MOTION: shake(), jitter(), glitch_at() (and Hud.glitch) are neutral
   paths ............ seg/line_pts, polyline, poly_pts, rrect_pts/rrect_c, seg_points, streak_mob, Field
   text ............. kick, card, below, hud_number, hud_label, hud_mult, step_readout, step_str,
                      hud_number_tmpl / hud_label_tmpl / hud_line_tmpl / hud_pill_tmpl (cached, read-only)
   animations ....... Drive, CARD_IN, CARD_OUT, SLAM, POP, slam_scale, pop_scale, fit_scale
-  frame-exact text . TextSlot, LiveText, TextTrack, Hud (+ Hud.retire, Hud.tear), core_hud,
-                     glitch_at (the HUD glitch clock for any element)
+  frame-exact text . TextSlot, LiveText, TextTrack (enter/exit 'fade'), Hud (+ Hud.fade_out,
+                     Hud.retire), core_hud (pop_at= or fade_in=), glitch_at
   counter .......... CALC_LABEL (= CORES_LABEL 'CORES WORKING AT ONCE'), CORE_LABEL_1 (singular, for
                      the number 1), core_label(n), COUNTER_LINES (the three LIME lines, per beat)
-  tear-away ........ tear_at (pure clock), tear_offsets, Tear (any static mobject), tear_away (a
-                     whole handoff state: HUD + token), TEAR_* constants
+  fade-away ........ fade_at (pure clock), FadeAway (any static mobject), fade_away (a whole handoff
+                     state: HUD + token, together, at a constant value), FADE_AWAY_TIME / _EASE
+  tear-away (v2) ... LEGACY, unused by default: tear_at, tear_offsets, Tear, tear_away, Hud.tear,
+                     TEAR_* constants (script v3 replaced the record-scratch tear with fade_away)
   units/tokens ..... unit, token_glyph, unit_with_glyph, handoff_token (Token), token_fill,
                      token_stroke_color, token_rgbas
-  camera ........... expand_cam, EXPAND / Expand / expand_rig, CamRig, Collapse / COLLAPSE, drift
+  camera ........... expand_cam, expand_e, EXPAND / Expand / expand_rig, CamRig, Collapse / COLLAPSE,
+                     settle_scale, drift
   effects .......... ShockRing, entry_ring, RadialFlash, FrameFlash, add_behind, ink_stroke
-  scene helpers .... hold_floor, cut_times, drive, riser_to_cut / scratch_cut (audio across a cut)
+  scene helpers .... hold_floor, cut_times (+ cut_times_v2), drive, riser_to_cut / swell_cut (audio
+                     across a cut; scratch_cut is a deprecated alias of swell_cut)
   hook grid ........ HookGrid (cells + top layer: halo, hero), hook_state, HOOK_* (WORKER_SCALE 1.4,
                      HALO_*, TRAIL_*, IDLE #2E3445), b01_worker_idx, b09_worker_idx
   handoffs ......... handoff_state, enter, exit_to, BEAT_ENTRY, BEAT_EXIT, HANDOFF_NAMES,
@@ -39,27 +45,36 @@ Contents (details in each docstring):
 Script v2 contract (timeline.py; E0N = exit of b0N = entry of the next beat):
   b01 hook --E01 plain CYAN token, no HUD--> b03 CPU --E03 cpu token + '16'--> b04 GPU
   --E04 gpu token + '16,896'--> b06 data center --E06 cluster token + '1,689,600,000+'-->
-  b08 twist (tears E06 away) --E08 AMBER serial token + '10×'--> b09 ending --LOOP--> b01.
+  b08 twist (fades E06 out: fade_away) --E08 AMBER serial token + '10×'--> b09 ending --LOOP--> b01.
+
+Calm motion (script v3, reel/design/script_v3.json, user decision 2026-10-23): every level
+boundary is COLLAPSE 0.80 s (ease_in_out_sine) + SETTLE 0.15 s (ease_out_cubic, NO overshoot) +
+3 static frames, and every entry pull-back is EXPAND 0.90 s (ease_in_out_sine). These are the
+defaults of cut_times(), Collapse, Expand and expand_e(), so a beat that uses the helpers gets them.
+The boundary frames themselves (handoff_state: token geometry, HUD contents) are unchanged, so the
+seams stay bit-exact by construction. The v2 rhythm (0.40 s expo / 0.12 s back / 0.50 s expo) stays
+reachable as *_V2 and cut_times_v2() (b01's own push window). No camera shakes, RGB-split / glitch
+effects or text jitter (CALM_MOTION); flashes, light waves, shock rings and slams stay.
 
 Typical beat (b03-like):
 
     class B03Cpu(BeatScene):
         def beat(self):
             st = enter(self)                    # E01: the plain token, no HUD (pixel-exact frame 0)
-            hud = core_hud('1', scene=self, pop_at=0.10)          # the counter's first appearance
+            hud = core_hud('1', scene=self, fade_in=(0.30, 0.60))  # the counter's first appearance
             world = VGroup(...)                 # build at REST positions (cores = plain units)
-            exp = Expand(world, slot, 0.95, hero=hero, token='plain')   # 0.50 s, draws e=0 now
+            exp = Expand(world, slot, 0.95, hero=hero, token='plain')   # 0.90 s sine, draws e=0 now
             add_behind(self, world)             # content above dust, behind token/HUD
             entry_ring(self)                    # ring behind content, from frame 1
             self.remove(st.token)               # the hero now draws the token
             self.add(hud)
             tr = TextTrack(self); self.add(tr)  # text on/off schedule (frame exact)
             tr.on(kick('LEVEL 1/3 · ONE CPU'), 0.0, 9.45, exit='cut')   # 'in' at 0.0: invisible on frame 0
-            hud.slam(3.70, '16'); hud.label(3.70, core_label(16))       # HUD events are scheduled
-            hud.mult(3.70, COUNTER_LINES['B03Cpu'], hold=1.8)
+            hud.slam(4.25, '16'); hud.label(4.25, core_label(16))       # HUD events are scheduled
+            hud.mult(4.25, COUNTER_LINES['B03Cpu'], hold=1.8)
             self.cue('hit'); self.play(exp)
             ...                                 # your own updaters use self.now / sframe(self)
-            t_col, t_set, t_exit = cut_times(9.5)                # 0.40 s collapse, 0.12 s settle, 3 frames
+            t_col, t_set, t_exit = cut_times(9.5)   # (8.50, 9.30, 9.45): 0.80 s collapse, 0.15 s settle
             self.hold_until(t_col)
             col = COLLAPSE(package, world, 'cpu')                # captures the state on screen now
             drive(self, lambda now: col.render(now, t_col, t_set, t_exit)); self.add(col.glyph)
@@ -155,11 +170,22 @@ SERIAL_TOKEN_STROKE_COLOR = ManimColor("#FFD27A")
 SETTLE_FROM = 0.94                          # collapse lands at 0.94, settles to 1.0
 COLLAPSE_SIZE = TOKEN_SIZE * SETTLE_FROM    # 1.598
 
-# Cut rhythm (recommended defaults; each beat owns its own T_* constants, see cut_times()).
-COLLAPSE_TIME = 0.40                        # collapse (ease_in_out_expo)
-SETTLE_TIME = 0.12                          # settle 0.94 -> 1.0 (ease_out_back)
+# Cut rhythm, script v3 "calm motion" (recommended defaults; each beat owns its own T_* constants,
+# see cut_times()). The curves are COLLAPSE_EASE / SETTLE_EASE / EXPAND_EASE (defined with the
+# easings below). Only the motion INTO and OUT OF the boundary frames changes: handoff_state() and
+# the exit hold are untouched, so the seams stay bit-exact.
+COLLAPSE_TIME = 0.80                        # collapse (COLLAPSE_EASE = ease_in_out_sine)
+SETTLE_TIME = 0.15                          # settle 0.94 -> 1.0 (SETTLE_EASE = ease_out_cubic, no overshoot)
 EXIT_HOLD_FRAMES = 3                        # static canonical exit state (60-fps frames)
-EXPAND_TIME = 0.50                          # entry pull-back (ease_out_expo)
+EXPAND_TIME = 0.90                          # entry pull-back (EXPAND_EASE = ease_in_out_sine)
+FLIP_TIME = 0.80                            # b04's CPU -> GPU token card-flip (CALM_EASE)
+MOVE_TIME = 0.80                            # in-level camera moves / glides (push-in, pull-back, bar
+                                            # glide, launch): 0.80-0.90 s on CALM_EASE
+# The script v2 rhythm (punchy), kept reachable: b01 keeps its own push window on it
+# (cut_times_v2(5.0) -> land 4.833, settle 4.95), and nothing else should use it.
+COLLAPSE_TIME_V2 = 0.40                     # COLLAPSE_EASE_V2 = ease_in_out_expo
+SETTLE_TIME_V2 = 0.12                       # SETTLE_EASE_V2 = ease_out_back (overshoots)
+EXPAND_TIME_V2 = 0.50                       # EXPAND_EASE_V2 = ease_out_expo
 
 EPS = 1e-6                                  # tolerance for time comparisons
 
@@ -242,7 +268,9 @@ def ease_out_sine(t: float) -> float:
 
 
 def ease_in_out_sine(t: float) -> float:
-    return -(math.cos(math.pi * t) - 1) / 2
+    """The calm curve (script v3): (1 - cos(pi t)) / 2, exactly 0.0 at 0 and 1.0 at 1 (the same
+    values as the old -(cos - 1)/2 everywhere, minus its -0.0 at t = 0)."""
+    return (1 - math.cos(math.pi * t)) / 2
 
 
 def ease_in_quart(t: float) -> float:
@@ -274,7 +302,15 @@ def ease_out_quad_arr(x):
 
 
 def ease_in_out_sine_arr(x):
-    return -(np.cos(np.pi * np.asarray(x, float)) - 1.0) / 2.0
+    return (1.0 - np.cos(np.pi * np.asarray(x, float))) / 2.0
+
+
+# ---- the cut rhythm's curves (script v3 calm motion; see COLLAPSE_TIME / SETTLE_TIME / EXPAND_TIME)
+COLLAPSE_EASE = ease_in_out_sine            # v2: ease_in_out_expo (a rush in the middle)
+SETTLE_EASE = ease_out_cubic                # never above 1: no overshoot (v2: ease_out_back)
+EXPAND_EASE = ease_in_out_sine              # v2: ease_out_expo (a jump on the cut frame)
+CALM_EASE = ease_in_out_sine                # every other calm move: flip, push-in, glide, fades
+COLLAPSE_EASE_V2, SETTLE_EASE_V2, EXPAND_EASE_V2 = ease_in_out_expo, ease_out_back, ease_out_expo
 
 
 # ---- envelopes
@@ -322,18 +358,37 @@ def rgba(color, opacity: float = 1.0) -> np.ndarray:
     return np.array([*ManimColor(color).to_rgb(), opacity], dtype=float)
 
 
-def shake(t_since: float, amp: float = 0.06, dur: float = 0.20, seed: int = 0) -> np.ndarray:
+# ---- calm motion (script v3, user decision 2026-10-23): NO camera shakes, NO RGB-split / glitch
+# effects, NO text jitter. While CALM_MOTION is True, shake() returns zeros, jitter() returns 0.0
+# and glitch_at() (and so Hud.glitch()) returns (0.0, None, False), whatever the caller passes, so
+# a beat that still calls them renders calm. calm=False on ONE call restores the v2 effect there
+# (e.g. if the user wants b01's locked impact shake back). Flashes, light waves, shock rings and
+# text/counter slams are NOT affected (RadialFlash, FrameFlash, ShockRing, SLAM/POP, Hud.slam).
+CALM_MOTION = True
+
+
+def _calm(calm: bool | None) -> bool:
+    return CALM_MOTION if calm is None else bool(calm)
+
+
+def shake(t_since: float, amp: float = 0.06, dur: float = 0.20, seed: int = 0,
+          calm: bool | None = None) -> np.ndarray:
     """Seeded impact-shake offset (3-vector). Amplitude decays amp->0 over dur;
-    the direction is re-drawn every 60 fps story frame (so 30/60 fps agree)."""
-    if t_since < -EPS or t_since >= dur - EPS:
+    the direction is re-drawn every 60 fps story frame (so 30/60 fps agree).
+    Script v3: zeros while CALM_MOTION (no camera shakes); calm=False for the v2 shake."""
+    if _calm(calm) or t_since < -EPS or t_since >= dur - EPS:
         return np.zeros(3)
     f = story_frame(max(t_since, 0.0))
     d = np.random.default_rng((seed, f)).uniform(-1, 1, 2) * amp * (1 - max(t_since, 0) / dur)
     return np.array([d[0], d[1], 0.0])
 
 
-def jitter(f: int, amp: float, seed: int = 0) -> float:
-    """Seeded uniform(-amp, amp) for story frame f (e.g. headline x-jitter)."""
+def jitter(f: int, amp: float, seed: int = 0, calm: bool | None = None) -> float:
+    """Seeded uniform(-amp, amp) for story frame f (e.g. headline x-jitter).
+    Script v3: 0.0 while CALM_MOTION (no text jitter, no flicker); calm=False for the v2 value
+    (or use np.random.default_rng((seed, f)) yourself for a deliberate, non-jitter random)."""
+    if _calm(calm):
+        return 0.0
     return float(np.random.default_rng((seed, int(f))).uniform(-amp, amp))
 
 
@@ -1061,8 +1116,11 @@ class TextTrack(VGroup):
         tr.on(card([...])[0], 1.50, 2.60, enter='slam')              # SLAM in, CARD_OUT
         tr.on(head, 0.0, 2.35, exit='cut', alpha=lambda now: 1 if now < 1 else 0.4)
 
-    enter: 'in' (CARD_IN 0.25 s), 'slam' (1.3->1 0.20 s), 'pop' (1.08->1 0.20 s), 'cut'.
-    exit : 'out' (CARD_OUT 0.20 s, starting at t_out), 'cut' (gone at t_out), None = stays.
+    enter: 'in' (CARD_IN 0.25 s), 'slam' (1.3->1 0.20 s), 'pop' (1.08->1 0.20 s), 'cut',
+           'fade' (opacity only, 0 -> 1 over 0.30 s on CALM_EASE: no shift, no scale).
+    exit : 'out' (CARD_OUT 0.20 s, starting at t_out), 'cut' (gone at t_out), None = stays,
+           'fade' (opacity only, 1 -> 0 over 0.30 s from t_out on CALM_EASE; b01's readout).
+    Cards still POP / SLAM in and hard-cut out (script v3); 'fade' is for labels and readouts.
     scale: per-call start scale of 'slam' / 'pop' (default 1.3 / 1.08); cap=True limits it with
     fit_scale() so a full-width line never overshoots the frame (6.9 wide -> 1.17).
     alpha(now) multiplies opacity, shift(now) adds an offset (e.g. jitter). Items are
@@ -1071,8 +1129,8 @@ class TextTrack(VGroup):
     kicker can start ON the match-cut without breaking the exact entry frame; 'pop'/'slam'/'cut'
     are visible at once, so give them t_in >= 1/60 (e.g. 0.05)."""
 
-    ENTER_DUR = {"in": 0.25, "slam": 0.20, "pop": 0.20, "cut": 0.0}
-    EXIT_DUR = {"out": 0.20, "cut": 0.0, None: 0.0}
+    ENTER_DUR = {"in": 0.25, "slam": 0.20, "pop": 0.20, "cut": 0.0, "fade": 0.30}
+    EXIT_DUR = {"out": 0.20, "cut": 0.0, None: 0.0, "fade": 0.30}
 
     def __init__(self, scene=None):
         super().__init__()
@@ -1126,10 +1184,14 @@ class TextTrack(VGroup):
                 s = lerp(it.s0, 1.0, ease_out_back(p))
             elif it.enter == "pop":
                 s = lerp(it.s0, 1.0, ease_out_expo(p))
+            elif it.enter == "fade":
+                a = CALM_EASE(p)
         if it.t_out is not None and it.exit == "out" and now >= it.t_out - EPS:
             e = smooth(clip01((now - it.t_out) / it.exit_dur))
             a *= 1 - e
             sh = sh + UP * 0.15 * e
+        elif it.t_out is not None and it.exit == "fade" and now >= it.t_out - EPS:
+            a *= 1 - CALM_EASE(clip01((now - it.t_out) / it.exit_dur) if it.exit_dur > 0 else 1.0)
         if it.alpha_fn is not None:
             a *= it.alpha_fn(now)
         if it.shift_fn is not None:
@@ -1159,25 +1221,51 @@ class TextTrack(VGroup):
 
 
 def glitch_at(now: float, t0: float, t1: float, amp: float = 0.06, seed: int = 8,
-              split_frames: Sequence[int] = (), tint=AMBER):
-    """The HUD's glitch, as a pure function for ANY element (b08 cracks its opening question
-    with it): (dx, tint_or_None, split) at local time now for a glitch over
+              split_frames: Sequence[int] = (), tint=AMBER, calm: bool | None = None):
+    """The HUD's glitch, as a pure function for ANY element (b08 cracked its opening question
+    with it in v2): (dx, tint_or_None, split) at local time now for a glitch over
     (t0, t1). 30 Hz clock g = story_frame(now - t0) // 2 (same pattern at 30 and 60 fps):
     x-jitter jitter(2g, amp, seed) per step, `tint` on odd steps, split=True on the steps that
     contain a listed story frame (draw CYAN/MAGENTA copies at -/+0.05 then); nothing on step 0 or
-    outside (t0, t1). Hud.glitch() renders exactly this."""
+    outside (t0, t1). Hud.glitch() renders exactly this.
+    Script v3: NEUTRAL while CALM_MOTION -> always (0.0, None, False) (no glitch, no RGB split,
+    no tint); calm=False for the v2 glitch."""
+    if _calm(calm):
+        return 0.0, None, False
     if t0 + EPS < now < t1 - EPS:
         g = story_frame(now - t0) // 2
         if g <= 0:
             return 0.0, None, False
         f = 2 * g
-        return (jitter(f, amp, seed), (tint if (tint is not None and g % 2 == 1) else None),
+        return (jitter(f, amp, seed, calm=False), (tint if (tint is not None and g % 2 == 1) else None),
                 (f in split_frames or f + 1 in split_frames))
     return 0.0, None, False
 
 
-# ---- the tear-away: an element is ripped out to black on the glitch clock (b08 tears the
-# incoming E06 counter + cluster token with it, so the counter is never seen dropping)
+# ---- the fade-away (script v3; replaces the v2 record-scratch tear-away): an element fades to
+# black at a CONSTANT value, opacity only (no chunks, no RGB split, no jitter, no AMBER tint).
+# b08 fades the incoming E06 counter + cluster token out together with it (fade_away), so the
+# counter is never seen dropping.
+FADE_AWAY_TIME = 0.80                       # b08: 0.00-0.80
+FADE_AWAY_EASE = ease_in_out_sine
+
+
+def fade_at(now: float, t0: float = 0.0, t1: float = FADE_AWAY_TIME, ease=None) -> float:
+    """The fade-away clock, a pure function: the opacity factor at local time now of an element
+    faded out over [t0, t1]: exactly 1.0 up to t0 (a fade starting at 0.0 keeps the beat's frame 0
+    bit-exact), 1 - ease((now - t0) / (t1 - t0)) inside (ease: FADE_AWAY_EASE, ease_in_out_sine),
+    exactly 0.0 from t1. Hud.fade_out() and FadeAway render exactly this, so a HUD and a token
+    faded over the same window go down together."""
+    if now <= t0 + EPS:
+        return 1.0
+    if now >= t1 - EPS:
+        return 0.0
+    return 1.0 - (ease or FADE_AWAY_EASE)(clip01((now - t0) / (t1 - t0)))
+
+
+# ---- the tear-away (LEGACY, script v2; unused by default since script v3 -> fade_away): an
+# element is ripped out to black on the glitch clock (b08 v2 tore the incoming E06 counter +
+# cluster token with it). Kept intact (it ignores CALM_MOTION) so the v2 look stays reachable.
 TEAR_TIME = 0.30                            # default tear window (b08: 0.00-0.30)
 TEAR_AMP = 0.10                             # whole-element x-jitter (grows x0.6 -> x1.4)
 TEAR_CHUNK = 0.30                           # max slide of a torn chunk/band at the end of the tear
@@ -1217,7 +1305,7 @@ def tear_at(now: float, t0: float = 0.0, t1: float = TEAR_TIME, amp: float = TEA
         if r[1] < 0.22:
             alpha *= 0.2
     f = 2 * g
-    dx = jitter(f, amp * (0.6 + 0.8 * p), seed)
+    dx = jitter(f, amp * (0.6 + 0.8 * p), seed, calm=False)     # legacy: the v2 tear, unchanged
     return (alpha, dx, (tint if (tint is not None and g % 2 == 1) else None),
             (f in split_frames or f + 1 in split_frames), g, p)
 
@@ -1297,12 +1385,12 @@ class Hud(VGroup):
     of the beat's self.now: you schedule events (local beat seconds) once, it renders the right
     frame every frame.
 
-        hud = core_hud('1', scene=self, pop_at=0.10)           # b03: E01 has no HUD; or enter(self).hud
-        hud.slam(3.70, '16'); hud.label(3.70, core_label(16))  # hard cut + SLAM; plural from here
-        hud.mult(3.70, '16-CORE RYZEN 9 9950X', hold=1.8)      # LIME line in the label slot
-        hud.roll(2.95, 3.45, 16, 16896)                        # log10-space comma roll
-        hud.slam(3.45, '16,896')
-        hud.tear(0.0, 0.30)                                    # b08: rip E06's counter out to black
+        hud = core_hud('1', scene=self, fade_in=(0.30, 0.60))  # b03: E01 has no HUD; or enter(self).hud
+        hud.slam(4.25, '16'); hud.label(4.25, core_label(16))  # hard cut + SLAM; plural from here
+        hud.mult(4.25, '16-CORE RYZEN 9 9950X', hold=1.8)      # LIME line in the label slot
+        hud.roll(1.50, 2.00, 16, 16896)                        # log10-space comma roll
+        hud.slam(2.00, '16,896')
+        hud.fade_out(0.0, 0.80)                                # b08: fade E06's counter out (constant value)
 
     Number events (the latest one with t <= now wins; before the first: the initial number):
       cut(t, s, color)                    hard cut
@@ -1341,10 +1429,19 @@ class Hud(VGroup):
                                           new label (crossfade if fade > 0; sequenced = out, then in)
       fade_to(t0, t1, o0, o1, shift0, shift1, ease)    whole-HUD opacity/offset envelope
       hide_at(t) / show_at(t)             instant envelope 0 / 1
+      fade_out(t0, t1=t0+0.80, ease=ease_in_out_sine)
+                                          script v3 FADE-AWAY (the fade_at clock): opacity only,
+                                          current envelope -> 0, no drift, the number and label
+                                          never change while it is seen; from t1 the HUD draws
+                                          NOTHING until a later show_at() / fade_to(). b08: the
+                                          E06 counter (fade_away() does it with the token), then
+                                          hud.cut(1.95, '1.0×'); hud.label(1.95, 'SPEEDUP');
+                                          hud.fade_to(1.95, 2.25, 0, 1, ease=CALM_EASE). b09: the
+                                          10× meter, hud.fade_out(0.0, 0.30)
       retire(t, dur=0.30, shift=DOWN*0.25, ease=ease_in_cubic)
                                           the HUD leaves for good (current envelope -> 0, drifting)
       tear(t0=0.0, t1=0.30, amp=0.10, seed=8, split_frames=TEAR_SPLIT, tint=AMBER, chunk=0.30)
-                                          TEAR-AWAY (tear_at clock): untouched through step 0 (so
+                                          LEGACY (v2; use fade_out). TEAR-AWAY (tear_at clock): untouched through step 0 (so
                                           frame 0 stays the exact entry state), then the number and
                                           label crack into sliding chunks (tear_offsets), jitter,
                                           flicker AMBER, split CYAN/MAGENTA and flicker out; from t1
@@ -1353,7 +1450,9 @@ class Hud(VGroup):
                                           never sees it drop. Reuse the same Hud afterwards, e.g.
                                           b08: hud.tear(0, 0.30); hud.cut(1.90, '1.0×');
                                           hud.label(1.90, 'SPEEDUP'); hud.show_at(1.90)
-      glitch(t0, t1, amp=0.06, tint=AMBER, split_frames=(), seed=8)  x-jitter + tint + RGB split
+      glitch(t0, t1, amp=0.06, tint=AMBER, split_frames=(), seed=8, calm=None)
+                                          NEUTRAL in script v3 (CALM_MOTION: draws nothing extra;
+                                          calm=False for the v2 effect). x-jitter + tint + RGB split
                                           on a 30 Hz clock (g = story_frame(now - t0) // 2): jitter
                                           per step, tint on odd steps, RGB-split copies on the steps
                                           containing a listed story frame; nothing on step 0. Same
@@ -1547,13 +1646,28 @@ class Hud(VGroup):
         return self.fade_to(t, t + dur, o0, 0.0, sh0, sh0 + np.asarray(shift, float),
                             ease or ease_in_cubic)
 
-    def glitch(self, t0, t1, amp=0.06, tint=AMBER, split_frames=(), seed=8):
-        self._ins(self._gl, (t0, t1, amp, tint, tuple(split_frames), seed))
+    def fade_out(self, t0, t1=None, ease=None):
+        """Script v3 fade-away of the whole HUD over [t0, t1] (default t0 + FADE_AWAY_TIME 0.80) on
+        the fade_at clock: opacity only (whatever the envelope is at t0 -> 0 on ease, default
+        FADE_AWAY_EASE ease_in_out_sine), no drift, no jitter, no tint: the number and label hold
+        their value while they are seen. From t1 the HUD draws NOTHING until a later show_at() /
+        fade_to() (b08: the SPEEDUP meter). At t0 it is exactly the state before (a fade at 0.0
+        keeps frame 0 bit-exact). Schedule earlier envelope events BEFORE calling it (it reads the
+        envelope at t0), and no number / label change inside [t0, t1)."""
+        t1 = t0 + FADE_AWAY_TIME if t1 is None else t1
+        o0, sh0 = self._env_at(t0)
+        sh0 = np.zeros(3) if sh0 is None else np.asarray(sh0, float)
+        return self.fade_to(t0, t1, o0, 0.0, sh0, sh0, ease or FADE_AWAY_EASE)
+
+    def glitch(self, t0, t1, amp=0.06, tint=AMBER, split_frames=(), seed=8, calm=None):
+        """Script v3: neutral while CALM_MOTION (see glitch_at); calm=False for the v2 glitch."""
+        self._ins(self._gl, (t0, t1, amp, tint, tuple(split_frames), seed, calm))
         return self
 
     def tear(self, t0=0.0, t1=TEAR_TIME, amp=TEAR_AMP, seed=8, split_frames=TEAR_SPLIT,
              tint=AMBER, chunk=TEAR_CHUNK):
-        """Tear the whole HUD out to black over (t0, t1) on the tear_at clock (see the class
+        """LEGACY (script v2; script v3 uses fade_out / fade_away, which fade at a constant value).
+        Tear the whole HUD out to black over (t0, t1) on the tear_at clock (see the class
         docstring). The envelope is held at its t0 value through the tear and is 0 from t1 (a
         later show_at()/fade_to() brings the HUD back, e.g. as b08's SPEEDUP meter). Schedule
         earlier envelope events BEFORE calling tear: it reads the envelope at t0."""
@@ -1684,9 +1798,9 @@ class Hud(VGroup):
         return cur, (prev if p < 1.0 else None), p, seq, drift
 
     def _glitch_at(self, now: float):
-        for t0, t1, amp, tint, split, seed in self._gl:
+        for t0, t1, amp, tint, split, seed, calm in self._gl:
             if t0 + EPS < now < t1 - EPS:               # 30 Hz glitch clock (fps independent)
-                return glitch_at(now, t0, t1, amp, seed, split, tint)
+                return glitch_at(now, t0, t1, amp, seed, split, tint, calm)
         return 0.0, None, False
 
     # ---- render
@@ -1831,14 +1945,23 @@ class Hud(VGroup):
             self.post(self, now)
 
 
-def core_hud(number: str = "1", scene=None, pop_at: float | None = None) -> Hud:
+def core_hud(number: str = "1", scene=None, pop_at: float | None = None,
+             fade_in: tuple[float, float] | None = None) -> Hud:
     """The CORES WORKING AT ONCE counter for a beat whose entry state has no HUD (b03 opens on
     E01, the plain token): Hud(number, core_label(number)) (INK, label INK 0.70: exactly the
     handoff HUD style). pop_at: hidden (zero pixels, so frame 0 stays the exact entry state)
-    until pop_at, then a hard cut on with a POP (1.08 -> 1, 0.20 s). Add it to the scene and
-    schedule the rest on it (b03: slam(3.70, '16') + label(3.70, core_label(16)) + the LIME
-    line). Not bound unless scene is given."""
+    until pop_at, then a hard cut on with a POP (1.08 -> 1, 0.20 s). fade_in=(t0, t1) (script
+    v3, b03: (0.30, 0.60)): hidden until t0, then fades in over [t0, t1] (opacity only, CALM_EASE,
+    no POP), exactly the rest HUD from t1. Pass one of the two (neither: visible from frame 0).
+    Add it to the scene and schedule the rest on it (b03: slam(4.25, '16') + label(4.25,
+    core_label(16)) + the LIME line). Not bound unless scene is given."""
+    if pop_at is not None and fade_in is not None:
+        raise ValueError("core_hud: pass pop_at OR fade_in, not both")
     h = Hud(number, core_label(number))
+    if fade_in is not None:
+        t0, t1 = fade_in
+        h.hide_at(0.0)
+        h.fade_to(t0, t1, 0.0, 1.0, ease=CALM_EASE)
     if pop_at is not None:
         h.hide_at(0.0)
         h.show_at(pop_at)
@@ -1865,8 +1988,77 @@ def _rest_style(dst: VMobject, r, alpha: float = 1.0, tint=None) -> None:
         dst.stroke_rgbas[:, :3] = rgb
 
 
+class FadeAway(VGroup):
+    """Script v3 fade-away of any STATIC mobject (b08 fades E06's cluster token with it) on the
+    fade_at clock, a pure function of scene.now: the exact rest state up to t0, then opacity only
+    (fill, stroke and background stroke x fade_at; geometry and colour never change: no chunks,
+    no RGB split, no jitter, no tint), and from t1 nothing at all (zero points).
+
+        st = enter(self)
+        fade = FadeAway(st.token, 0.0, 0.80, scene=self)   # takes st.token's place (same draw order)
+
+    Same scene contract as Tear: the FadeAway contains the mobject (do not add it again); with
+    scene= it replaces the mobject in the scene (Scene.replace, z-order kept) and binds its
+    updater; otherwise add it yourself and call fade.bind(scene) (or fade.render_at(now) from your
+    own driver). Call it between plays (it restructures the scene). alpha_at(now) -> the factor."""
+
+    def __init__(self, mob: Mobject, t0: float = 0.0, t1: float = FADE_AWAY_TIME, ease=None,
+                 scene=None):
+        super().__init__()
+        self.mob, self.t0, self.t1, self.ease = mob, t0, t1, ease or FADE_AWAY_EASE
+        self.mems = mob.family_members_with_points()
+        self.rest = [_Rest(m) for m in self.mems]
+        self._key = None
+        self.add(mob)
+        if scene is not None and mob in scene.mobjects:
+            scene.replace(mob, self)
+        elif scene is not None:
+            scene.add(self)
+        if scene is not None:
+            self.bind(scene)
+
+    def bind(self, scene) -> "FadeAway":
+        self.add_updater(lambda m, dt: m.render_at(scene.now))
+        return self
+
+    def alpha_at(self, now: float) -> float:
+        return fade_at(now, self.t0, self.t1, self.ease)
+
+    def render_at(self, now: float) -> None:
+        a = self.alpha_at(now)
+        key = round(a, 9)
+        if key == self._key:
+            return
+        self._key = key
+        for r in self.rest:
+            if a <= 0.0:                                # gone
+                r.m.points = EMPTY.copy()
+            else:                                       # a == 1.0: the exact rest state
+                r.m.points = r.p.copy()
+                _rest_style(r.m, r, a)
+
+
+def fade_away(scene, st: "Handoff", t0: float = 0.0, t1: float = FADE_AWAY_TIME,
+              ease=None) -> "FadeAway | None":
+    """Script v3 (replaces tear_away): fade a whole entry state out to black TOGETHER, at a
+    constant value (b08's opening on E06: the cluster token and the 1,689,600,000+ / CORES WORKING
+    AT ONCE HUD, 0.00-0.80 on ease_in_out_sine, so the count is never seen dropping):
+    st.hud.fade_out(t0, t1, ease) and a FadeAway on st.token (replacing it in the scene). Both
+    follow the same fade_at clock; frame 0 (t0 = 0.0) stays the exact entry state; from t1 they
+    draw nothing. Bring the HUD back later as a new meter (b08: hud.cut(1.95, '1.0×');
+    hud.label(1.95, 'SPEEDUP'); hud.fade_to(1.95, 2.25, 0.0, 1.0, ease=CALM_EASE)) and never
+    change its number inside [t0, t1). Pair it with swell_cut() for the audio. Returns the token's
+    FadeAway (None if the state has no token). Call it right after enter(), between plays."""
+    if st.hud is not None:
+        st.hud.fade_out(t0, t1, ease)
+    if st.token is None:
+        return None
+    return FadeAway(st.token, t0, t1, ease, scene=scene)
+
+
 class Tear(VGroup):
-    """Tear-away of any STATIC mobject (b08 tears E06's cluster token with it) on the tear_at
+    """LEGACY (script v2; script v3 uses FadeAway). Tear-away of any STATIC mobject (b08 v2 tore
+    E06's cluster token with it) on the tear_at
     clock, a pure function of scene.now: untouched through step 0, then 1-3 horizontal cuts split
     it into bands that slide sideways (tear_offsets(..., along='y') on each member's centre y),
     the whole thing x-jitters, flickers AMBER on odd steps, draws CYAN/MAGENTA split copies
@@ -1943,7 +2135,8 @@ class Tear(VGroup):
 
 
 def tear_away(scene, st: "Handoff", t0: float = 0.0, t1: float = TEAR_TIME, **kw) -> "Tear | None":
-    """Tear a whole entry state out to black (b08's opening on E06): st.hud.tear(t0, t1, **kw)
+    """LEGACY (script v2; script v3 uses fade_away: no record-scratch tear, user decision).
+    Tear a whole entry state out to black (b08 v2's opening on E06): st.hud.tear(t0, t1, **kw)
     and a Tear on st.token (replacing it in the scene, seed 11). Returns the token's Tear (None
     if the state has no token). kw: amp, split_frames, tint, chunk (seed: HUD 8, token 11).
     Call it right after enter(), between plays."""
@@ -2249,7 +2442,8 @@ def EXPAND(world: Mobject, slot, u: float, e: float, hero: Mobject | None = None
     ink=1.0 if flash_frames(now, 1/60, 2) else 0.0 -> story frames 1-2, never frame 0).
     Returns the rig (also expand_rig(world)): .members, .rest[i] (rest points/style),
     .index {id(member): i}, .indices_of(mob).
-    Usable in updaters: world.add_updater(lambda m, dt: EXPAND(m, slot, u, ease_out_expo(...)))."""
+    Usable in updaters: world.add_updater(lambda m, dt: EXPAND(m, slot, u, expand_e(now))):
+    expand_e() is the script v3 progress (EXPAND_TIME 0.90 s on ease_in_out_sine)."""
     rig = getattr(world, "_motif_expand", None)
     if rig is None:
         rig = _ExpandRig(world, hero, token, fades, fade)
@@ -2266,10 +2460,29 @@ def expand_rig(world: Mobject) -> "_ExpandRig":
     return rig
 
 
-def Expand(world: Mobject, slot, u: float, run_time: float = EXPAND_TIME, rate_func=ease_out_expo, **kw) -> Drive:
-    """play()-able EXPAND (default EXPAND_TIME 0.50 s, ease_out_expo). kw -> EXPAND (hero, token, fades...)."""
+def expand_e(now: float, t0: float = 0.0, dur: float = EXPAND_TIME, ease=None) -> float:
+    """The EASED EXPAND progress at local time `now` for a pull-back that starts at t0 (script v3:
+    EXPAND_TIME 0.90 s on EXPAND_EASE ease_in_out_sine; v2 was 0.50 s ease_out_expo, which jumped
+    on the cut frame): ease(ramp(now, t0, t0 + dur)), exactly 0 up to t0 and exactly 1 from
+    t0 + dur. EXPAND(world, slot, u, expand_e(now), ...)."""
+    return (ease or EXPAND_EASE)(ramp(now, t0, t0 + dur))
+
+
+def Expand(world: Mobject, slot, u: float, run_time: float = EXPAND_TIME, rate_func=None, **kw) -> Drive:
+    """play()-able EXPAND (default EXPAND_TIME 0.90 s on EXPAND_EASE ease_in_out_sine; script v2:
+    run_time=EXPAND_TIME_V2, rate_func=EXPAND_EASE_V2). kw -> EXPAND (hero, token, fades...)."""
     EXPAND(world, slot, u, 0.0, **kw)       # capture rest + draw e=0 now
-    return Drive(world, lambda e: EXPAND(world, slot, u, e, **kw), run_time=run_time, rate_func=rate_func)
+    return Drive(world, lambda e: EXPAND(world, slot, u, e, **kw), run_time=run_time,
+                 rate_func=rate_func or EXPAND_EASE)
+
+
+def settle_scale(p: float, ease=None) -> float:
+    """The SETTLE's scale factor relative to the collapsed token (0.94) at LINEAR progress p:
+    lerp(SETTLE_FROM, 1.0, ease(p)) / SETTLE_FROM, 1.0 at p <= 0, exactly 1/0.94 at p >= 1 (the
+    token at its full 1.0). ease defaults to SETTLE_EASE (ease_out_cubic: it never passes 1/0.94,
+    i.e. NO overshoot; v2's ease_out_back overshot to ~1.006). Collapse.settle() uses it; b01's
+    own push window multiplies its scale by it."""
+    return lerp(SETTLE_FROM, 1.0, (ease or SETTLE_EASE)(clip01(p))) / SETTLE_FROM
 
 
 class Collapse:
@@ -2278,26 +2491,34 @@ class Collapse:
         p -> lerp(C_out, AC, e) + s*(p - C_out),  s = (COLLAPSE_SIZE / max(w, h))^e
     (strokes scale by s too) and fade 1 -> 0 over e in [0.45, 0.80]; the token glyph
     (self.glyph, scale 0.94) fades in over e in [0.55, 1.0]. Then SETTLE scales outline +
-    glyph 0.94 -> 1.00 about AC (SETTLE_TIME 0.12 s, ease_out_back).
+    glyph 0.94 -> 1.00 about AC (settle_scale(): SETTLE_TIME 0.15 s, ease_out_cubic, no overshoot).
 
-        t_col, t_set, t_exit = cut_times(beat_end)    # 0.40 s collapse, 0.12 s settle, 3 frames
+        t_col, t_set, t_exit = cut_times(beat_end)    # 0.80 s collapse, 0.15 s settle, 3 frames
         c = COLLAPSE(frame, contents, 'core')         # captures the state on screen now
         self.add(c.glyph)
         drive(self, lambda now: c.render(now, t_col, t_set, t_exit))   # or call it in your _draw
         hold_floor(self, t_exit)
         exit_to(self)                                 # swap in the canonical exit state
 
-    Play-able: self.play(c.anim(COLLAPSE_TIME)); self.play(c.settle_anim()).
-    Updater use: self.add(c.glyph) once, then c.render(now, ...) or c.at(ease) / c.settle(p).
+    Curves (script v3): ease = COLLAPSE_EASE (ease_in_out_sine) for the collapse and settle_ease
+    = SETTLE_EASE (ease_out_cubic) for the settle, the defaults of render() / anim() / settle();
+    pass ease= / settle_ease= to the constructor (or to one render() call) to change them
+    (v2: COLLAPSE_EASE_V2 / SETTLE_EASE_V2). Content a beat draws ITSELF in step with the
+    collapse (b06's hall) must use the same curve: e = c.e_at(now, t_col, t_set), alpha =
+    c.contents_alpha(e), scale = c.s1 ** e.
+    Play-able: self.play(c.anim()); self.play(c.settle_anim()).
+    Updater use: self.add(c.glyph) once, then c.render(now, ...) or c.at(eased e) / c.settle(p).
     outline must be ONE VMobject (e.g. the frame RoundedRectangle); contents any Mobject
     (or None)."""
 
     def __init__(self, outline: VMobject, contents: Mobject | None, kind: str = "plain",
                  color=CYAN, contents_fade=(0.45, 0.80), glyph_fade=(0.55, 1.0),
-                 scale_strokes: bool = True):
+                 scale_strokes: bool = True, ease=None, settle_ease=None):
         self.kind, self.color = kind, color
         self.outline, self.contents = outline, contents
         self.contents_fade, self.glyph_fade, self.scale_strokes = contents_fade, glyph_fade, scale_strokes
+        self.ease = ease or COLLAPSE_EASE
+        self.settle_ease = settle_ease or SETTLE_EASE
         tok = handoff_token(kind, color)
         target = tok.base.copy().scale(SETTLE_FROM, about_point=AC)
         src = outline.copy()
@@ -2325,7 +2546,7 @@ class Collapse:
         o.stroke_width = lerp(r0.sw, r1.sw, e)
         c = lerp(self.C, AC, e)
         s = self.s1 ** e
-        a = 1.0 - ramp(e, *self.contents_fade)
+        a = self.contents_alpha(e)
         for r in self._c:
             r.m.points = (r.p - self.C) * s + c
             _set_alpha(r.m, r, a)
@@ -2335,28 +2556,43 @@ class Collapse:
             r.m.points = r.p.copy()
             _set_alpha(r.m, r, ga)
 
-    def settle(self, p: float) -> None:
-        """SETTLE at linear progress p in [0, 1] (scale 0.94 -> 1.0, ease_out_back, about AC)."""
+    def settle(self, p: float, ease=None) -> None:
+        """SETTLE at linear progress p in [0, 1] (scale 0.94 -> 1.0 about AC on settle_scale();
+        ease default self.settle_ease = SETTLE_EASE, ease_out_cubic: no overshoot)."""
         if self._e < 1.0:
             self.at(1.0)
-        s = lerp(SETTLE_FROM, 1.0, ease_out_back(clip01(p))) / SETTLE_FROM
+        s = settle_scale(p, ease or self.settle_ease)
         self.outline.points = (self._t.p - AC) * s + AC
         for r in self._g:
             r.m.points = (r.p - AC) * s + AC
 
-    def render(self, now: float, t0: float, t1: float, t_end: float, ease=ease_in_out_expo) -> None:
-        """The whole cut as a pure function of now: collapse over [t0, t1] (eased), then settle
-        over [t1, t_end] (the duplicated 'if self.collapse is not None' branch of every _draw)."""
+    def e_at(self, now: float, t0: float, t1: float, ease=None) -> float:
+        """The eased collapse progress at now for a collapse over [t0, t1] (ease default
+        self.ease = COLLAPSE_EASE): what render() feeds to at(). Exactly 0 at t0, 1 from t1."""
+        return (ease or self.ease)(ramp(now, t0, t1))
+
+    def contents_alpha(self, e: float) -> float:
+        """Opacity of the contents at eased progress e (1 -> 0 over contents_fade)."""
+        return 1.0 - ramp(e, *self.contents_fade)
+
+    def render(self, now: float, t0: float, t1: float, t_end: float, ease=None,
+               settle_ease=None) -> None:
+        """The whole cut as a pure function of now: collapse over [t0, t1] (eased; default
+        self.ease = COLLAPSE_EASE, ease_in_out_sine), then settle over [t1, t_end] (default
+        self.settle_ease = SETTLE_EASE, ease_out_cubic) (the duplicated 'if self.collapse is not
+        None' branch of every _draw)."""
         if now < t1 - EPS:
-            self.at(ease(ramp(now, t0, t1)))
+            self.at(self.e_at(now, t0, t1, ease))
         else:
-            self.settle(ramp(now, t1, t_end))
+            self.settle(ramp(now, t1, t_end), settle_ease)
 
-    def anim(self, run_time: float = COLLAPSE_TIME, rate_func=ease_in_out_expo) -> Drive:
-        return Drive(self.glyph, self.at, run_time=run_time, rate_func=rate_func)
+    def anim(self, run_time: float = COLLAPSE_TIME, rate_func=None) -> Drive:
+        """play()-able collapse (default COLLAPSE_TIME 0.80 s on self.ease)."""
+        return Drive(self.glyph, self.at, run_time=run_time, rate_func=rate_func or self.ease)
 
-    def settle_anim(self, run_time: float = SETTLE_TIME) -> Drive:
-        return Drive(self.glyph, self.settle, run_time=run_time, rate_func=linear)
+    def settle_anim(self, run_time: float = SETTLE_TIME, ease=None) -> Drive:
+        """play()-able settle (default SETTLE_TIME 0.15 s on self.settle_ease)."""
+        return Drive(self.glyph, lambda p: self.settle(p, ease), run_time=run_time, rate_func=linear)
 
     def token(self) -> Token:
         """A fresh canonical handoff_token(kind, color) (what the settled state equals)."""
@@ -2547,20 +2783,42 @@ def cut_times(t_end: float, collapse: float = COLLAPSE_TIME, settle: float = SET
     """(t_collapse, t_settle, t_exit) on the 60-fps grid for a beat that ends at t_end: the
     collapse runs t_collapse -> t_settle, the settle t_settle -> t_exit, and the canonical exit
     state holds the last `hold_frames` 60-fps frames (exit_to at t_exit, via hold_floor).
-    cut_times(5.0) -> (4.433, 4.833, 4.95)."""
+    Script v3 defaults (0.80 s collapse, 0.15 s settle): cut_times(9.5) -> (8.50, 9.30, 9.45),
+    cut_times(12.0) -> (11.00, 11.80, 11.95), cut_times(12.5) -> (11.50, 12.30, 12.45). t_exit (and
+    so the boundary frame) is the same as in v2; only the collapse starts earlier and runs longer.
+    cut_times_v2() keeps the v2 rhythm."""
     f_exit = int(round(t_end * 60)) - hold_frames
     f_set = f_exit - int(round(settle * 60))
     f_col = f_set - int(round(collapse * 60))
     return f_col / 60, f_set / 60, f_exit / 60
 
 
-# ---- audio across a cut: a riser that never resolves, cut dead by the next beat's scratch
-def riser_to_cut(scene, t0: float | None = None, gain: float = 1.0,
-                 note: str = "climbs into the cut, never resolves") -> float:
+def cut_times_v2(t_end: float, hold_frames: int = EXIT_HOLD_FRAMES) -> tuple[float, float, float]:
+    """cut_times() on the script v2 rhythm (COLLAPSE_TIME_V2 0.40, SETTLE_TIME_V2 0.12):
+    cut_times_v2(5.0) -> (4.433, 4.833, 4.95), b01's own push window (land f290, settled f297).
+    Only b01 should use it (script v3: 'b01 keeps its own T_* constants')."""
+    return cut_times(t_end, COLLAPSE_TIME_V2, SETTLE_TIME_V2, hold_frames)
+
+
+# ---- audio across a cut (script v3): a riser CRESTS on the seam and a soft swell carries it over
+# the cut and lets it decay with the 0.80 s fade (no record scratch, no glitch, no bed cut-out).
+# Measured with audio/synth.py (dry, 20 ms RMS): riser x0.6 alone -18.5 dB -> silence on the seam
+# sample (a dead stop); with swell_cut()'s whoosh -18.5 -> -19.8 dB across the seam, then a smooth
+# decay (-22 at +0.2 s, -28 at +0.4 s, -39 at +0.6 s, silent by +0.78 s).
+RISER_CREST_GAIN = 0.6                      # riser_to_cut's default gain (v2: 1.0)
+SWELL_TIME = FADE_AWAY_TIME                 # swell_cut: half-length of the whoosh (= the fade, 0.80)
+SWELL_GAIN = 0.8                            # swell_cut's whoosh gain
+
+
+def riser_to_cut(scene, t0: float | None = None, gain: float = RISER_CREST_GAIN,
+                 note: str = "climbs into the cut, crests on the seam") -> float:
     """Cue a riser that starts at local time t0 (default: scene.t, i.e. call it right before the
     play that starts the climb) and ends EXACTLY on the beat's end (the seam): synth's riser peaks
-    on its last sample and stops dead, so it never resolves; the next beat's scratch_cut() lands
-    on that sample (b06 'More GPUs…' -> b08's opening glitch). Returns the riser's dur."""
+    on its last sample, so it CRESTS on the seam. Script v3: it no longer stops dead into a
+    scratch: the next beat's swell_cut() (b08 frame 0) lands a soft whoosh whose peak is that seam
+    sample, which carries the crest over the cut and decays with the fade (b06 -> b08). The default
+    gain is RISER_CREST_GAIN (0.6, v2 used 1.0) so the crest sits under the swell. Returns the
+    riser's dur."""
     end = beat_duration(type(scene).__name__)
     if end is None:
         raise ValueError(f"{type(scene).__name__} is not in timeline.BEATS")
@@ -2572,15 +2830,25 @@ def riser_to_cut(scene, t0: float | None = None, gain: float = 1.0,
     return dur
 
 
-def scratch_cut(scene, dur: float = TEAR_TIME, gain: float = 1.0,
-                note: str = "record scratch: the tear-away") -> None:
-    """The record scratch on a beat's opening (b08 frame 0, under tear_away): glitch(dur) +
-    noise_burst, and a true silence of the music bed + reverb for dur (the riser_to_cut riser of
-    the beat before has just stopped dead on the seam; cue sounds play over the silence). Call it
-    at the very top of beat() (scene.t == 0), next to the first play."""
-    scene.cue("glitch", gain=0.9 * gain, note=note, dur=dur)
-    scene.cue("noise_burst", gain=0.8 * gain, note=note)
-    scene.cue("silence", note="the bed cuts out under the scratch", dur=dur)
+def swell_cut(scene, dur: float = SWELL_TIME, gain: float = 1.0, t: float = 0.0,
+              note: str = "soft swell over the cut: the riser crests and decays into the twist") -> None:
+    """Script v3 (replaces scratch_cut, user decision 'SOFTEN'): the soft swell on a beat's opening
+    (b08 frame 0, with fade_away). One gentle whoosh DOWN of length 2*dur whose peak (the synth's
+    anchor) lands on local time t (default 0.0, the seam): it swells in under the previous beat's
+    last `dur` seconds (under riser_to_cut's crest), takes over on the seam and decays to silence
+    over the first `dur` seconds of this beat, together with the 0.80 s fade. No glitch, no
+    noise_burst and NO silence: the bed glides on into the twist's drone. Call it at the top of
+    beat() (or anywhere: t is absolute local time)."""
+    scene.cue("whoosh", dt=round(t - scene.t, 4), gain=round(SWELL_GAIN * gain, 4),
+              dur=round(2 * dur, 4), direction="down", note=note)
+
+
+def scratch_cut(scene, dur: float | None = None, gain: float = 1.0, note: str | None = None) -> None:
+    """DEPRECATED (script v2's record scratch: glitch + noise_burst + bed silence, removed by the
+    user's decision 'SOFTEN'): now an alias of swell_cut(scene, dur or SWELL_TIME, gain), so a
+    beat that still calls it gets the soft swell. Call swell_cut() instead."""
+    swell_cut(scene, SWELL_TIME if dur is None else dur, gain,
+              **({} if note is None else {"note": note}))
 
 
 def drive(scene, fn: Callable[[float], None], add: bool = True) -> Mobject:
@@ -2881,11 +3149,12 @@ LOOP_WORKER = 32                            # the LOOP frame's worker idx (b09 f
 _HO_TOKEN = {"E01": ("plain", CYAN),        # hook worker -> CPU core T6 (b03 HERO = 5)
              "E03": ("cpu", CYAN),          # CPU -> card-flips into the GPU
              "E04": ("gpu", CYAN),          # GPU -> box (c3, r3) of the data-center pod
-             "E06": ("cluster", CYAN),      # hall -> torn away by the twist's opening glitch
+             "E06": ("cluster", CYAN),      # hall -> faded out with the HUD by the twist (fade_away)
              "E08": ("plain", AMBER)}       # the serial token -> the lone hook worker
 # The counter (CORES WORKING AT ONCE) first appears INSIDE b03 (E01 carries no HUD), climbs
-# 1 -> 16 -> 16,896 -> 1,689,600,000+ and never drops: b08 tears it out (tear_away) and brings
-# in its own SPEEDUP meter. E08 carries that meter's final reading.
+# 1 -> 16 -> 16,896 -> 1,689,600,000+ and never drops: b08 fades it out at a constant value
+# (fade_away, script v3; v2 tore it out) and brings in its own SPEEDUP meter. E08 carries that
+# meter's final reading.
 _HO_HUD = {"E03": ("16", INK, core_label("16"), INK, 0.70),
            "E04": ("16,896", INK, core_label("16,896"), INK, 0.70),
            "E06": ("1,689,600,000+", INK, core_label("1,689,600,000+"), INK, 0.70),
@@ -2956,11 +3225,12 @@ def handoff_state(name: str) -> Handoff:
     (number INK, label INK 0.70). reel/tools/check_handoffs.py renders both sides of every
     boundary and compares them with this builder bit for bit (30 and 60 fps).
       E01  b01 -> b03  handoff_token('plain') (CYAN, fill 0.32). NO HUD: the counter first
-                       appears inside b03 (core_hud('1', pop_at=0.10)).
+                       appears inside b03 (script v3: core_hud('1', fade_in=(0.30, 0.60))).
       E03  b03 -> b04  token('cpu')     + HUD '16'             / CORES WORKING AT ONCE
       E04  b04 -> b06  token('gpu')     + HUD '16,896'         / CORES WORKING AT ONCE
       E06  b06 -> b08  token('cluster') + HUD '1,689,600,000+' / CORES WORKING AT ONCE (fit to
-                       6.9 wide). b08 tears both out to black by 0.30 (tear_away).
+                       6.9 wide). b08 fades both out to black together, at a constant value,
+                       over 0.00-0.80 (fade_away; script v2 tore them out with tear_away).
       E08  b08 -> b09  token('plain', AMBER) (the serial token: fill 0.58, rim #FFD27A)
                        + HUD '10×' AMBER / 'MAX SPEEDUP · 10% SERIAL' (AMBER 0.85)
       LOOP b09 -> b01  hook_state(32) (worker x1.4 + halo) + kicker 'PARALLEL COMPUTING' (kick,
