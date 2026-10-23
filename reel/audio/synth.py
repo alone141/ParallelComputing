@@ -457,8 +457,8 @@ def render(total: float, cues: list[dict]) -> np.ndarray:
     return master(out)
 
 
-TARGET_LUFS = -14.5  # TikTok/Reels-friendly; platforms normalise around -14
-CEILING = 0.72       # ~ -2.9 dBFS sample peak: AAC adds ~1.7 dB of inter-sample overshoot, so true peak stays under -1 dBTP
+TARGET_LUFS = -15.0  # platforms normalise around -14; -15 leaves true-peak headroom
+CEILING = 0.62       # ~ -4.2 dBFS sample peak: inter-sample + AAC overshoot reach ~3.5 dB on dense mixes; keeps true peak under -1 dBTP
 
 
 def lufs(x: np.ndarray) -> float:
