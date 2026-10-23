@@ -2,16 +2,23 @@
 
 Stills (PNG lands in reel/build/media/images/motif_preview/):
   PYTHONPATH=reel /home/user/.venvs/manim/bin/manim render -s -r 540,960 --disable_caching \
-      --media_dir reel/build/media reel/motif_preview.py StateE02
+      --media_dir reel/build/media reel/motif_preview.py StateE03
 
-  StateE01 .. StateE08, StateLOOP   one handoff state each (exactly what beats hand over)
-  Tokens                            the 6 handoff_token glyphs, enlarged + at true size
-  LayoutB01/B02/B06/B08             representative text + HUD frames, with layout guides
+  StateE01 StateE03 StateE04 StateE06 StateE08 StateLOOP
+                         one handoff state each (exactly what the script v2 beats hand over:
+                         b01 -E01-> b03 -E03-> b04 -E04-> b06 -E06-> b08 -E08-> b09 -LOOP-> b01)
+  Tokens                 the handoff_token glyphs the film uses (plain, cpu, gpu, cluster, AMBER
+                         plain), enlarged + at true size
+  LayoutB01/B03/B04/B06/B08   representative text + HUD frames of the new script, with guides
+  TearContact            b08's tear-away of E06 (HUD + cluster token) at 7 times 0.00-0.30 s
 Set MOTIF_GUIDES=1 to overlay the safe zone / STAGE / TTZ / AC guides on the State stills.
 
-Motion test (video or PNG sequence): MotifMotionTest walks E02 -> EXPAND -> HUD slam/roll/
-multiplier -> COLLAPSE('cpu') -> SETTLE -> exit_to('E03'); its first frame must equal
-StateE02 and its last frame StateE03.
+Motion tests (video or PNG sequence; no dust, so frames diff exactly against the State stills):
+  MotifMotionTest  E01 -> EXPAND (plain token = core T6) -> HUD POP '1' (singular label) -> SLAM
+                   '16' + plural label + LIME line -> COLLAPSE('cpu') -> SETTLE -> exit_to('E03');
+                   its first frame must equal StateE01 and its last frame StateE03.
+  TearMotionTest   E06 -> tear_away(0.00-0.30) -> black; first frame == StateE06, BG from 0.30.
+  LoopSeamTest     the b09 ending built dynamically must end pixel-identical to StateLOOP.
 """
 
 from __future__ import annotations
@@ -52,56 +59,51 @@ class _StateStill(Scene):
 
 
 class StateE01(_StateStill):
+    """b01 -> b03: the plain CYAN token, no HUD."""
     state = "E01"
 
 
-class StateE02(_StateStill):
-    state = "E02"
-
-
 class StateE03(_StateStill):
+    """b03 -> b04: cpu token + '16' / CORES WORKING AT ONCE."""
     state = "E03"
 
 
 class StateE04(_StateStill):
+    """b04 -> b06: gpu token + '16,896' / CORES WORKING AT ONCE."""
     state = "E04"
 
 
-class StateE05(_StateStill):
-    state = "E05"
-
-
 class StateE06(_StateStill):
+    """b06 -> b08: cluster token + '1,689,600,000+' / CORES WORKING AT ONCE."""
     state = "E06"
 
 
-class StateE07(_StateStill):
-    state = "E07"
-
-
 class StateE08(_StateStill):
+    """b08 -> b09: the AMBER serial token + '10×' / MAX SPEEDUP · 10% SERIAL."""
     state = "E08"
 
 
 class StateLOOP(_StateStill):
+    """b09 -> b01: hook grid (worker on 32) + kicker + 'One at a time.' + STEP 032 / 320."""
     state = "LOOP"
 
 
 class Tokens(Scene):
-    """Top: the six glyphs at 2.4x (strokes unscaled) with their kind; bottom row: true size."""
+    """Top: the film's glyphs at 2x (strokes unscaled) with their handoff; bottom row: true size."""
 
     def construct(self):
-        kinds = ["plain", "core", "cpu", "gpu", "node", "cluster"]
-        for i, k in enumerate(kinds):
-            col, row = i % 2, i // 2
-            c = np.array([-2.15 + 4.3 * col, 5.3 - 3.35 * row, 0])
-            t = handoff_token(k).scale(2.0, about_point=AC).shift(c - AC)
-            lab = mono(k, 34, DIM).next_to(t, DOWN, buff=0.14)
+        kinds = [("plain", CYAN, "plain (E01)"), ("cpu", CYAN, "cpu (E03)"),
+                 ("gpu", CYAN, "gpu (E04)"), ("cluster", CYAN, "cluster (E06)")]
+        for i, (k, col, name) in enumerate(kinds):
+            c = np.array([-2.15 + 4.3 * (i % 2), 5.2 - 3.75 * (i // 2), 0])
+            t = handoff_token(k, col).scale(1.5, about_point=AC).shift(c - AC)
+            lab = mono(name, 34, DIM).next_to(t, DOWN, buff=0.14)
             self.add(t, lab)
-        self.add(handoff_token("plain", AMBER).shift(np.array([-3.2, -4.6, 0]) - AC),
-                 mono("plain, AMBER (E08)", 34, DIM).move_to([0.6, -4.6, 0]))
-        for i, k in enumerate(kinds):
-            t = handoff_token(k).shift(np.array([-3.5 + 1.4 * i, -6.5, 0]) - AC)
+        self.add(handoff_token("plain", AMBER).shift(np.array([-3.0, -2.2, 0]) - AC),
+                 mono("plain, AMBER (E08)", 34, DIM).move_to([0.9, -2.2, 0]))
+        self.add(mono("true size", 30, DIM).move_to([0.0, -3.55, 0]))
+        for i, (k, col, _) in enumerate(kinds):
+            t = handoff_token(k, col).shift(np.array([-3.0 + 2.0 * i, -4.8, 0]) - AC)
             self.add(t)
 
 
@@ -123,49 +125,101 @@ class LayoutB01(Scene):
         self.add(g, one, allc, step_readout("320 WORKERS · 1 STEP", CYAN))
 
 
-class LayoutB02(Scene):
-    """b02 at ~1.6 s: kicker, 2-style card, HUD '16' with the ×16 multiplier."""
+class LayoutB03(Scene):
+    """b03 at ~0.5 s: LEVEL 1/3 kicker, 'That worker? / One CPU core.', the counter's first
+    appearance with the SINGULAR label."""
 
     def construct(self):
         self.add(guides())
-        self.add(kick("SCALE 1/6 · ONE CORE"))
-        self.add(card([("1 instruction.", "H96", INK, {"1": CYAN}), ("16 numbers at once.", "S56", CYAN)]))
-        self.add(handoff_token("core"))
-        hud = Hud("16", "CALCULATION AT ONCE")
-        hud.mult(0.0, "×16")
+        self.add(kick("LEVEL 1/3 · ONE CPU"))
+        self.add(card([("That worker?", "H84", INK), ("One CPU core.", "H84", INK, {"CPU core.": CYAN})]))
+        self.add(handoff_token("plain"))
+        self.add(core_hud("1"))
+
+
+class LayoutB03Power(Scene):
+    """b03 at ~4.0 s: '16 cores. / 16 different jobs.' with '16' and its LIME line."""
+
+    def construct(self):
+        self.add(guides())
+        self.add(kick("LEVEL 1/3 · ONE CPU"))
+        self.add(card([("16 cores.", "H96", INK, {"16": CYAN}), ("16 different jobs.", "S56", INK)]))
+        self.add(handoff_token("cpu"))
+        hud = Hud("16", core_label(16))
+        hud.mult(0.0, COUNTER_LINES["B03Cpu"], hold=1.8)
+        hud.render_at(0.5)
+        self.add(hud)
+
+
+class LayoutB04(Scene):
+    """b04 at ~3.6 s: 'Thousands of / tiny cores.', HUD 16,896 + 'H100: 16,896 CUDA CORES'."""
+
+    def construct(self):
+        self.add(guides())
+        self.add(kick("LEVEL 2/3 · ONE GPU"))
+        self.add(card([("Thousands of", "H84", INK), ("tiny cores.", "H84", INK, {"tiny cores.": CYAN})]))
+        self.add(handoff_token("gpu"))
+        hud = Hud("16,896", CALC_LABEL)
+        hud.mult(0.0, COUNTER_LINES["B04Gpu"], hold=1.8)
         hud.render_at(0.5)
         self.add(hud)
 
 
 class LayoutB06(Scene):
-    """b06 at ~3.6 s: '100,000+' climax card, HUD 1,689,600,000+ and ×12,500."""
+    """b06 at ~7.6 s: the biggest drop: '100,000+ / GPUs. One AI.', HUD 1,689,600,000+ and the
+    '100,000+ GPUs × 16,896' line."""
 
     def construct(self):
         self.add(guides())
-        self.add(kick("SCALE 5/6 · DATA CENTER"))
-        self.add(card([("100,000+", "H96", CYAN), ("GPUs, training one AI.", "S56", INK)]))
+        self.add(kick("LEVEL 3/3 · DATA CENTER"))
+        self.add(card([("100,000+", "H96", CYAN), ("GPUs. One AI.", "S56", INK)]))
         self.add(handoff_token("cluster"))
         hud = Hud("1,689,600,000+", CALC_LABEL)
-        hud.mult(0.0, "×12,500")
+        hud.mult(0.0, COUNTER_LINES["B06DataCenter"], hold=1.8)
         hud.render_at(0.5)
         self.add(hud)
 
 
 class LayoutB08(Scene):
-    """b08 at ~6.5 s: the screenshot frame (catch kicker at tracking 80, takeaway card, HUD 10×)."""
+    """b08 at ~9.5 s: the screenshot frame (FINAL BOSS kicker at tracking 80, takeaway, HUD 10×)."""
 
     def construct(self):
         self.add(guides())
-        self.add(kick("THE CATCH · AMDAHL'S LAW", AMBER, tracking=80))
+        self.add(kick("FINAL BOSS: AMDAHL'S LAW", AMBER, tracking=80))
         self.add(card([("10% serial", "H84", INK, {"10% serial": AMBER}),
                        ("= max 10×.", "H84", INK, {"10×": AMBER})]))
         self.add(handoff_token("plain", AMBER))
         self.add(Hud("10×", "MAX SPEEDUP · 10% SERIAL", AMBER, AMBER, 0.85))
 
 
+class TearContact(Scene):
+    """b08's opening tear-away of E06 at 0.000 / 0.050 / 0.100 / 0.150 / 0.200 / 0.267 / 0.300 s
+    (story frames 0, 3, 6, 9, 12, 16, 18), each frame shrunk to a third, left to right, top to
+    bottom. 0.000 must be the exact E06; 0.300 must be empty."""
+
+    TIMES = (0.0, 0.05, 0.10, 0.15, 0.20, 16 / 60, 0.30)
+
+    def construct(self):
+        k = 0.30
+        for i, t in enumerate(self.TIMES):
+            st = handoff_state("E06")
+            st.hud.tear(0.0, TEAR_TIME)
+            tear = Tear(st.token, 0.0, TEAR_TIME)
+            st.hud.render_at(t)
+            tear.render_at(t)
+            frame = VGroup(tear, st.hud).copy()
+            box = Rectangle(width=9.0, height=16.0, stroke_color=DIM, stroke_width=1.5)
+            cell = VGroup(box, frame)
+            cell.scale(k, about_point=ORIGIN)
+            c = np.array([-3.0 + 3.0 * (i % 3), 5.45 - 5.3 * (i // 3), 0])
+            cell.shift(c)
+            lab = mono(f"{t:.3f}s  f{story_frame(t)}", 26, DIM).next_to(box, DOWN, buff=0.05)
+            self.add(cell, lab)
+
+
 class MotifMotionTest(BeatScene):
     """A mini b03 built only from motif helpers (not in the timeline; no dust so frames diff
-    exactly against the State stills)."""
+    exactly against the State stills): E01 -> core T6 -> '1' (singular) -> '16' -> E03."""
 
     with_dust = False
 
@@ -173,14 +227,15 @@ class MotifMotionTest(BeatScene):
         self.beat()
 
     def beat(self):
-        st = enter(self, "E02")
-        hud = st.hud
-        # world at rest: 16 cores with their lane glyphs + labels + memory bar
+        st = enter(self, "E01")
+        assert st.hud is None
+        hud = core_hud("1", scene=self, pop_at=0.10)
+        # world at rest: 16 PLAIN cores (no SIMD lane glyphs) + labels + memory bar
         xs, ys = (-2.15, -0.95, 0.25, 1.45), (2.75, 1.55, 0.35, -0.85)
         cores, labels = VGroup(), VGroup()
         for i in range(16):
             c = np.array([xs[i % 4], ys[i // 4], 0])
-            cores.add(unit_with_glyph("core", 0.95, c, glyph_fill=0.35))
+            cores.add(unit_with_glyph("plain", 0.95, c))
             labels.add(mono(f"T{i + 1}", 34, INK).set_opacity(0.9).move_to(c + UP * 0.21))
         bar = RoundedRectangle(width=6.4, height=0.5, corner_radius=0.12, stroke_color=MAGENTA,
                                stroke_width=3, fill_color=MAGENTA, fill_opacity=0.10).move_to([X_C, -1.95, 0])
@@ -189,17 +244,19 @@ class MotifMotionTest(BeatScene):
         hero = cores[5]
         track = TextTrack(self)
         self.add(track)
-        track.on(kick("SCALE 2/6 · ONE CPU"), 0.20, 3.00)
-        head = card([("16 cores.", "H96", INK, {"16": CYAN}), ("× 16 lanes each", "S56", CYAN)])
-        track.on(head[0], 0.30, 3.00)
-        track.on(head[1], 1.50, 3.00, enter="cut")
-        hud.slam(1.50, "256", mult="×16")
-        hud.pulse(2.60, 1.06)
-        exp = Expand(world, hero.unit.get_center(), 0.95, run_time=0.70, hero=hero, token="core",
+        track.on(kick("LEVEL 1/3 · ONE CPU"), 0.0, 3.00, exit="cut")
+        head = card([("16 cores.", "H96", INK, {"16": CYAN}), ("16 different jobs.", "S56", INK)])
+        track.on(head[0], 0.30, 3.00, exit="cut")
+        track.on(head[1], 0.30, 3.00, enter="cut", exit="cut")
+        hud.slam(1.50, "16")
+        hud.label(1.50, core_label(16))
+        hud.mult(1.50, COUNTER_LINES["B03Cpu"], hold=1.0)
+        exp = Expand(world, hero.unit.get_center(), 0.95, run_time=0.70, hero=hero, token="plain",
                      fades={labels: (0.3, 0.8)})
         add_behind(self, world)      # content behind token + HUD
         entry_ring(self)             # ring behind content, from frame 1
         self.remove(st.token)
+        self.add(hud)
         self.cue("hit")
         self.play(exp)
         self.hold_until(3.20)
@@ -211,6 +268,22 @@ class MotifMotionTest(BeatScene):
         self.play(col.settle_anim())
         exit_to(self, "E03")
         self.wait(0.2)
+
+
+class TearMotionTest(BeatScene):
+    """b08's opening on E06: tear_away + scratch_cut, then black. Frame 0 == StateE06; every
+    frame from 0.30 is BG. No dust, no timeline slot."""
+
+    with_dust = False
+
+    def construct(self):
+        self.beat()
+
+    def beat(self):
+        st = enter(self, "E06")
+        tear_away(self, st, 0.0, TEAR_TIME)
+        scratch_cut(self)
+        self.wait(0.5)
 
 
 class LoopSeamTest(BeatScene):

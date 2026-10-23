@@ -1,29 +1,42 @@
-"""b04 - SCALE 3/6 - ONE GPU: warps of 32, every pixel in parallel (SIMT).
+"""b04 - LEVEL 2/3 - ONE GPU: thousands of tiny cores, groups of 32 on one instruction (SIMT).
 
-The CPU token (E03) card-flips (replacement, not containment) into a GPU token, whose
-base opens into the H100 die (0.51, after a beat on the GPU token). 3,072 pixels (1 pixel =
-1 thread, 8x4 blocks = warps of 32) appear in a radial wave while the HUD rolls 256 -> 16,896
-('66x ONE CPU'). On the 1.55 slam the LIGHT WAVE races out from the centre (every pixel INK,
-then CYAN); 1.85-2.67 three DISPATCH waves of warps sweep the die (diagonal fronts: each warp
-fires on one frame, INK-hot, then bright CYAN easing back to a low idle-busy hum, every warp
-flickering on its own at 8 Hz). 2.70-3.00 the camera pushes in 4.5x on one warp; while
-'32 threads, 1 instruction.' is read its bus charges and its 32 threads brighten together, then run three
-instructions in lockstep (3.60 / 3.90 / 4.20: an INK instruction beam fires, all 32 recolour
-on the SAME frame: CYAN, LIME, then each thread its own pixel colour), then the camera pulls
-back straight into six waves of 16 warps scattered over the whole die (stratified, never a
-top-to-bottom scanline), which develop a shaded sphere; 5.20 hit: a burst of light from the
-ball's centre (INK core, CYAN and faint toward the corners, never a solid slab), pop, shock
-ring. 5.50-6.52 EVERY FRAME: four more frames are rendered (the light steps across the ball),
-each by a wave of warps sweeping the die (every warp repaints its 32 pixels on one frame
-with a CYAN-white write-flash), so the image visibly updates warp by warp, under a slow
-1.0 -> 1.02 stage push-in that carries the finished image to the collapse. The die
-collapses (cut_times) into handoff_token('gpu') (E04); kicker + headline hold to the exit
-and hard-cut with the canonical swap.
+Script v2 'gpu' segment (12.0 s, reel/design/script_v2.json). Every idea lands on a calm stage
+and is read before its animation fires; the payoff then holds. Only the gaps between motions grew;
+the motions keep their snappy durations (flip 0.24, die 0.54, roll 0.50, light wave 0.25, push-in
+0.30, steps 0.30 apart, waves 0.10 apart, ...).
 
-Everything that moves is a pure function of self.now (one driver updater; the pixel
-field is one vectorised state function drawn through motif.Field, one VMobject per
-quantised colour); the scene only holds until the structural switch points (collapse
-capture, canonical exit).
+  0.00  E03 (cpu token + HUD '16' / CORES WORKING AT ONCE). Card-flip (replacement, not
+        containment): the CPU token flips into the GPU token (8x8 pixel glyph) by 0.24. '16? Cute.'
+        POPs on story frame 1, 'Meet the GPU.' one frame later. Calm token hold while it is read;
+        the token's 64 pixels idle-twinkle so the stage never sits dead.
+  1.10  The token's base opens into the H100 die; 3,072 tiny cells (1 cell = 1 CUDA core, 8x4
+        blocks = groups of 32) appear in a soft radial wave and settle to a dim idle hum (each
+        group of 32 breathes on its own).
+  2.45  Hard swap: 'Thousands of / tiny cores.' on the calm, dim die. From 2.95 the HUD winds up
+        (accelerating log-roll 16 -> 16,896, ticks + riser).
+  3.45  SLAM 16,896 + LIME 'H100: 16,896 CUDA CORES' (3.45-5.25; no CPU-to-GPU ratio anywhere).
+        LIGHT WAVE: every cell flashes INK, then CYAN, racing out from the centre behind a shock
+        ring; 3.75-4.57 three diagonal DISPATCH waves of 32-cell groups sweep the die (each group
+        fires on one frame), which settles into a busy shimmer.
+  4.65  The camera pushes in 4.5x on ONE group of 32, outlined as a LIME block (4.65-4.95).
+  4.95  Hard swap: 'Groups of 32. / One instruction.' Calm stage: the group's instruction bus
+        charges and all 32 cells brighten together for 1.0 s.
+  5.95  Three lockstep steps (5.95 / 6.25 / 6.55): an INK instruction beam fires down the bus and
+        all 32 recolour on the SAME frame (CYAN, LIME, then each its own pixel colour). Payoff
+        holds to 7.15, then the camera pulls back to the whole die (7.15-7.45).
+  7.45  Hard swap: 'Same math, / every number.' (user decision, NOT 'every pixel') on the calm,
+        humming die; 8.45-9.12 six waves of 16 groups, scattered over the die (never a
+        top-to-bottom scanline), develop a shaded ball; 9.20 a burst of light from the ball's
+        centre (INK core, CYAN and faint toward the corners), pop, shock ring.
+  9.80  Hard swap: 'For AI? / Not enough.' over the finished ball under a slow stage push-in
+        (1.0 -> 1.02). 10.40-11.20 the light steps across the ball, each step repainted by a wave of
+        groups (every group rewrites its 32 cells on one frame), so the stage stays alive.
+ 11.433 COLLAPSE (cut_times(12.0)) into handoff_token('gpu'), settle 11.833; kicker + card hard-cut
+        at 11.95 with the canonical swap to E04 (gpu token + HUD '16,896'), static to 12.00.
+
+Everything that moves is a pure function of self.now (one driver updater; the cell field is one
+vectorised state function drawn through motif.Field, one VMobject per quantised colour); the
+scene only holds until the structural switch points (collapse capture, canonical exit).
 """
 
 from style import *
@@ -33,7 +46,7 @@ from motif import *
 # World layout (storyboard b04 visuals)
 # --------------------------------------------------------------------------
 NCOL, NROW = 64, 48
-N_PIX = NCOL * NROW                                   # 3,072 threads
+N_PIX = NCOL * NROW                                   # 3,072 cells (1 cell = 1 CUDA core)
 PIX = 0.075                                           # pixel side
 PIX_CORNER = 0.015
 _I = np.tile(np.arange(NCOL), NROW)                   # column i of pixel k = 64*j + i
@@ -41,7 +54,7 @@ _J = np.repeat(np.arange(NROW), NCOL)                 # row j (0 = top)
 PX = X_C + (_I - 31.5) * 0.10 + 0.03 * (_I // 8 - 3.5)
 PY = AC[1] + (23.5 - _J) * 0.10 - 0.03 * (_J // 4 - 5.5)
 PC = np.stack([PX, PY, np.zeros(N_PIX)], axis=1)
-WARP_C, WARP_R = _I // 8, _J // 4                     # 8 x 12 = 96 warps of 32
+WARP_C, WARP_R = _I // 8, _J // 4                     # 8 x 12 = 96 warps of 32 (on screen: "groups of 32")
 N_WARP = 96
 WARP_ID = WARP_R * 8 + WARP_C
 FOCUS = (WARP_C == 3) & (WARP_R == 5)                 # cols 24-31 x rows 20-23
@@ -54,60 +67,57 @@ OUT_C = np.array([-0.765, 0.665, 0.0])                # focus-warp outline
 OUT_W, OUT_H, OUT_R = 0.86, 0.46, 0.05
 
 # --------------------------------------------------------------------------
-# Timeline (beat-local seconds)
+# Timeline (beat-local seconds; script v2 'gpu' segment, 12.0 s slot)
 # --------------------------------------------------------------------------
-# Pacing (7.5 s slot): every idea is SEQUENCED - its card lands while the die is calm, the
-# viewer gets a read before the motion it describes, then the payoff holds before the next idea.
-# Only the gaps between motions grew; every motion keeps its old duration (flip 0.24, die 0.54,
-# roll 0.90, light wave 0.25, push-in 0.30, steps 0.30 apart, pull-back 0.25, waves 0.50, ...).
-#   0.00-0.24  card-flip on the cut; 'Now, a GPU.' POPs on frame 1, '... 16,896 math lanes' 0.05
-#   0.51       (after a 0.27 s look at the GPU token) the die opens; 0.65 reveal + roll (read:
-#              0.35 s after the sub-line is fully in, 0.60 s after it lands)
-#   1.55       16,896 SLAMS + '66× ONE CPU' (1.6 s fully visible); light wave, 3 dispatch sweeps;
-#              the payoff holds 1.05 s before the next idea (c1 hard-cuts at 2.60, push-in 2.70)
-#   2.60       hard swap: 'Warps of 32.' + '32 threads, 1 instruction.' POP together (with the focus
-#              outline 2.63, before the push-in); the steps wait 1.0 s (3.60). Reading: c1
-#              0.017 -> 2.60 (2.58 s), c2 2.60 -> 5.20 (2.60 s); no fade/CARD_IN between the cards
-#   5.20       hit: 'Every pixel, / in parallel.' POPs on the finished image; it re-renders 4 frames
-#              (5.50-6.52) under a slow stage push-in, holds, collapses 6.933, text cut at 7.45
+# Cards (all hard swaps, every line POPs at full opacity; visible / reading floor 0.3 s/word + 0.8):
+#   c1 '16? Cute. / Meet the GPU.'         0.017 -> 2.45  (2.43 / 2.3)   read on the calm token
+#   c2 'Thousands of / tiny cores.'        2.45  -> 4.95  (2.50 / 2.0)   1.0 s before the light wave
+#   c3 'Groups of 32. / One instruction.'  4.95  -> 7.45  (2.50 / 2.3)   1.0 s before the first step
+#   c4 'Same math, / every number.'        7.45  -> 9.80  (2.35 / 2.0)   1.0 s before the waves
+#   c5 'For AI? / Not enough.'             9.80  -> 11.95 (2.15 / 2.0)   hard-cut by the E04 swap
+#   LIME 'H100: 16,896 CUDA CORES'         3.45  -> 5.25  (1.8; fully in 3.55 -> 5.25 = 1.70 / 1.5)
 T_FLIP_MID = 0.12
 T_FLIP_END = 0.24
 FLASH_FRAMES = (7, 8)                                 # 2-frame INK flash at 0.12 (60 fps grid)
-T_DIE0, T_DIE1 = 0.51, 1.05                           # token base -> die
-T_GLYPH_OUT = 0.70
-T_ROLL0, T_LAND = 0.65, 1.55                          # HUD roll (accelerating), 16,896 slams
-T_APPEAR = T_ROLL0 + 0.55 * DIST / DMAX               # radial reveal from AC, with the roll
-LW_DUR = 0.25                                         # 1.55 LIGHT WAVE: front reaches the corners
+TW_T0, TW_T1 = 0.30, 0.50                             # GPU token idle twinkle fades in (calm token hold)
+T_DIE0, T_DIE1 = 1.10, 1.64                           # token base -> die
+T_GLYPH_OUT = 1.29
+T_REV0, REV_SPREAD = 1.20, 0.50                       # radial reveal of the 3,072 cells (1.20 -> 1.82)
+T_APPEAR = T_REV0 + REV_SPREAD * DIST / DMAX
+T_C2 = 2.45                                           # 'Thousands of / tiny cores.'
+T_ROLL0, T_LAND = 2.95, 3.45                          # HUD windup (accelerating log-roll), 16,896 slams
+LW_DUR = 0.25                                         # 3.45 LIGHT WAVE: front reaches the corners
 LW_R0 = 0.80                                          # ... already this wide on the slam frame
-MULT_HOLD = 1.70                                      # '66× ONE CPU': fully visible 1.65 -> 3.25
-T_C1_OUT = 2.60                                       # 'Now, a GPU.' card hard-cuts to 'Warps of 32.'
-T_OUTLINE = 2.63                                      # focus outline telegraphs the target
-Z_IN0, Z_IN1 = 2.70, 3.00                             # camera push-in on the focus warp
-T_C2 = T_C1_OUT                                       # 'Warps of 32.' + '32 threads, 1 instruction.' POP
-Z_OUT0, Z_OUT1 = 4.40, 4.65                           # pull-back, straight into the waves
-ZK = 4.5                                              # 8x4 warp -> ~3.9 x 2.1 units
-STEPS = (3.60, 3.90, 4.20)                            # lockstep instructions (all 32, one frame)
-T_WAVE0, WAVE_DT = 4.65, 0.10
-T_HIT = 5.20
-T_COL, T_SET, T_EXIT = cut_times(7.5)                 # 6.933 / 7.333 / 7.45
-T_TEXT_OUT = T_EXIT                                   # kicker + headline hold to the exit, then hard-cut
-# 1.85-2.67 DISPATCH: after the light wave, waves of warps keep sweeping the die (diagonal
-# fronts, top-left -> bottom-right). A warp fires on ONE frame (all 32 threads together).
-T_DISP = (1.85, 2.11, 2.37)
+MULT_HOLD = 1.80                                      # 'H100: 16,896 CUDA CORES' 3.45 -> 5.25
+T_OUTLINE = 4.58                                      # LIME outline telegraphs the target group
+Z_IN0, Z_IN1 = 4.65, 4.95                             # camera push-in on the focus group
+T_C3 = Z_IN1                                          # 'Groups of 32. / One instruction.'
+STEPS = (5.95, 6.25, 6.55)                            # lockstep instructions (all 32, one frame)
+Z_OUT0, Z_OUT1 = 7.15, 7.45                           # pull-back to the whole die
+ZK = 4.5                                              # 8x4 group -> ~3.9 x 2.1 units
+T_C4 = Z_OUT1                                         # 'Same math, / every number.'
+T_WAVE0, WAVE_DT = 8.45, 0.10                         # six waves of 16 groups (8.45 -> 9.12)
+T_HIT = 9.20
+T_C5 = 9.80                                           # 'For AI? / Not enough.'
+T_COL, T_SET, T_EXIT = cut_times(12.0)                # 11.433 / 11.833 / 11.95
+T_TEXT_OUT = T_EXIT                                   # kicker + card hold to the exit, then hard-cut
+# 3.75-4.57 DISPATCH: after the light wave, waves of groups keep sweeping the die (diagonal
+# fronts, top-left -> bottom-right). A group fires on ONE frame (all 32 cells together).
+T_DISP = (3.75, 4.01, 4.27)
 DISP_CROSS = 0.30                                     # a front crosses the die in this long
-DISP_DECAY = 0.38                                     # fired warp: bright CYAN -> its idle-busy level
+DISP_DECAY = 0.38                                     # fired group: bright CYAN -> its idle-busy level
 DISP_HOT = 0.55                                       # INK lift on the 2 fire frames
-# 5.50-6.52 FRAMES: 'every pixel, every frame'. The light steps to a new position per frame and
-# each frame is re-rendered by a wave of warps sweeping the die (each warp repaints its 32 pixels
-# on one frame with a short CYAN-white write-flash), so the image visibly updates warp by warp.
-# The hit's burst + shock ring get 0.30 s on their own first.
-T_FRAMES = (5.50, 5.76, 6.02, 6.28)
-# 5.45 -> 6.933: slow stage push-in (die + pixels, never text/HUD) under 'Every pixel, in parallel.',
+# 10.40-11.20 REPAINTS: the light steps across the ball; each step is re-rendered by a wave of groups
+# sweeping the die (each group rewrites its 32 cells on one frame with a short CYAN-white
+# write-flash), so the image visibly updates group by group. The hit's burst + shock ring and the
+# 'For AI?' read get the stage to themselves first.
+T_FRAMES = (10.40, 10.60, 10.80, 11.00)
+# 9.45 -> 11.433: slow stage push-in (die + cells, never text/HUD) under 'For AI? / Not enough.',
 # so the finished image is never a dead hold; folded into the collapse at T_COL.
 T_DRIFT0, T_DRIFT1 = T_HIT + 0.25, T_COL
 DRIFT_S1 = 1.02
-# 3.00-3.60 the zoomed warp waits for its instruction (while '32 threads, 1 instruction.' is read):
-# the dim instruction bus charges up and all 32 threads brighten together toward the first issue
+# 4.95-5.95 the zoomed group waits for its instruction (while 'Groups of 32.' is read): the dim
+# instruction bus charges up and all 32 cells brighten together toward the first issue
 BUS_CHARGE = 0.32                                     # bus alpha 0.28 -> 0.60
 READY_CHARGE = 0.13                                   # ready tint 0.15 -> 0.28 toward CYAN
 
@@ -118,7 +128,9 @@ def charge_at(now: float) -> float:
     if now >= STEPS[0] - EPS:
         return 0.0
     return ease_in_sine(ramp(now, Z_IN1, STEPS[0]))
-FR_CROSS = 0.24
+
+
+FR_CROSS = 0.20
 FR_HOT = 0.45                                         # write-flash: CYAN lifted this far toward INK
 FR_GLOW, FR_DECAY = 0.55, 0.12                        # then a short CYAN afterglow
 
@@ -131,11 +143,13 @@ C_INK = RGB_INK
 C_LIME = RGB_LIME
 BASE_OP = 0.90
 IMG_OP = 0.95
-IDLE_TINT = 0.07                                      # pre-wave threads: DIMMER lifted 7% toward CYAN
+IDLE_TINT = 0.05                                      # pre-wave cells: DIMMER lifted 5% toward CYAN ...
+HUM_AMP, HUM_HZ = 0.22, 3.0                           # ... plus a slow per-group breath (the dim idle hum)
 BUSY0, BUSY1 = 0.18, 0.36                             # idle-busy: CYAN opacity range per warp (low, so the sweeps read)
 BUSY_HZ = 8.0
 DIM_K = 0.35                                          # other warps while one is in focus ...
-DIM_BACK = 0.55                                       # ... and how far they come back on the pull-back
+DIM_BACK = 0.80                                       # ... and how far they come back on the pull-back (the
+#   die hums at nearly full level again while 'Same math, / every number.' is read)
 READY_TINT = 0.15                                     # the focus warp waiting for its instruction
 STEP_RGB = (C_CY, C_LIME, None)                       # None = each thread its own pixel colour
 
@@ -175,21 +189,54 @@ SWEEP_P = ((_proj - _proj.min()) / (_proj.max() - _proj.min()))[WARP_ID]   # per
 DISP_F = np.rint((np.array(T_DISP)[:, None] + DISP_CROSS * SWEEP_P[None, :]) * 60).astype(int)
 FR_F = np.rint((np.array(T_FRAMES)[:, None] + FR_CROSS * SWEEP_P[None, :]) * 60).astype(int)
 
-# 5.20 hit flash: a burst of light from the centre of the ball, not a solid INK slab. Pixels go
+# 9.20 hit flash: a burst of light from the centre of the ball, not a solid INK slab. Pixels go
 # HIT_K toward HIT_RGB: 0.9 toward INK at the centre, ~0.4 at the ball's rim, ~0.05 in the
 # corners, and the burst cools from INK to CYAN toward its edge.
 HIT_K = 0.90 * np.exp(-(DIST / 2.4) ** 2)
 HIT_RGB = lerp(C_CY[None, :], C_INK[None, :], np.exp(-(DIST / 2.0) ** 2)[:, None])
 
 
-# 1.55 light wave: per-pixel arrival (linear in distance from AC beyond LW_R0), 60 fps grid
+# 3.45 light wave: per-pixel arrival (linear in distance from AC beyond LW_R0), 60 fps grid
 LW_T = T_LAND + LW_DUR * np.maximum(DIST - LW_R0, 0.0) / (DMAX - LW_R0)
 LW_F = np.rint(LW_T * 60).astype(int)
 
-# idle-busy: every warp re-rolls its CYAN level at ~8 Hz, each on its own phase
+# idle-busy: every group re-rolls its CYAN level at ~8 Hz, each on its own phase (128 steps:
+# the 12.0 s slot needs ~97)
 _brng = np.random.default_rng(404)
-BUSY_R = _brng.random((N_WARP, 64))
+BUSY_R = _brng.random((N_WARP, 128))
 BUSY_PH = _brng.random(N_WARP)
+# idle hum (1.20-3.45, before the light wave): every group of 32 breathes smoothly between random
+# levels at HUM_HZ, each on its own phase, so the calm die is never a dead hold
+_hrng = np.random.default_rng(1104)
+HUM_R = _hrng.random((N_WARP, 16))
+HUM_PH = _hrng.random(N_WARP)
+
+
+def hum_level(now: float) -> np.ndarray:
+    """(N_WARP,) 0..1 idle-hum level of each group at now (smoothstep between random levels)."""
+    x = now * HUM_HZ + HUM_PH
+    b = np.clip(np.floor(x).astype(int), 0, HUM_R.shape[1] - 2)
+    q = np.clip(x - b, 0.0, 1.0)
+    q = q * q * (3.0 - 2.0 * q)
+    w = np.arange(N_WARP)
+    return lerp(HUM_R[w, b], HUM_R[w, b + 1], q)
+
+
+# GPU token idle twinkle (0.30-1.29, the calm token hold under '16? Cute.'): the 64 pixels of the
+# token glyph re-roll their brightness at TW_HZ, each on its own phase (rest opacity +- TW_AMP / 2)
+TW_HZ, TW_AMP = 6.0, 0.50
+_trng = np.random.default_rng(64)
+TW_R = _trng.random((64, 16))
+TW_PH = _trng.random(64)
+
+
+def twinkle(now: float, fo: np.ndarray) -> np.ndarray:
+    """(64,) glyph fill opacities at now for rest opacities fo (== fo before TW_T0)."""
+    k = ease_in_out_sine(ramp(now, TW_T0, TW_T1))
+    if k <= 0:
+        return fo
+    b = np.clip(np.floor(now * TW_HZ + TW_PH).astype(int), 0, TW_R.shape[1] - 1)
+    return np.clip(fo + k * TW_AMP * (TW_R[np.arange(64), b] - 0.5), 0.15, 1.0)
 
 
 def busy_level(now: float) -> np.ndarray:
@@ -209,7 +256,7 @@ for _rr in range(4):
         WAVE_OF_WARP[_ws] = _wrng.permutation(6)
 WAVE_T = T_WAVE0 + WAVE_DT * WAVE_OF_WARP[WARP_ID]   # per pixel
 WAVE_F = np.rint(WAVE_T * 60).astype(int)
-IN_WAVES = ~FOCUS                                     # the focus warp already computed its pixels
+IN_WAVES = ~FOCUS                                     # the focus group already computed its cells
 
 # zoom window: zoomed pixels stay inside the die (inset), fading out near its edge
 WIN = (AC[0] - DIE_W / 2 + 0.08, AC[0] + DIE_W / 2 - 0.08, AC[1] - DIE_H / 2 + 0.08, AC[1] + DIE_H / 2 - 0.08)
@@ -246,7 +293,7 @@ def flash_decay(now: float, t: float, dur: float) -> float:
 def warp_fires(now: float, f: int, F: np.ndarray, decay: float) -> tuple[np.ndarray, np.ndarray]:
     """Per pixel, for warp fires at story frames F (sweeps, N_PIX): (hot, glow). hot = on one of the
     2 fire frames of a sweep; glow = 1 on them, then 1 -> 0 (ease_out_cubic) over decay; the
-    strongest sweep wins. Whole warps share F, so all 32 threads of a warp change on one frame."""
+    strongest sweep wins. Whole groups share F, so all 32 cells of a group change on one frame."""
     hot = np.zeros(N_PIX, bool)
     glow = np.zeros(N_PIX)
     for Fk in F:
@@ -274,21 +321,23 @@ def field_pop(now: float) -> float:
 
 
 def pixel_state(now: float):
-    """(centers (N,3), sizes (N,), rgba (N,4)) of the 3,072 threads at now (pure)."""
+    """(centers (N,3), sizes (N,), rgba (N,4)) of the 3,072 cells at now (pure)."""
     f = story_frame(now)
     rgb = np.tile(C_DIM, (N_PIX, 1))
     alpha = np.full(N_PIX, BASE_OP)
     size = np.ones(N_PIX)
 
-    # radial reveal 0.65-1.32 (scale 0 -> 1 in 0.12 s) with a CYAN wavefront
+    # radial reveal 1.20-1.82 (scale 0 -> 1 in 0.12 s) with a CYAN wavefront, settling to the
+    # dim idle hum (every group of 32 breathes on its own)
     a = ramp_arr(now, T_APPEAR, T_APPEAR + 0.12)
     size *= ease_out_cubic_arr(a)
     alpha = np.where(a > 0, alpha, 0.0)
     tint = np.where(now >= T_APPEAR, 1.0 - ease_out_cubic_arr(ramp_arr(now, T_APPEAR, T_APPEAR + 0.40)), 0.0)
-    tint = np.maximum(tint * 0.75, IDLE_TINT * (a > 0))
+    idle = IDLE_TINT + HUM_AMP * hum_level(now)[WARP_ID] if now < T_LAND + LW_DUR + 0.1 else IDLE_TINT
+    tint = np.maximum(tint * 0.75, idle * (a > 0))
     rgb = lerp(rgb, C_CY[None, :], tint[:, None])
 
-    # 1.55 LIGHT WAVE: INK (2 frames) -> CYAN (0.10 s) -> idle-busy (0.40 s), front from AC
+    # 3.45 LIGHT WAVE: INK (2 frames) -> CYAN (0.10 s) -> idle-busy (0.40 s), front from AC
     if now >= T_LAND - EPS:
         busy = busy_level(now)[WARP_ID]
         d = now - LW_T
@@ -303,7 +352,7 @@ def pixel_state(now: float):
         rgb[ink] = C_INK
         alpha[ink] = 1.0
 
-    # 1.85-2.67 DISPATCH: waves of warps sweep the die (fired warp: INK-hot, then bright CYAN
+    # 3.75-4.57 DISPATCH: waves of groups sweep the die (fired warp: INK-hot, then bright CYAN
     # easing back to its idle-busy level)
     if T_DISP[0] - EPS <= now < Z_OUT0:
         hot, glow = warp_fires(now, f, DISP_F, DISP_DECAY)
@@ -338,7 +387,7 @@ def pixel_state(now: float):
         if pp < 1.0:
             size[FOCUS] *= lerp(1.15, 1.0, ease_out_cubic(pp))
 
-    # waves of warps 4.65-5.15 (scattered): INK for 2 frames, settles to the image in 0.15 s
+    # waves of groups 8.45-9.12 (scattered): INK for 2 frames, settles to the image in 0.15 s
     img = image_at(f)
     if now >= T_WAVE0 - EPS:
         on = IN_WAVES & (f >= WAVE_F)
@@ -353,7 +402,7 @@ def pixel_state(now: float):
             rgb[FOCUS] = img[FOCUS]
             alpha[FOCUS] = IMG_OP
 
-    # 5.20 HIT: a 2-frame burst of light from the centre (HIT_K / HIT_RGB: INK at the core, CYAN
+    # 9.20 HIT: a 2-frame burst of light from the centre (HIT_K / HIT_RGB: INK at the core, CYAN
     # and faint toward the corners, so the image still shows through), then it fades back
     if now >= T_HIT - EPS:
         if flash_frames(now, T_HIT, 2):
@@ -364,7 +413,7 @@ def pixel_state(now: float):
             if lift > 0:
                 rgb = lerp(rgb, HIT_RGB, (lift * HIT_K)[:, None])
 
-    # 5.50-6.52 FRAMES: each warp repaints its 32 pixels with the next frame (image_at) on one
+    # 10.40-11.20 REPAINTS: each group repaints its 32 pixels with the next frame (image_at) on one
     # frame (a 2-frame CYAN-white write-flash, then a short CYAN afterglow) as the front sweeps
     if now >= T_FRAMES[0] - EPS:
         hot, glow = warp_fires(now, f, FR_F, FR_DECAY)
@@ -407,7 +456,7 @@ class _Snap:
 
 class B04Gpu(BeatScene):
     def beat(self):
-        # ---------------- entry: E03 (cpu token + HUD '256') ----------------
+        # ---------------- entry: E03 (cpu token + HUD '16' / CORES WORKING AT ONCE) ----------------
         st = enter(self)
         hud = st.hud
 
@@ -417,6 +466,8 @@ class B04Gpu(BeatScene):
         self._snap_cpu = [_Snap(m) for m in self.tok_cpu.family_members_with_points()]
         self._snap_gpu_base = _Snap(self.tok_gpu.base)
         self._snap_gpu_glyph = [_Snap(m) for m in self.tok_gpu.glyph.family_members_with_points()]
+        assert len(self._snap_gpu_glyph) == 64
+        self._glyph_fo = np.array([s.fr[0, 3] for s in self._snap_gpu_glyph])
 
         # ---------------- world at rest ----------------
         self.die_rest = RoundedRectangle(width=DIE_W, height=DIE_H, corner_radius=DIE_R).move_to(AC).points.copy()
@@ -424,36 +475,49 @@ class B04Gpu(BeatScene):
                                     stroke_width=3, fill_color=CYAN, fill_opacity=0.04).move_to(AC)
         assert len(self.die.points) == len(self.tok_gpu.base.points)
         self.field = Field(_RR, pool=360, qc=24, qa=32, fixed=True)   # the radial hit burst needs ~340
-        self.outline = RoundedRectangle(width=OUT_W, height=OUT_H, corner_radius=OUT_R, stroke_color=INK,
+        self.outline = RoundedRectangle(width=OUT_W, height=OUT_H, corner_radius=OUT_R, stroke_color=LIME,
                                         stroke_width=3, fill_opacity=0).move_to(OUT_C)
         self.outline_rest = self.outline.points.copy()
         self.beam = Line(LEFT, RIGHT, stroke_color=INK, stroke_width=7)
         self.beam.cap_style = CapStyleType.ROUND
+        # 3.45: the light wave races out behind a shock ring that rides its front (same speed)
+        lw_r0, lw_r1 = LW_R0 + 0.12, DMAX + 0.45
+        lw_dur = LW_DUR * (lw_r1 - lw_r0) / (DMAX - LW_R0)
+        self.lw_ring = ShockRing(self, T_LAND, AC, r0=lw_r0, r1=lw_r1, w0=9.0, w1=2.0, op0=0.85,
+                                 dur=lw_dur, color=INK, ease=linear)
         self.ring = ShockRing(self, T_HIT, AC, r0=0.5, r1=4.0, w0=8.0, op0=1.0, dur=0.50, color=INK)
 
-        # ---------------- text (kicker + headline in on the cut; they hold through the collapse and
-        # settle and hard-cut at T_EXIT with the canonical E04 swap, so no frame near a cut is bare) ----
+        # ---------------- text: kicker + cards (hard swaps; the kicker and the last card hold
+        # through the collapse and settle and hard-cut at T_EXIT with the canonical E04 swap) ----
         track = TextTrack(self)
-        track.on(kick("SCALE 3/6 · ONE GPU"), 0.0, T_TEXT_OUT, exit="cut")
-        c1 = card([("Now, a GPU.", "H96", INK),
-                   ("H100: 16,896 math lanes", "S56", INK, {"16,896 math lanes": CYAN})])
-        track.on(c1[0], 1 / 60, T_C1_OUT, enter="pop", exit="cut")   # POPs on story frame 1 (frame 0
-        track.on(c1[1], 0.05, T_C1_OUT, exit="cut")                  # stays E03); hard swap at 2.60
-        c2 = card([("Warps of 32.", "H96", INK, {"32": CYAN}),
-                   ("32 threads, 1 instruction.", "S56", INK)])
-        track.on(c2[0], T_C2, T_HIT, enter="pop", exit="cut")        # both lines POP on the swap;
-        track.on(c2[1], T_C2, T_HIT, enter="pop", exit="cut")        # hard swap on the 5.20 hit
-        c3 = card([("Every pixel,", "H84", INK), ("in parallel.", "H84", CYAN)])
-        track.on(c3, T_HIT, T_TEXT_OUT, enter="pop", exit="cut")
+        track.on(kick("LEVEL 2/3 · ONE GPU"), 0.0, T_TEXT_OUT, exit="cut")
+        c1 = card([("16? Cute.", "H96", INK, {"16?": CYAN}),
+                   ("Meet the GPU.", "S56", INK)])
+        track.on(c1[0], 1 / 60, T_C2, enter="pop", exit="cut")      # POPs on story frame 1 (frame 0
+        track.on(c1[1], 2 / 60, T_C2, enter="pop", exit="cut")      # stays E03), the sub-line 1 later
+        c2 = card([("Thousands of", "H84", INK),
+                   ("tiny cores.", "H84", INK, {"tiny cores.": CYAN})])
+        track.on(c2, T_C2, T_C3, enter="pop", exit="cut")
+        c3 = card([("Groups of 32.", "H96", INK, {"32": CYAN}),
+                   ("One instruction.", "S56", INK)])
+        track.on(c3, T_C3, T_C4, enter="pop", exit="cut")
+        c4 = card([("Same math,", "H84", INK),
+                   ("every number.", "H84", INK, {"every number.": CYAN})])
+        track.on(c4, T_C4, T_C5, enter="pop", exit="cut")
+        c5 = card([("For AI?", "H84", INK, {"AI": CYAN}),
+                   ("Not enough.", "H84", INK)])
+        track.on(c5, T_C5, T_TEXT_OUT, enter="pop", exit="cut")
 
-        # ---------------- HUD: the roll accelerates into the slam (with its ticks) ----------------
-        hud.roll(T_ROLL0, T_LAND, 256, 16896, ease=ease_in_quad)
+        # ---------------- HUD: '16' holds, the windup roll accelerates into the slam ----------------
+        hud.roll(T_ROLL0, T_LAND, 16, 16896, ease=ease_in_quad)
         hud.slam(T_LAND, "16,896")
-        hud.mult(T_LAND, "66× ONE CPU", hold=MULT_HOLD)  # word line: what the jump means
+        hud.mult(T_LAND, COUNTER_LINES["B04Gpu"], hold=MULT_HOLD)   # names the kind of core
+        assert hud.number_at(T_EXIT - 1e-4)[0] == "16,896" and hud.label_at(T_EXIT - 1e-4)[0] == CALC_LABEL
 
-        # ---------------- z-order: dust, ring, die, pixels, outline, beam, hit ring, flip tokens, text, HUD ----
+        # ---- z-order: dust, entry ring, die, cells, outline, beam, rings, flip tokens, text, HUD ----
         self.remove(st.token)                          # the flip token now draws E03
-        add_behind(self, self.die, self.field, self.outline, self.beam, self.ring, self.tok_cpu, self.tok_gpu)
+        add_behind(self, self.die, self.field, self.outline, self.beam, self.lw_ring, self.ring,
+                   self.tok_cpu, self.tok_gpu)
         entry_ring(self)
         self.add(track)
         self.remove(hud)
@@ -469,24 +533,28 @@ class B04Gpu(BeatScene):
         # ---------------- audio (each cue sits with the visual it scores) ----------------
         self.cue("glitch", dur=0.12, note="card-flip")
         self.cue("hit", dt=T_FLIP_MID, gain=0.8, note="GPU swapped in")
-        self.cue("ticks_burst", dt=T_ROLL0, dur=0.86, rate0=8, rate1=60, note="odometer (accelerating roll)")
-        self.cue("whoosh", dt=round(T_DIE0 + 0.27, 4), dur=0.55, direction="up", note="die opens")
-        self.cue("hit", dt=T_LAND, gain=0.8, note="16,896 lands")
+        self.cue("whoosh", dt=round(T_DIE0 + 0.10, 4), dur=0.55, direction="up", note="die opens")
+        self.cue("shimmer", dt=T_DIE0, dur=0.70, gain=0.35, note="low shimmer: 3,072 cells appear")
+        self.cue("ticks_burst", dt=T_ROLL0, dur=round(T_LAND - T_ROLL0 - 0.04, 4), rate0=8, rate1=60,
+                 note="odometer windup (accelerating roll 16 -> 16,896)")
+        self.cue("riser", dt=T_ROLL0, dur=round(T_LAND - T_ROLL0, 4), gain=0.7, note="windup into the slam")
+        self.cue("hit", dt=T_LAND, note="16,896 lands (tier 1, with the sub drop)")
+        self.cue("sub_drop", dt=T_LAND, dur=0.9)
         self.cue("shimmer", dt=T_LAND, dur=0.55, gain=0.6, note="light wave across the die")
         for t in T_DISP:
-            self.cue("tick", dt=t, gain=0.45, freq=2600, note="dispatch wave of warps sweeps the die")
-        self.cue("whoosh", dt=round(Z_IN0 - 0.05, 4), dur=0.40, direction="up", note="push-in on one warp")
+            self.cue("tick", dt=t, gain=0.45, freq=2600, note="dispatch wave of groups sweeps the die")
+        self.cue("whoosh", dt=round((Z_IN0 + Z_IN1) / 2, 4), dur=0.40, direction="up",
+                 note="push-in on one group of 32")
         for s in STEPS:
-            self.cue("tick", dt=s, gain=0.9, freq=3800, pan=0, note="lockstep step: all 32 threads")
-        self.cue("riser", dt=round(Z_OUT0 - 0.15, 4), dur=0.40, note="into the waves")
-        self.cue("whoosh", dt=round(Z_OUT0 - 0.03, 4), dur=0.30, direction="down", note="pull back")
-        self.cue("ticks_burst", dt=T_WAVE0, dur=0.55, rate0=10, rate1=10, note="one tick per warp wave")
-        self.cue("hit", dt=T_HIT, note="image complete")
-        self.cue("sub_drop", dt=T_HIT, dur=0.9)
-        self.cue("shimmer", dt=T_HIT, dur=1.40, note="rides the re-rendered frames")
+            self.cue("tick", dt=s, gain=0.9, freq=3800, pan=0, note="lockstep step: all 32 cells")
+        self.cue("whoosh", dt=round((Z_OUT0 + Z_OUT1) / 2, 4), dur=0.30, direction="down", note="pull back")
+        self.cue("riser", dt=round(T_WAVE0 - 0.40, 4), dur=0.40, gain=0.8, note="short riser into the waves")
+        self.cue("ticks_burst", dt=T_WAVE0, dur=0.55, rate0=10, rate1=10, note="one tick per wave of groups")
+        self.cue("hit", dt=T_HIT, gain=0.9, note="image complete (tier 2)")
+        self.cue("shimmer", dt=T_HIT, dur=0.90, note="burst of light from the ball")
         for t in T_FRAMES:
-            self.cue("tick", dt=t, gain=0.55, freq=3200, note="next frame: a wave of warps repaints the die")
-        self.cue("whoosh", dt=round(T_COL - 0.10, 4), dur=0.55, direction="down", note="collapse")
+            self.cue("tick", dt=t, gain=0.55, freq=3200, note="repaint: a wave of groups rewrites the ball")
+        self.cue("whoosh", dt=round((T_COL + T_SET) / 2, 4), dur=0.45, direction="down", note="collapse")
         self.cue("tick", dt=round(T_SET, 4), gain=0.5, note="settle")
 
         # ---------------- run ----------------
@@ -499,7 +567,7 @@ class B04Gpu(BeatScene):
         self.collapse = COLLAPSE(self.die, self.field, "gpu")
         self.add(self.collapse.glyph)
         hold_floor(self, T_EXIT)
-        exit_to(self)                                  # canonical E04, static to 7.50
+        exit_to(self)                                  # canonical E04, static to 12.00
 
     # ------------------------------------------------------------------
     def _draw(self, now: float) -> None:
@@ -511,7 +579,7 @@ class B04Gpu(BeatScene):
         self.field.draw(*pixel_state(now))
         self._draw_focus(now)
 
-    # ---- 0.00-0.70: card-flip, then the token glyph zooms/fades as the die opens
+    # ---- 0.00-1.29: card-flip, calm (twinkling) token hold, then the glyph zooms/fades as the die opens
     def _draw_flip(self, now: float) -> None:
         f = story_frame(now)
         flash = f in FLASH_FRAMES
@@ -532,23 +600,29 @@ class B04Gpu(BeatScene):
             self._apply_snap(s, cpu_vis, exact, stretch, flash)
         # gpu token base (hidden once the die takes over)
         self._apply_snap(self._snap_gpu_base, gpu_vis and now < T_DIE0 - EPS, exact, stretch, flash)
-        # gpu glyph: stretch during the flip; zooms with the opening die and fades 0.51 -> 0.70
+        # gpu glyph: stretch during the flip; idle twinkle through the calm hold (from TW_T0); zooms
+        # with the opening die and fades 1.10 -> 1.29
         ga = 1.0 - ramp(now, T_DIE0, T_GLYPH_OUT)
+        fo = twinkle(now, self._glyph_fo) if gpu_vis and exact else None
         if gpu_vis and now >= T_DIE0 - EPS:
             de = ease_out_expo(ramp(now, T_DIE0, T_DIE1))
             z = lerp(1.0, 2.4, de)
-            for s in self._snap_gpu_glyph:
+            for i, s in enumerate(self._snap_gpu_glyph):
                 m = s.m
                 if ga <= 0:
                     m.points = EMPTY.copy()
                     continue
                 m.points = (s.p - AC) * z + AC
                 v = s.fr.copy()
-                v[:, 3] *= ga
+                v[:, 3] = fo[i] * ga
                 m.fill_rgbas = v
         else:
-            for s in self._snap_gpu_glyph:
+            for i, s in enumerate(self._snap_gpu_glyph):
                 self._apply_snap(s, gpu_vis, exact, stretch, flash)
+                if fo is not None and fo[i] != s.fr[0, 3]:
+                    v = s.fr.copy()
+                    v[:, 3] = fo[i]
+                    s.m.fill_rgbas = v
 
     @staticmethod
     def _apply_snap(s: _Snap, vis: bool, exact: bool, stretch, flash: bool) -> None:
@@ -564,7 +638,7 @@ class B04Gpu(BeatScene):
             m.fill_rgbas, m.stroke_rgbas = s.fr.copy(), s.sr.copy()
         m.stroke_width = s.sw
 
-    # ---- die: token base -> 7.0 x 5.4 die; on the 5.20 hit an INK w8 stroke (2 frames) + pop
+    # ---- die: token base -> 7.0 x 5.4 die; on the 9.20 hit an INK w8 stroke (2 frames) + pop
     def _draw_die(self, now: float) -> None:
         d = self.die
         if now < T_DIE0 - EPS:
@@ -583,7 +657,7 @@ class B04Gpu(BeatScene):
         d.stroke_width = lerp(TOKEN_STROKE, 3.0, e) + 5.0 * hk + 2.0 * lw
         d.fill_rgbas = rgba(CYAN, lerp(TOKEN_FILL, 0.04, e) + 0.08 * hk).reshape(1, 4)
 
-    # ---- focus warp: INK outline + the instruction beam (both ride the camera)
+    # ---- focus group: LIME outline + the INK instruction beam (both ride the camera)
     def _draw_focus(self, now: float) -> None:
         o, bm = self.outline, self.beam
         k, c, e = cam_at(now)
@@ -598,7 +672,7 @@ class B04Gpu(BeatScene):
         sc = lerp(1.35, 1.0, vis_in) * (1.0 + 0.05 * fl)
         local = (self.outline_rest - OUT_C) * sc
         o.points = c + local * k
-        o.stroke_rgbas = rgba(INK, a).reshape(1, 4)
+        o.stroke_rgbas = rgba(interpolate_color(LIME, INK, 0.6 * fl) if fl > 0 else LIME, a).reshape(1, 4)
         o.stroke_width = lerp(3.0, 5.0, e) + 4.0 * fl
         # the instruction beam: a dim bus over the warp while zoomed, full INK on every issue
         ba = clip01((e - 0.85) / 0.15) * vis_out

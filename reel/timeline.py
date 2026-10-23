@@ -24,6 +24,6 @@ ENERGY = {
     "B03Cpu": 0.6,
     "B04Gpu": 0.72,
     "B06DataCenter": 0.9,
-    "B08Amdahl": 0.3,
+    "B08Amdahl": 0.25,
     "B09Loop": 0.5,
 }

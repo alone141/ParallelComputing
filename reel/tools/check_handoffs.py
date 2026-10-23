@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Lossless, dust-free exactness check of every beat boundary (and the loop seam).
 
-    /home/user/.venvs/manim/bin/python reel/tools/check_handoffs.py                 # 30 + 60 fps, all 9 seams
+    /home/user/.venvs/manim/bin/python reel/tools/check_handoffs.py                 # 30 + 60 fps, every seam
     /home/user/.venvs/manim/bin/python reel/tools/check_handoffs.py --fps 60
     /home/user/.venvs/manim/bin/python reel/tools/check_handoffs.py --beats b03_cpu b04_gpu   # seams touching these
     /home/user/.venvs/manim/bin/python reel/tools/check_handoffs.py --reuse          # compare the last capture again
@@ -13,12 +13,18 @@ exactly as a render would) but rasterises only frame 0 and the last 4 frames, st
 Cairo frame buffer (no video encode, no grade). The dust field is kept (its time-based updater is
 what makes waits render frame by frame) but drawn invisible, so frames compare bit for bit.
 
+The seams come from timeline.BEATS + motif.handoff_contract() (exit of beat N == entry of beat
+N+1, and the last beat -> the first: the loop). Script v2: 6 beats, 6 seams
+  b01 -E01-> b03 -E03-> b04 -E04-> b06 -E06-> b08 -E08-> b09 -LOOP-> b01.
+A contract error (a timeline beat without BEAT_ENTRY/BEAT_EXIT, exit != entry, stale entries for
+beats that are no longer in the timeline) stops the run before anything renders.
+
 Checks (all lossless, tolerance 0 unless --tol):
-  seam    last frame of beat N == frame 0 of beat N+1, for the 8 cuts and b09 -> b01 (the loop)
+  seam    last frame of beat N == frame 0 of beat N+1, for every cut incl. last -> first (the loop)
   canon   both sides == handoff_state(<name>) rendered on its own (says WHICH side drifted)
   frames  the beat renders exactly round(duration * fps) frames
-  hold    the last >= 3 frames at 60 fps are static (b09 excluded: its last frame IS the hop
-          onto idx 32 == b01 frame 0); at 30 fps the static count is reported only
+  hold    the last >= 3 frames at 60 fps are static (the last beat, b09, is excluded: its last
+          frame IS the hop onto idx 32 == b01 frame 0); at 30 fps the static count is reported only
 
 Captures go to reel/build/handoffs/<fps>/ (first.png, last0.png = final frame, last1..3.png);
 for every failing comparison a sheet A | B | |A-B| x8 is written next to them.
@@ -50,13 +56,21 @@ BEATS = [(cls, Path(mod).stem, dur) for cls, mod, dur in timeline.BEATS]
 STEMS = [s for _, s, _ in BEATS]
 
 
-def _entry_exit():
-    """(BEAT_ENTRY, BEAT_EXIT) without importing manim in the parent process."""
-    out = subprocess.run([PYTHON, "-c", "import json, motif; print(json.dumps([motif.BEAT_ENTRY, motif.BEAT_EXIT]))"],
-                         capture_output=True, text=True, cwd=REEL, env=dict(os.environ, PYTHONPATH=str(REEL)))
+def _contract():
+    """[(class A, class B, handoff name)] for every seam of timeline.BEATS (incl. the loop), from
+    motif.handoff_contract(), in a subprocess (the parent process never imports manim)."""
+    code = ("import json, motif\n"
+            "try:\n    print(json.dumps(motif.handoff_contract()))\n"
+            "except ValueError as e:\n    print('CONTRACT ' + str(e)); raise SystemExit(3)\n")
+    out = subprocess.run([PYTHON, "-c", code], capture_output=True, text=True, cwd=REEL,
+                         env=dict(os.environ, PYTHONPATH=str(REEL)))
+    last = out.stdout.strip().splitlines()[-1] if out.stdout.strip() else ""
+    if out.returncode == 3:
+        raise SystemExit(f"handoff contract broken (motif.BEAT_ENTRY / BEAT_EXIT vs timeline.BEATS): "
+                         f"{last[len('CONTRACT '):]}")
     if out.returncode != 0:
         raise SystemExit(f"cannot import motif:\n{out.stderr}")
-    return json.loads(out.stdout.strip().splitlines()[-1])
+    return [tuple(x) for x in json.loads(last)]
 
 
 # --------------------------------------------------------------------------
@@ -107,6 +121,9 @@ def _worker(kind: str, name: str, fps: int, w: int, h: int, out_dir: Path) -> No
             if i == 0 or i >= n_exp - N_LAST:
                 self.update_frame(scene, moving_mobjects)
                 frames[i] = self.get_frame()[..., :3].copy()
+            # what add_frame() does minus the file write: scene.time (and so BeatScene.now)
+            # advances frame by frame INSIDE a play, exactly as in a real render
+            self.time += 1 / self.camera.frame_rate
 
         CairoRenderer.render = render
         mod = importlib.import_module(name)
@@ -187,13 +204,10 @@ def main() -> int:
     a = ap.parse_args()
     w, h = (int(v) for v in a.res.lower().split("x"))
 
-    # seams: (A stem, B stem, handoff name)
-    entry, exit_ = _entry_exit()
-    seams = []
-    for k, (cls, stem, _) in enumerate(BEATS):
-        ncls, nstem, _ = BEATS[(k + 1) % len(BEATS)]
-        assert exit_[cls] == entry[ncls] or {exit_[cls], entry[ncls]} == {"LOOP"}, (cls, ncls)
-        seams.append((stem, nstem, exit_[cls]))
+    # seams: (A stem, B stem, handoff name), straight from the shared contract
+    stem_of = {cls: stem for cls, stem, _ in BEATS}
+    seams = [(stem_of[a_], stem_of[b_], name) for a_, b_, name in _contract()]
+    print("contract: " + "  ".join(f"{sa} -{name}-> {sb}" for sa, sb, name in seams), flush=True)
     if a.beats:
         want = {s for s in STEMS for b in a.beats if b in (s, s.split("_", 1)[0])}
         want |= {s for c, s, _ in BEATS if c in a.beats}
@@ -208,9 +222,21 @@ def main() -> int:
         log_dir.mkdir(parents=True, exist_ok=True)
         if not a.reuse:
             jobs = [("beat", s) for s in stems] + ([] if a.no_canon else [("canon", n) for n in names])
-            # slowest first (b04 / b08 / b06 dominate)
-            order = {"b04_gpu": 0, "b08_amdahl": 1, "b06_datacenter": 2, "b07_planet": 3}
-            jobs.sort(key=lambda j: order.get(j[1], 9))
+            # slowest first: the longest beats dominate the wall time; canon stills are quick
+            dur_of = {stem: dur for _, stem, dur in BEATS}
+            jobs.sort(key=lambda j: -dur_of.get(j[1], 0.0) if j[0] == "beat" else 1.0)
+            # drop this run's targets first: a crashed worker must read as a MISSING capture, never
+            # be compared through a stale PNG from an earlier run
+            stale = []
+            for kind, name in jobs:
+                if kind == "beat":
+                    stale += [out_dir / f"{name}_first.png", out_dir / f"{name}.json"]
+                    stale += [out_dir / f"{name}_last{k}.png" for k in range(N_LAST)]
+                else:
+                    stale.append(out_dir / f"canon_{name}.png")
+            stale += list(out_dir.glob("seam_*.png")) + list(out_dir.glob("canon_b*.png"))
+            for f in stale:
+                f.unlink(missing_ok=True)
             print(f"[{fps} fps] capturing {len(jobs)} jobs ({a.jobs} parallel) -> {out_dir}", flush=True)
             with ThreadPoolExecutor(a.jobs) as ex:
                 for name, rc, log in ex.map(lambda j: _run_worker(j[0], j[1], fps, w, h, out_dir, log_dir), jobs):
@@ -247,25 +273,32 @@ def main() -> int:
 
         for sa, sb, name in seams:
             pa, pb = out_dir / f"{sa}_last0.png", out_dir / f"{sb}_first.png"
-            if not (pa.exists() and pb.exists()):
-                ok = False
-                print(f"  FAIL  seam    {sa} -> {sb} ({name}): missing capture")
-                continue
-            A, B = _load(pa), _load(pb)
-            mx, n, bbox = _cmp(A, B, a.tol)
             label = f"{sa} -> {sb} ({name})"
-            if n:
+            A = _load(pa) if pa.exists() else None
+            B = _load(pb) if pb.exists() else None
+            if A is None or B is None:
                 ok = False
-                _sheet(A, B, out_dir / f"seam_{sa}__{sb}.png")
-                print(f"  FAIL  seam    {label}: max diff {mx}, {n} px > tol, bbox {bbox} "
-                      f"-> {out_dir / f'seam_{sa}__{sb}.png'}")
+                gone = " and ".join(x for x, y in ((f"{sa} exit", A), (f"{sb} entry", B)) if y is None)
+                print(f"  FAIL  seam    {label}: missing capture ({gone})")
             else:
-                print(f"  ok    seam    {label}: bit exact" + (f" (max {mx} <= tol)" if mx else ""))
+                mx, n, bbox = _cmp(A, B, a.tol)
+                if n:
+                    ok = False
+                    _sheet(A, B, out_dir / f"seam_{sa}__{sb}.png")
+                    print(f"  FAIL  seam    {label}: max diff {mx}, {n} px > tol, bbox {bbox} "
+                          f"-> {out_dir / f'seam_{sa}__{sb}.png'}")
+                else:
+                    print(f"  ok    seam    {label}: bit exact" + (f" (max {mx} <= tol)" if mx else ""))
             pc = out_dir / f"canon_{name}.png"
             if a.no_canon or not pc.exists():
                 continue
             C = _load(pc)
+            # each side on its own, so a beat that is already right says so even when its
+            # neighbour crashed
             for side, X, tag in (("exit ", A, sa), ("entry", B, sb)):
+                if X is None:
+                    print(f"  --    canon   {side} {tag}: no capture")
+                    continue
                 mx, n, bbox = _cmp(X, C, a.tol)
                 if n:
                     ok = False

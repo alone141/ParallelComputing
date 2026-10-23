@@ -10,26 +10,26 @@ Reels, made with [Manim Community](https://www.manim.community/) 0.22.
 
 ## The film
 
-It's a "Powers of Ten" zoom-out. Each scale collapses into one glowing token,
-and that token opens as a single unit of the next scale. A counter in one honest
-unit, *calculations at once* (simultaneous FP32 lanes), climbs as it goes, and
-a lime line under it explains every jump.
+It's a "level-up run" through three scales. Each scale collapses into one glowing
+token, and that token opens as a single unit of the next scale. The final boss
+is Amdahl's law. A counter in one honest unit, *cores working at once* (a
+literal spec count of what the maker calls a core), climbs as it goes, and a
+lime line under it explains every jump. The script is
+[`design/script_v2.json`](design/script_v2.json), approved together with the
+decisions recorded in its `user_decisions` field.
 
 Pacing rule: every idea lands on a calm stage and is read before the animation
 it describes fires, and each payoff holds. Cards stay up at least
 0.3 s per word + 0.8 s; the lime equation lines stay up at least 1.5 s.
 
-| Film time | Beat | Scale | Mechanism on screen | Counter |
+| Film time | Beat | Level | On screen | Counter |
 |---|---|---|---|---|
-| 0.0 | `b01_hook` | Hook | one worker, one task at a time → 320 workers, one step | — |
-| 5.0 | `b02_simd` | 1/6 one core | SIMD: one `vaddps` adds 16 number pairs in lockstep | 1 → 16 |
-| 11.0 | `b03_cpu` | 2/6 one CPU | 16 cores, each running its own thread over shared memory | 256 |
-| 16.5 | `b04_gpu` | 3/6 one GPU | H100: 16,896 lanes; warps of 32 threads, one instruction | 16,896 |
-| 24.0 | `b05_node` | 4/6 one server | 8 GPUs exchanging results through NVSwitch | 135,168 |
-| 29.5 | `b06_datacenter` | 5/6 data center | no shared memory: GPUs pass messages; 100,000+ GPUs train one AI | 1,689,600,000+ |
-| 36.5 | `b07_planet` | 6/6 the planet | Folding@home 2020: work units out, results back | (retired) |
-| 42.5 | `b08_amdahl` | the catch | Amdahl's law: 10% serial work caps speedup at 10× | speedup meter |
-| 51.5 | `b09_loop` | loop | "So why build 100,000 GPUs?" → back to frame 0 | — |
+| 0.0 | `b01_hook` | Hook | "One at a time." → "All at once." (320 tasks light up) → "It scales… then stalls." | — |
+| 5.0 | `b03_cpu` | 1/3 one CPU | "That worker? One CPU core." → "16 cores. 16 different jobs." → "They share one memory." → "Need more?" | 1 → 16 (16-CORE RYZEN 9 9950X) |
+| 14.5 | `b04_gpu` | 2/3 one GPU | "16? Cute. Meet the GPU." → "Thousands of tiny cores." → "Groups of 32. One instruction." → "Same math, every number." → "For AI? Not enough." | 16,896 (H100: 16,896 CUDA CORES) |
+| 26.5 | `b06_datacenter` | 3/3 data center | "Many boxes. No shared memory." → "So they pass messages." → "Go bigger." → "100,000+ GPUs. One AI." → "More GPUs…" | 1,689,600,000+ (100,000+ GPUs × 16,896) |
+| 39.0 | `b08_amdahl` | final boss | record-scratch → "So… infinite speed?" → "No." → "Some work can't be split." → "A million GPUs?" → "10% serial = max 10×." → "Forever." | speedup meter 1.0× → 9.9× → 10× |
+| 51.5 | `b09_loop` | loop | "Why buy 100,000 GPUs?" · "Wrong answers only ↓" → back to frame 0 | — |
 
 The last frame of `b09` is the first frame of `b01`, and the worker's hop
 clock runs straight through the cut, so the video loops seamlessly. Every
@@ -38,18 +38,24 @@ number is in [`design/facts.json`](design/facts.json) with its source.
 ## Posting kit
 
 - **Title:** How parallel computing works — at every scale
-- **Caption:** One worker vs 320. Then 16 lanes inside one CPU core, 16 cores,
-  an H100's 16,896 math lanes, 8 GPUs on NVLink, 100,000+ GPUs training one
-  AI, and in 2020 a planet of home PCs… until one law no budget can beat.
-  So why build 100,000-GPU clusters? Wrong answers only ↓
-- **Pinned comment:** Hint: Gustafson's law (1988). Grow the problem, not just the workers.
-- **Hashtags:** #parallelcomputing #computerscience #gpu #cuda #simd #nvidia
-  #supercomputer #ai #amdahlslaw #programming #coding #techtok #learnontiktok #stem #manim
-- **Cover frame:** film time ≈ 34.6 s (b06 local ~5.1): the hall right after
-  the big drop, with "100,000+" up top and "1,689,600,000+" below.
+- **Caption:** 1 worker → 16 CPU cores → 16,896 CUDA cores → 1.7 BILLION CUDA
+  cores training ONE AI. Then the final boss shows up: if 10% of the job can't
+  be split, you max out at 10× faster. Forever. So why buy 100,000 GPUs?
+  Wrong answers only ↓
+- **Pinned comment:** How to beat the final boss: Gustafson's law (1988).
+  Amdahl's 10× cap assumes the job stays the same size. AI labs grow the job with
+  the machine (bigger models, more data), so the parallel part keeps growing and
+  100,000 GPUs still pay off. Nerd notes: a "CUDA core" is NVIDIA's name for one
+  tiny FP32 math lane. They run 32 at a time on one instruction (a warp), so they
+  are not CPU-style cores. H100 SXM5 = 132 SMs × 128 = 16,896. The CPU count is
+  physical cores (a 9950X has 16 cores / 32 threads). The 10% serial share is
+  just an example.
+- **Hashtags:** #parallelcomputing #computerscience #gpu #cpu #nvidia #cuda
+  #datacenter #ai #amdahlslaw #programming #coding #techtok #learnontiktok #stem #manim
+- **Cover frame:** film time ≈ 34.5 s (b06 local ~8.0): the hall right after
+  the big drop, with "100,000+ GPUs. One AI." up top and "1,689,600,000+" below.
 - **Accuracy notes for replies:**
-  - The counter counts FP32 lanes only: no tensor cores, no FMA-as-2-FLOPs.
-  - The Folding@home comparison holds only for April 2020, and it was not the HPL benchmark.
+  - The counter counts cores as each maker defines them: CPU physical cores, then NVIDIA FP32 CUDA cores.
   - The 10% serial fraction is illustrative.
 
 ## Build
@@ -73,7 +79,7 @@ $PY reel/build.py contact b04_gpu          # 540x960 preview + time-stamped cont
 $PY reel/build.py frames b04_gpu 1.3 4.55  # exact preview frames at beat-local times
 $PY reel/build.py film                     # whole film at preview quality (~3 min)
 $PY reel/build.py film --final             # 1080x1920 @ 60 fps masters into reel/out (~15 min)
-$PY reel/tools/check_handoffs.py           # bit-exact check of all 9 cuts incl. the loop seam
+$PY reel/tools/check_handoffs.py           # bit-exact check of every cut incl. the loop seam
 ```
 
 ## How it's built
@@ -90,7 +96,8 @@ $PY reel/tools/check_handoffs.py           # bit-exact check of all 9 cuts incl.
   - Tokens, cards, the HUD counter, camera EXPAND/COLLAPSE, flashes, the hook grid.
   - `handoff_state(name)`: the boundary frames. Adjacent beats build each cut
     from the same function, so they match by construction.
-- `b01_hook.py` … `b09_loop.py`: one Scene per beat.
+- `b01_hook.py`, `b03_cpu.py`, `b04_gpu.py`, `b06_datacenter.py`, `b08_amdahl.py`,
+  `b09_loop.py`: one Scene per beat (file numbers kept from the first cut).
 - `build.py`: renders the beats, concatenates them, and grades.
   - Bloom is computed on fixed-size intermediates, so previews and masters
     look the same.

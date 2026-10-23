@@ -1,19 +1,22 @@
-"""b09 LOOP: so why build 100,000 GPUs? Back to one worker (3.5 s, film 51.5-55.0).
+"""b09 LOOP: why buy 100,000 GPUs? Back to one worker (3.5 s, film 51.5-55.0). Script v2,
+segment 'ending'.
 
-Frame 0 is E08: the bright serial token (AMBER fill 0.58, crisp #FFD27A rim) + the '10×' HUD.
-On frame 1 the comment question POPs in and the camera is already pulling back
+Frame 0 is E08 (the twist -> ending boundary): the bright serial token (AMBER fill 0.58,
+crisp #FFD27A rim) + the '10×' HUD. On frame 1 the comment question 'Why buy / 100,000 GPUs?'
+('100,000' CYAN) POPs in and the camera is already pulling back
 (ease_out_quart from 0.00: the grid rushes in at once and decelerates all the way into the
 crawl): the token was cell 0 of the hook grid all along. Drawn on the grid's top layer, it
 fills in to the lone solid-amber worker within 0.6 s (rim -> INK, x1.4, its halo growing in
-with the morph), while the HUD drops away in 0.12 s, before the field is dense. 'Wrong
+with the morph), while the HUD drops away in 0.12 s, before the field is dense. The question
+is fully visible f1 -> 2.40 = 2.38 s (floor 0.3 s x 4 words + 0.8 = 2.0). 'Wrong
 answers only ↓' (the caption's CTA, BG knockout over the still-settling field) joins at 0.43,
 once the question has been read alone for 0.4 s, so the CTA gets its full reading window
 (fully in 0.68 -> 2.40 = 1.72 s >= 0.3 s x 3 words + 0.8). Count-in: the settled worker pulses twice (f84, f100; halo swells, the cell
 blinks hot, a low tick, the CTA arrow nudges down), and the crawl's first hop (f116) lands on
 the same 16-frame interval. From f113 the worker crawls on the same integer frame clock as
-b01 (hop every 3 frames); at 2.40 the question cuts and 'One at a time.' + the
-'PARALLEL COMPUTING' kicker + the readout POP in. The worker lands on idx 32 on the very last
-frame (f209), which is exactly b01's frame 0 (handoff_state('LOOP')).
+b01 (hop every 3 frames, LOCKED); at 2.40 the question cuts and 'One at a time.' + the
+'PARALLEL COMPUTING' kicker + the readout POP in (no kicker before). The worker lands on idx 32
+on the very last frame (f209), which is exactly b01's frame 0 (handoff_state('LOOP')).
 """
 
 from style import *
@@ -22,7 +25,7 @@ from motif import *
 # ---------------------------------------------------------------- timing (local s)
 F = 1 / 60
 T_HUD_OUT = 0.12                # HUD fades out + drops 0.3 (ease_out_quad): gone before the grid is dense
-T_Q_IN = F                      # 'So why build / 100,000 GPUs?' POPs on story frame 1
+T_Q_IN = F                      # 'Why buy / 100,000 GPUs?' POPs on story frame 1
 T_CB_IN = 26 * F                # 0.4333 'Wrong answers only ↓' CARD_IN (BG knockout over the settling grid);
                                 # fully in 0.683 -> T_CUT 2.40 = 1.717 s (reading floor 1.70)
 T_ZOOM0 = 0.0                   # reverse zoom (ease_out_quart) from the cut ...
@@ -126,7 +129,7 @@ class B09Loop(BeatScene):
         # ---------------------------------------------------------------- text
         tr = TextTrack(self)
         self.add(tr)
-        q = card([("So why build", "H84", INK), ("100,000 GPUs?", "H84", INK, {"100,000": CYAN})])
+        q = card([("Why buy", "H84", INK), ("100,000 GPUs?", "H84", INK, {"100,000": CYAN})])
         tr.on(q[0], T_Q_IN, T_CUT, enter="pop", exit="cut")
         tr.on(q[1], T_Q_IN, T_CUT, enter="pop", exit="cut")
         cb = card([(CTA, "S56", INK)], top=STEP_TOP)[0]

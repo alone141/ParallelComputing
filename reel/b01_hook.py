@@ -1,4 +1,4 @@
-"""b01 HOOK: one at a time vs all at once (5.0 s, film 0.0-5.0).
+"""b01 HOOK: one at a time vs all at once (5.0 s, film 0.0-5.0). Script v2, segment 'hook'.
 
 Frame 0 is handoff_state('LOOP') (== b09's last frame): the x1.4 amber worker with its soft
 halo is mid-crawl on idx 32 (10-cell bright trail, #2E3445 idle field), under the
@@ -10,16 +10,20 @@ dead on the 8-frame micro-freeze (headline jitter, silence); at 1.00 s every oth
 lights up in a radial INK->CYAN wave (white radial burst + CYAN shock ring from the worker)
 while the lone worker stays AMBER, drawn on the grid's top layer with its halo (above the
 1.3x flashing neighbours); the halo fades out during the push-in, before the token lands.
-Read-holds: 'All at once.' + '320 WORKERS · 1 STEP' hold over the shimmering field until 2.667
-(1.67 s after the hit; the readout until 3.22), then the hook pair hard-swaps to the open-loop
-card (POP, 2.667) on the calm field, read for 1.23 s before the push-in fires. The swap is the
-film's card-swap grammar: no 0.20 s CARD_OUT + 0.25 s CARD_IN gap eats the reading windows.
-The camera then never sits still: a slow linear push-in about the worker (1.035 -> 1.06,
-1.30-3.90) carries straight into the ease_in_out_expo push-in (3.90-4.83, 56 frames), with a
-second, softer diagonal light pulse on the open-loop card (2.667). The worker morphs into the
-cyan E01 token and settles (cut_times(5.0): land 4.833, settle 0.12 s, static E01 f297-f299).
-The kicker + open-loop card stay fully visible until the token is static (hard cut at 4.95),
-so the cut never shows an empty, text-less frame before b02's frame 0.
+The first second (riser 0.45, freeze f52-f59, hit 1.00) is LOCKED.
+Read-holds: 'All at once.' + '320 WORKERS · 1 STEP' hold over the shimmering field until 2.70
+(f162: exactly the 1.70 s floor of 'All at once.'; the readout leaves at 3.25), then the hook
+pair hard-swaps to the open-loop card 'It scales… / then stalls.' (AMBER 2nd line, POP, f162)
+on the calm field, read for 1.20 s before the push-in fires (visible 2.70 -> 4.95 = 2.25 s,
+floor 2.0). The swap is the film's card-swap grammar: no 0.20 s CARD_OUT + 0.25 s CARD_IN gap
+eats the reading windows. The camera then never sits still: a slow linear push-in about the
+worker (1.035 -> 1.06, 1.30-3.90) carries straight into the ease_in_out_expo push-in
+(3.90-4.83, 56 frames), with a second, softer diagonal light pulse on the open-loop card
+(2.70). The worker morphs into the plain cyan E01 token (no HUD: b03 opens it as core T6 and
+its counter first appears there) and settles (cut_times(5.0): land 4.833, settle 0.12 s,
+static E01 f297-f299). The kicker + open-loop card stay fully visible until the token is
+static (hard cut at 4.95), so the cut never shows an empty, text-less frame before b03's
+frame 0.
 
 Everything per frame is a pure function of self.now (one vectorised grid updater + the
 motif text tracks), so 30 fps previews and 60 fps finals agree.
@@ -37,14 +41,15 @@ T_HIT = 1.00                    # f60 the parallel wave
 WAVE_SPAN = 0.35                # flash front reaches the farthest cell 0.35 s after the hit
 FLASH_SETTLE = 0.25             # INK flash -> LIT
 # Read-holds (5.0 s slot; the first second above is untouched): the payoff ('All at once.' +
-# '320 WORKERS · 1 STEP' over the shimmering cyan field) holds 1.67 s after the hit, then the
-# hook pair HARD-SWAPS to the open-loop card (POP), read on the calm field for 1.23 s before the
-# push-in fires. The text window is 1.00 (the sacred hit) -> 4.95 (exit) = 3.95 s for floors of
-# 1.70 ('All at once.', 3 words) + 2.30 (open-loop card, 5 words); the swap at f160 splits the
-# 0.05 s shortfall: 1.667 s / 2.283 s (counted from full opacity: SLAM / POP are opaque at once).
-T_SWAP = 160 * F                # 2.6667 hook pair cut -> open-loop card POP
+# '320 WORKERS · 1 STEP' over the shimmering cyan field) holds 1.70 s after the hit, then the
+# hook pair HARD-SWAPS to the open-loop card 'It scales… / then stalls.' (POP), read on the
+# calm field for 1.20 s before the push-in fires. The text window is 1.00 (the sacred hit) ->
+# 4.95 (exit) = 3.95 s for floors of 1.70 ('All at once.', 3 words) + 2.00 (open-loop card,
+# 4 words); the swap at f162 (script v2) gives 'All at once.' exactly its 1.70 s and the card
+# 2.25 s (counted from full opacity: SLAM / POP are opaque at once).
+T_SWAP = 162 * F                # 2.70 hook pair cut -> open-loop card POP
 T_CARDS = T_SWAP                # open-loop card in (+ the second light pulse)
-T_RO_OUT = T_CARDS + 0.55       # 3.217 '320 WORKERS · 1 STEP' out (gone 3.417, before the push-in)
+T_RO_OUT = T_CARDS + 0.55       # 3.25 '320 WORKERS · 1 STEP' out (gone 3.45, before the push-in)
 CREEP_S = 1.035                 # camera creeps in about the worker during the crawl (1.0 -> 1.035,
                                 # ease_in_quad from f0, stops dead on the micro-freeze, holds)
 T_CHARGE0 = 0.45                # visual riser (with the audio riser): the idle field charges,
@@ -255,7 +260,11 @@ class B01Hook(BeatScene):
         # The topic is part of the LOOP frame (b09 POPs it in at 2.40), so it is on screen from
         # frame 0 with no fade-in, stays when the open-loop card arrives and cuts with the token.
         tr.on(st.kicker, 0.0, T_TXT_OUT, enter="cut", exit="cut")
-        ol = card([("It scales…", "H84", INK), ("until it doesn't.", "H84", AMBER)])
+        ol = card([("It scales…", "H84", INK), ("then stalls.", "H84", AMBER)])
+        # BG knockout (as b09's CTA): during the push-in (~4.30-4.60) the enlarged, fading top row
+        # of cells passes under 'then stalls.'; the knockout keeps the glyph edges clean there.
+        # It overlaps nothing before the push-in, and the card is cut at 4.95 (before E01).
+        ol.set_stroke(BG, width=8, opacity=0.9, background=True)
         tr.on(ol[0], T_CARDS, T_TXT_OUT, enter="pop", exit="cut")   # both lines POP on the swap
         tr.on(ol[1], T_CARDS, T_TXT_OUT, enter="pop", exit="cut")
 

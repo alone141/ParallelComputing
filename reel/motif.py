@@ -18,36 +18,48 @@ Contents (details in each docstring):
   text ............. kick, card, below, hud_number, hud_label, hud_mult, step_readout, step_str,
                      hud_number_tmpl / hud_label_tmpl / hud_line_tmpl / hud_pill_tmpl (cached, read-only)
   animations ....... Drive, CARD_IN, CARD_OUT, SLAM, POP, slam_scale, pop_scale, fit_scale
-  frame-exact text . TextSlot, LiveText, TextTrack, Hud (+ Hud.retire), glitch_at (the HUD glitch clock
-                     for any element)
+  frame-exact text . TextSlot, LiveText, TextTrack, Hud (+ Hud.retire, Hud.tear), core_hud,
+                     glitch_at (the HUD glitch clock for any element)
+  counter .......... CALC_LABEL (= CORES_LABEL 'CORES WORKING AT ONCE'), CORE_LABEL_1 (singular, for
+                     the number 1), core_label(n), COUNTER_LINES (the three LIME lines, per beat)
+  tear-away ........ tear_at (pure clock), tear_offsets, Tear (any static mobject), tear_away (a
+                     whole handoff state: HUD + token), TEAR_* constants
   units/tokens ..... unit, token_glyph, unit_with_glyph, handoff_token (Token), token_fill,
                      token_stroke_color, token_rgbas
   camera ........... expand_cam, EXPAND / Expand / expand_rig, CamRig, Collapse / COLLAPSE, drift
   effects .......... ShockRing, entry_ring, RadialFlash, FrameFlash, add_behind, ink_stroke
-  scene helpers .... hold_floor, cut_times, drive
+  scene helpers .... hold_floor, cut_times, drive, riser_to_cut / scratch_cut (audio across a cut)
   hook grid ........ HookGrid (cells + top layer: halo, hero), hook_state, HOOK_* (WORKER_SCALE 1.4,
                      HALO_*, TRAIL_*, IDLE #2E3445), b01_worker_idx, b09_worker_idx
-  handoffs ......... handoff_state, enter, exit_to, BEAT_ENTRY, BEAT_EXIT, loop_kicker, loop_headline,
+  handoffs ......... handoff_state, enter, exit_to, BEAT_ENTRY, BEAT_EXIT, HANDOFF_NAMES,
+                     handoff_contract, RETIRED_HANDOFFS, loop_kicker, loop_headline,
                      LOOP_KICKER / LOOP_HEADLINE / LOOP_WORKER
   (reel/tools/check_handoffs.py verifies every boundary bit-exactly at 30 and 60 fps.)
+
+Script v2 contract (timeline.py; E0N = exit of b0N = entry of the next beat):
+  b01 hook --E01 plain CYAN token, no HUD--> b03 CPU --E03 cpu token + '16'--> b04 GPU
+  --E04 gpu token + '16,896'--> b06 data center --E06 cluster token + '1,689,600,000+'-->
+  b08 twist (tears E06 away) --E08 AMBER serial token + '10×'--> b09 ending --LOOP--> b01.
 
 Typical beat (b03-like):
 
     class B03Cpu(BeatScene):
         def beat(self):
-            st = enter(self)                    # E02 token + live HUD (pixel-exact frame 0)
-            hud = st.hud
-            world = VGroup(...)                 # build at REST positions
-            exp = Expand(world, slot, 0.95, hero=hero, token='core')   # 0.50 s, draws e=0 now
+            st = enter(self)                    # E01: the plain token, no HUD (pixel-exact frame 0)
+            hud = core_hud('1', scene=self, pop_at=0.10)          # the counter's first appearance
+            world = VGroup(...)                 # build at REST positions (cores = plain units)
+            exp = Expand(world, slot, 0.95, hero=hero, token='plain')   # 0.50 s, draws e=0 now
             add_behind(self, world)             # content above dust, behind token/HUD
             entry_ring(self)                    # ring behind content, from frame 1
             self.remove(st.token)               # the hero now draws the token
+            self.add(hud)
             tr = TextTrack(self); self.add(tr)  # text on/off schedule (frame exact)
-            tr.on(kick('SCALE 2/6 · ONE CPU'), 0.0, 3.80)        # 'in' at 0.0 is invisible on frame 0
-            hud.slam(2.20, '256', mult='×16')   # HUD events are scheduled, not played
+            tr.on(kick('LEVEL 1/3 · ONE CPU'), 0.0, 9.45, exit='cut')   # 'in' at 0.0: invisible on frame 0
+            hud.slam(3.70, '16'); hud.label(3.70, core_label(16))       # HUD events are scheduled
+            hud.mult(3.70, COUNTER_LINES['B03Cpu'], hold=1.8)
             self.cue('hit'); self.play(exp)
             ...                                 # your own updaters use self.now / sframe(self)
-            t_col, t_set, t_exit = cut_times(4.5)                # 0.40 s collapse, 0.12 s settle, 3 frames
+            t_col, t_set, t_exit = cut_times(9.5)                # 0.40 s collapse, 0.12 s settle, 3 frames
             self.hold_until(t_col)
             col = COLLAPSE(package, world, 'cpu')                # captures the state on screen now
             drive(self, lambda now: col.render(now, t_col, t_set, t_exit)); self.add(col.glyph)
@@ -935,9 +947,12 @@ _EMPTY = np.zeros((0, 3))
 
 class TextSlot(VGroup):
     """A pool of VMobjects that displays any (cached, positioned) Text in place:
-    display(tmpl, alpha, scale, about, shift, tint) copies glyph points + style, unused pool members get no points (not drawn).
+    display(tmpl, alpha, scale, about, shift, tint, offsets) copies glyph points + style, unused
+    pool members get no points (not drawn).
     Renders pixel-identically to the template itself; safe to change every frame
-    mid-play (nothing is added/removed from the scene)."""
+    mid-play (nothing is added/removed from the scene).
+    offsets: optional (n_glyphs, 3) array added to each glyph AFTER scale + shift (per-glyph
+    displacement: the tear-away splits a line into sliding chunks with it)."""
 
     def __init__(self):
         super().__init__()
@@ -951,28 +966,32 @@ class TextSlot(VGroup):
         self._key = "empty"
 
     def display(self, tmpl: Mobject, alpha: float = 1.0, scale: float = 1.0, about=None,
-             shift=None, tint=None) -> None:
+             shift=None, tint=None, offsets=None) -> None:
         if alpha <= 0:
             self.clear_slot()
             return
         sh = None if shift is None or not np.any(shift) else np.asarray(shift, float)
         ab = None if scale == 1.0 else (np.asarray(about, float) if about is not None
                                           else getattr(tmpl, "_about", tmpl.get_center()))
+        go = None if offsets is None or not np.any(offsets) else np.asarray(offsets, float)
         key = (id(tmpl), round(alpha, 9), round(scale, 9),
                None if ab is None else tuple(np.round(ab, 9)),
-               None if sh is None else tuple(np.round(sh, 9)), None if tint is None else _hex(tint))
+               None if sh is None else tuple(np.round(sh, 9)), None if tint is None else _hex(tint),
+               None if go is None else np.round(go, 9).tobytes())
         if key == self._key:
             return
         self._key = key
         glyphs = getattr(tmpl, "_glyphs", None) or tmpl.family_members_with_points()
         while len(self.submobjects) < len(glyphs):
             self.add(VMobject())
-        for m, g in zip(self.submobjects, glyphs):
+        for j, (m, g) in enumerate(zip(self.submobjects, glyphs)):
             p = g.points
             if ab is not None:
                 p = (p - ab) * scale + ab
             if sh is not None:
                 p = p + sh
+            if go is not None and j < len(go) and np.any(go[j]):
+                p = p + go[j]
             m.points = p.copy() if p is g.points else p
             _copy_style(m, g, alpha, tint)
         for m in self.submobjects[len(glyphs):]:
@@ -1141,8 +1160,8 @@ class TextTrack(VGroup):
 
 def glitch_at(now: float, t0: float, t1: float, amp: float = 0.06, seed: int = 8,
               split_frames: Sequence[int] = (), tint=AMBER):
-    """The HUD's glitch, as a pure function for ANY element (b08 cracks its opening text/bar with
-    it now that E07 has no HUD): (dx, tint_or_None, split) at local time now for a glitch over
+    """The HUD's glitch, as a pure function for ANY element (b08 cracks its opening question
+    with it): (dx, tint_or_None, split) at local time now for a glitch over
     (t0, t1). 30 Hz clock g = story_frame(now - t0) // 2 (same pattern at 30 and 60 fps):
     x-jitter jitter(2g, amp, seed) per step, `tint` on odd steps, split=True on the steps that
     contain a listed story frame (draw CYAN/MAGENTA copies at -/+0.05 then); nothing on step 0 or
@@ -1157,14 +1176,118 @@ def glitch_at(now: float, t0: float, t1: float, amp: float = 0.06, seed: int = 8
     return 0.0, None, False
 
 
+# ---- the tear-away: an element is ripped out to black on the glitch clock (b08 tears the
+# incoming E06 counter + cluster token with it, so the counter is never seen dropping)
+TEAR_TIME = 0.30                            # default tear window (b08: 0.00-0.30)
+TEAR_AMP = 0.10                             # whole-element x-jitter (grows x0.6 -> x1.4)
+TEAR_CHUNK = 0.30                           # max slide of a torn chunk/band at the end of the tear
+TEAR_SPLIT = (2, 4, 8, 12, 14)              # story frames whose 30 Hz step draws the RGB split
+TEAR_SPLIT_DX = 0.05                        # CYAN copy at -dx, MAGENTA copy at +dx (as Hud.glitch)
+TEAR_SPLIT_A = 0.5                          # their opacity (x the element's)
+
+
+def tear_at(now: float, t0: float = 0.0, t1: float = TEAR_TIME, amp: float = TEAR_AMP,
+            seed: int = 8, split_frames: Sequence[int] = TEAR_SPLIT, tint=AMBER):
+    """The tear-away clock, a pure function: (alpha, dx, tint_or_None, split, g, p) at local time
+    now for an element torn out over (t0, t1). Same 30 Hz step clock as glitch_at
+    (g = story_frame(now - t0) // 2, identical in 30-fps previews and the 60-fps final):
+      now <= t0, and step 0 (the first two story frames after t0): UNTOUCHED -> (1, 0, None,
+          False, 0, 0.0), so a tear starting at 0.0 keeps the beat's frame 0 bit-exact;
+      t0 < now < t1, steps g >= 1: p = g / n_steps in (0, 1); alpha flickers down (1.0 on step 1,
+          then (1-p)^0.5 x 0.55..1.0 with an occasional 0.2 blink), dx = seeded x-jitter growing
+          with p, `tint` on odd steps (the AMBER flicker), split=True on the steps that contain a
+          story frame in split_frames;
+      now >= t1: GONE -> (0, 0, None, False, -1, 1.0).
+    The element never changes what it says (no number drop): it cracks, slides apart and is gone.
+    Hud.tear() and Tear render exactly this; tear_offsets() gives the per-chunk slides."""
+    if now <= t0 + EPS:
+        return 1.0, 0.0, None, False, 0, 0.0
+    if now >= t1 - EPS:
+        return 0.0, 0.0, None, False, -1, 1.0
+    g = story_frame(now - t0) // 2
+    if g <= 0:
+        return 1.0, 0.0, None, False, 0, 0.0
+    n = max(story_frame(t1 - t0) // 2, g + 1)
+    p = g / n
+    r = np.random.default_rng((seed, g, 31)).random(2)
+    if g == 1:
+        alpha = 1.0
+    else:
+        alpha = (1.0 - p) ** 0.5 * (0.55 + 0.45 * r[0])
+        if r[1] < 0.22:
+            alpha *= 0.2
+    f = 2 * g
+    dx = jitter(f, amp * (0.6 + 0.8 * p), seed)
+    return (alpha, dx, (tint if (tint is not None and g % 2 == 1) else None),
+            (f in split_frames or f + 1 in split_frames), g, p)
+
+
+def tear_offsets(coord, g: int, p: float, seed: int = 8, chunk: float = TEAR_CHUNK,
+                 along: str = "x") -> np.ndarray:
+    """(n, 3) per-piece offsets of tear step g (from tear_at). coord: (n,) piece positions
+    along the cut axis. along='x' (a text line: glyph centre x): 1-3 vertical cuts split the line
+    into chunks that slide sideways and a little up/down. along='y' (shapes: member centre y):
+    1-3 horizontal cuts split it into bands that slide sideways (scan tears). Slides grow with p
+    up to `chunk`. Zeros when g < 1 (untouched)."""
+    coord = np.asarray(coord, float)
+    out = np.zeros((len(coord), 3))
+    if g < 1 or len(coord) == 0:
+        return out
+    rng = np.random.default_rng((seed, g, 101))
+    lo, hi = float(coord.min()), float(coord.max())
+    n_cuts = int(rng.integers(1, 4))
+    cuts = np.sort(rng.uniform(lo, hi, n_cuts)) if hi > lo else np.zeros(0)
+    idx = np.searchsorted(cuts, coord)
+    u = rng.uniform(-1.0, 1.0, (n_cuts + 1, 2))
+    s = chunk * (0.35 + 0.65 * p)
+    out[:, 0] = u[idx, 0] * s
+    if along == "x":
+        out[:, 1] = u[idx, 1] * s * 0.30
+    return out
+
+
+def _glyph_cx(tmpl) -> np.ndarray:
+    """Cached glyph centre x of a (cached, read-only) text template."""
+    cx = getattr(tmpl, "_gcx", None)
+    if cx is None:
+        glyphs = getattr(tmpl, "_glyphs", None) or tmpl.family_members_with_points()
+        cx = np.array([g.get_center()[0] for g in glyphs]) if glyphs else np.zeros(0)
+        tmpl._gcx = cx
+    return cx
+
+
+# ---- the counter's unit (script v2): every number is a literal spec count of what the maker
+# calls a core. Singular while the number is 1 (b03 opens on '1'); both fit the 6.9 slot
+# (6.06 / 6.38 wide).
+CALC_LABEL = "CORES WORKING AT ONCE"        # the counter label (old name kept for compatibility)
+CORES_LABEL = CALC_LABEL
+CORE_LABEL_1 = "CORE WORKING AT ONCE"       # ... while the HUD number reads 1
+# The LIME lines script v2 draws in the label slot (Hud.mult(kind='line')), one per jump; they
+# name the KIND of core (facts.json). _hud_slot_top() measures them for the collision guard.
+COUNTER_LINES = {"B03Cpu": "16-CORE RYZEN 9 9950X",          # 40 px
+                 "B04Gpu": "H100: 16,896 CUDA CORES",        # auto-fit 37.7 px (floor 34)
+                 "B06DataCenter": "100,000+ GPUs × 16,896"}  # 40 px
+
+
+def core_label(n) -> str:
+    """The counter label for HUD number n (int/float or the HUD string, e.g. '1', '16',
+    '16,896', '1,689,600,000+'): 'CORE WORKING AT ONCE' for exactly 1, else
+    'CORES WORKING AT ONCE'."""
+    if isinstance(n, str):
+        one = n.replace(",", "").replace("+", "").strip() == "1"
+    else:
+        one = float(n) == 1.0
+    return CORE_LABEL_1 if one else CORES_LABEL
+
+
 _SLOT_TOP: list = []
 
 
 def _hud_slot_top() -> float:
-    """Highest ink top of anything drawn in the label slot (the label, or a mult line)."""
+    """Highest ink top of anything drawn in the label slot (the labels, or a LIME line)."""
     if not _SLOT_TOP:
-        _SLOT_TOP.append(max(hud_label_tmpl(CALC_LABEL).get_top()[1],
-                             hud_line_tmpl("16 CORES × 16 LANES").get_top()[1]))
+        _SLOT_TOP.append(max(*(hud_label_tmpl(s).get_top()[1] for s in (CORES_LABEL, CORE_LABEL_1)),
+                             *(hud_line_tmpl(s).get_top()[1] for s in COUNTER_LINES.values())))
     return _SLOT_TOP[0]
 
 
@@ -1174,11 +1297,12 @@ class Hud(VGroup):
     of the beat's self.now: you schedule events (local beat seconds) once, it renders the right
     frame every frame.
 
-        hud = Hud('256', 'CALCULATIONS AT ONCE', scene=self)   # or enter(self).hud
-        hud.slam(2.20, '4,096', mult='×16')                    # hard cut + SLAM + ×16 pill
-        hud.mult(2.20, '16 CORES × 16 LANES')                  # word equation in the label slot
-        hud.roll(0.40, 1.30, 256, 16896)                       # log10-space comma roll
-        hud.slam(1.30, '16,896', mult='×66')
+        hud = core_hud('1', scene=self, pop_at=0.10)           # b03: E01 has no HUD; or enter(self).hud
+        hud.slam(3.70, '16'); hud.label(3.70, core_label(16))  # hard cut + SLAM; plural from here
+        hud.mult(3.70, '16-CORE RYZEN 9 9950X', hold=1.8)      # LIME line in the label slot
+        hud.roll(2.95, 3.45, 16, 16896)                        # log10-space comma roll
+        hud.slam(3.45, '16,896')
+        hud.tear(0.0, 0.30)                                    # b08: rip E06's counter out to black
 
     Number events (the latest one with t <= now wins; before the first: the initial number):
       cut(t, s, color)                    hard cut
@@ -1218,8 +1342,17 @@ class Hud(VGroup):
       fade_to(t0, t1, o0, o1, shift0, shift1, ease)    whole-HUD opacity/offset envelope
       hide_at(t) / show_at(t)             instant envelope 0 / 1
       retire(t, dur=0.30, shift=DOWN*0.25, ease=ease_in_cubic)
-                                          the HUD leaves for good (current envelope -> 0, drifting);
-                                          b07 retires it so E07 is HUD-free
+                                          the HUD leaves for good (current envelope -> 0, drifting)
+      tear(t0=0.0, t1=0.30, amp=0.10, seed=8, split_frames=TEAR_SPLIT, tint=AMBER, chunk=0.30)
+                                          TEAR-AWAY (tear_at clock): untouched through step 0 (so
+                                          frame 0 stays the exact entry state), then the number and
+                                          label crack into sliding chunks (tear_offsets), jitter,
+                                          flicker AMBER, split CYAN/MAGENTA and flicker out; from t1
+                                          the HUD draws NOTHING (envelope 0) until a later show_at()
+                                          / fade_to(). The number never changes, so a muted viewer
+                                          never sees it drop. Reuse the same Hud afterwards, e.g.
+                                          b08: hud.tear(0, 0.30); hud.cut(1.90, '1.0×');
+                                          hud.label(1.90, 'SPEEDUP'); hud.show_at(1.90)
       glitch(t0, t1, amp=0.06, tint=AMBER, split_frames=(), seed=8)  x-jitter + tint + RGB split
                                           on a 30 Hz clock (g = story_frame(now - t0) // 2): jitter
                                           per step, tint on odd steps, RGB-split copies on the steps
@@ -1229,7 +1362,7 @@ class Hud(VGroup):
     Collision guard: whenever a slam/pop/pulse would bring the scaled number within 0.04 of the
     label slot, the label (and a mult line) is hard-hidden from the hit frame until the number has
     shrunk clear, then fades back in over 0.08 s (a comma number slammed 1.3x used to print its
-    comma into 'CALCULATIONS AT ONCE').
+    comma into the label).
     hud.post = fn(hud, now) runs after each render for anything bespoke.
     Public read-outs: number_at(now), label_at(now), mult_kind(t, s), slam_scale_for(s, scale).
     With no events (or before them) it renders exactly hud_number(number) + hud_label(label),
@@ -1257,6 +1390,8 @@ class Hud(VGroup):
         self._lab: list = []
         self._env: list = []
         self._gl: list = []
+        self._tear: list = []          # (t0, t1, amp, seed, split_frames, tint, chunk)
+        self._tear_now = None          # (g, p, seed, chunk) of the tear step being rendered
         self._guard: list = []         # (t_hit, t_clear)
         self.post = None
         self.scene = None
@@ -1405,7 +1540,7 @@ class Hud(VGroup):
         """Take the whole HUD off screen for good from t: opacity (whatever the envelope is at t,
         e.g. b07's 0.5 dim) -> 0 and offset -> +shift over dur (ease_in_cubic: it leaves, it does
         not count down). After t + dur it draws nothing (every slot cleared), which is what a
-        HUD-free exit state (E07) needs. Schedule earlier envelope events (fade_to/hide_at)
+        HUD-free exit state needs. Schedule earlier envelope events (fade_to/hide_at)
         BEFORE calling retire: it reads the envelope at t when called."""
         o0, sh0 = self._env_at(t)
         sh0 = np.zeros(3) if sh0 is None else np.asarray(sh0, float)
@@ -1415,6 +1550,37 @@ class Hud(VGroup):
     def glitch(self, t0, t1, amp=0.06, tint=AMBER, split_frames=(), seed=8):
         self._ins(self._gl, (t0, t1, amp, tint, tuple(split_frames), seed))
         return self
+
+    def tear(self, t0=0.0, t1=TEAR_TIME, amp=TEAR_AMP, seed=8, split_frames=TEAR_SPLIT,
+             tint=AMBER, chunk=TEAR_CHUNK):
+        """Tear the whole HUD out to black over (t0, t1) on the tear_at clock (see the class
+        docstring). The envelope is held at its t0 value through the tear and is 0 from t1 (a
+        later show_at()/fade_to() brings the HUD back, e.g. as b08's SPEEDUP meter). Schedule
+        earlier envelope events BEFORE calling tear: it reads the envelope at t0."""
+        o0, sh0 = self._env_at(t0)
+        sh0 = np.zeros(3) if sh0 is None else np.asarray(sh0, float)
+        self.fade_to(t0, t0, o0, o0, sh0, sh0)
+        self.hide_at(t1)
+        self._ins(self._tear, (t0, t1, amp, seed, tuple(split_frames), tint, chunk))
+        return self
+
+    def _tear_eval(self, now: float):
+        """(alpha, dx, tint, split) of the active tear at now; sets self._tear_now."""
+        self._tear_now = None
+        for t0, t1, amp, seed, split, tint, chunk in self._tear:
+            if t0 + EPS < now < t1 - EPS:
+                a, dx, tn, sp, g, p = tear_at(now, t0, t1, amp, seed, split, tint)
+                if g >= 1:
+                    self._tear_now = (g, p, seed, chunk)
+                return a, dx, tn, sp
+        return 1.0, 0.0, None, False
+
+    def _tear_off(self, tmpl, k: int):
+        """Per-glyph tear offsets for template tmpl (k: 0 number, 1 label, 2 line)."""
+        if self._tear_now is None or tmpl is None:
+            return None
+        g, p, seed, chunk = self._tear_now
+        return tear_offsets(_glyph_cx(tmpl), g, p, seed * 7 + k, chunk, "x")
 
     # ---- state evaluation
     def _num_eval(self, i: int, now: float):
@@ -1527,6 +1693,14 @@ class Hud(VGroup):
     def render_at(self, now: float) -> None:
         env, env_sh = self._env_at(now)
         gx, tint, split = self._glitch_at(now)
+        if self._tear:
+            ta, tdx, ttint, tsplit = self._tear_eval(now)
+            env *= ta
+            gx += tdx
+            tint = ttint if ttint is not None else tint
+            split = split or tsplit
+        else:
+            self._tear_now = None
         shift = np.zeros(3) if env_sh is None else np.array(env_sh, float)
         shift[0] += gx
         if env <= 0:
@@ -1556,17 +1730,19 @@ class Hud(VGroup):
             num_tmpl = hud_number_tmpl(s, col)
             if old_s:
                 old_tmpl = hud_number_tmpl(old_s, old_c)
-                self.s_num_old.display(old_tmpl, env * ao, 1.0, None, shift + off_old, tint)
+                self.s_num_old.display(old_tmpl, env * ao, 1.0, None, shift + off_old, tint,
+                                       self._tear_off(old_tmpl, 0))
                 split_num = (old_tmpl, ao) if ao > an else (num_tmpl, an)
             else:
                 self.s_num_old.clear_slot()
                 split_num = (num_tmpl, an)
-            self.s_num.display(num_tmpl, env * an, scale, None, shift + off_new, tint)
+            self.s_num.display(num_tmpl, env * an, scale, None, shift + off_new, tint,
+                               self._tear_off(num_tmpl, 0))
         else:
             self.s_num_old.clear_slot()
             if s:
                 num_tmpl = hud_number_tmpl(s, col)
-                self.s_num.display(num_tmpl, env, scale, None, shift, tint)
+                self.s_num.display(num_tmpl, env, scale, None, shift, tint, self._tear_off(num_tmpl, 0))
                 split_num = (num_tmpl, 1.0)
             else:
                 self.s_num.clear_slot()
@@ -1587,9 +1763,11 @@ class Hud(VGroup):
             else:
                 ln = ease_in_out_cubic(p)
                 lo, so, sn = 1.0 - ln, ORIGIN, ORIGIN
-            self.s_lab_old.display(prev_tmpl, la * lo, 1.0, None, shift + so, tint)
+            self.s_lab_old.display(prev_tmpl, la * lo, 1.0, None, shift + so, tint,
+                                   self._tear_off(prev_tmpl, 1))
             if lab_tmpl is not None:
-                self.s_lab.display(lab_tmpl, la * ln, 1.0, None, shift + sn, tint)
+                self.s_lab.display(lab_tmpl, la * ln, 1.0, None, shift + sn, tint,
+                                   self._tear_off(lab_tmpl, 1))
             else:
                 self.s_lab.clear_slot()
             if lo > ln:
@@ -1599,12 +1777,13 @@ class Hud(VGroup):
         else:
             self.s_lab_old.clear_slot()
             if lab_tmpl is not None:
-                self.s_lab.display(lab_tmpl, la, 1.0, None, shift, tint)
+                self.s_lab.display(lab_tmpl, la, 1.0, None, shift, tint, self._tear_off(lab_tmpl, 1))
             else:
                 self.s_lab.clear_slot()
         if line is not None and line[2] > 0:
             ls, lc, lalpha, lsc = line
-            self.s_mult.display(hud_line_tmpl(ls, lc), env * lalpha * guard, lsc, None, shift, tint)
+            lt = hud_line_tmpl(ls, lc)
+            self.s_mult.display(lt, env * lalpha * guard, lsc, None, shift, tint, self._tear_off(lt, 2))
         else:
             self.s_mult.clear_slot()
         # ---- multiplier pill
@@ -1643,12 +1822,137 @@ class Hud(VGroup):
                 else:
                     tm, al = src
                     self.s_split[k].display(tm, 0.5 * env * al * (1.0 if k < 2 else lk * guard),
-                                            scale if k < 2 else 1.0, None, shift + RIGHT * dx, c)
+                                            scale if k < 2 else 1.0, None, shift + RIGHT * dx, c,
+                                            self._tear_off(tm, 0 if k < 2 else 1))
         else:
             for sl in self.s_split:
                 sl.clear_slot()
         if self.post is not None:
             self.post(self, now)
+
+
+def core_hud(number: str = "1", scene=None, pop_at: float | None = None) -> Hud:
+    """The CORES WORKING AT ONCE counter for a beat whose entry state has no HUD (b03 opens on
+    E01, the plain token): Hud(number, core_label(number)) (INK, label INK 0.70: exactly the
+    handoff HUD style). pop_at: hidden (zero pixels, so frame 0 stays the exact entry state)
+    until pop_at, then a hard cut on with a POP (1.08 -> 1, 0.20 s). Add it to the scene and
+    schedule the rest on it (b03: slam(3.70, '16') + label(3.70, core_label(16)) + the LIME
+    line). Not bound unless scene is given."""
+    h = Hud(number, core_label(number))
+    if pop_at is not None:
+        h.hide_at(0.0)
+        h.show_at(pop_at)
+        h.pop(pop_at)
+    if scene is not None:
+        h.bind(scene)
+    h.render_at(scene.now if scene is not None else 0.0)
+    return h
+
+
+def _rest_style(dst: VMobject, r, alpha: float = 1.0, tint=None) -> None:
+    """dst takes rest style r (a _Rest) x alpha, rgb replaced by tint if given."""
+    dst.fill_rgbas = r.fr.copy()
+    dst.stroke_rgbas = r.sr.copy()
+    dst.background_stroke_rgbas = r.br.copy()
+    dst.stroke_width, dst.background_stroke_width = r.sw, r.bsw
+    if alpha != 1.0:
+        dst.fill_rgbas[:, 3] *= alpha
+        dst.stroke_rgbas[:, 3] *= alpha
+        dst.background_stroke_rgbas[:, 3] *= alpha
+    if tint is not None:
+        rgb = np.array(ManimColor(tint).to_rgb())
+        dst.fill_rgbas[:, :3] = rgb
+        dst.stroke_rgbas[:, :3] = rgb
+
+
+class Tear(VGroup):
+    """Tear-away of any STATIC mobject (b08 tears E06's cluster token with it) on the tear_at
+    clock, a pure function of scene.now: untouched through step 0, then 1-3 horizontal cuts split
+    it into bands that slide sideways (tear_offsets(..., along='y') on each member's centre y),
+    the whole thing x-jitters, flickers AMBER on odd steps, draws CYAN/MAGENTA split copies
+    behind it on TEAR_SPLIT steps and flickers out; from t1 it draws nothing (zero points).
+
+        st = enter(self)
+        tear = Tear(st.token, 0.0, 0.30, scene=self)   # takes st.token's place (same draw order)
+
+    The Tear contains the mobject (do not add it again). With scene= it replaces the mobject in
+    the scene (Scene.replace, so the z-order is kept) and binds its updater; otherwise add the
+    Tear yourself and call tear.bind(scene) (or tear.render_at(now) from your own driver).
+    Call it between plays (it restructures the scene)."""
+
+    def __init__(self, mob: Mobject, t0: float = 0.0, t1: float = TEAR_TIME, amp: float = TEAR_AMP,
+                 seed: int = 11, split_frames: Sequence[int] = TEAR_SPLIT, tint=AMBER,
+                 chunk: float = TEAR_CHUNK, scene=None):
+        super().__init__()
+        self.mob, self.t0, self.t1, self.amp, self.seed = mob, t0, t1, amp, seed
+        self.split_frames, self.tint, self.chunk = tuple(split_frames), tint, chunk
+        self.mems = mob.family_members_with_points()
+        self.rest = [_Rest(m) for m in self.mems]
+        self.cy = np.array([m.get_center()[1] for m in self.mems])
+        self.split_c = VGroup(*[VMobject() for _ in self.mems])
+        self.split_m = VGroup(*[VMobject() for _ in self.mems])
+        for grp in (self.split_c, self.split_m):
+            for m in grp:
+                m.points = EMPTY.copy()
+        self.add(self.split_c, self.split_m)
+        self._key = None
+        if scene is not None and mob in scene.mobjects:
+            self.add(mob)
+            scene.replace(mob, self)
+        else:
+            self.add(mob)
+            if scene is not None:
+                scene.add(self)
+        if scene is not None:
+            self.bind(scene)
+
+    def bind(self, scene) -> "Tear":
+        self.add_updater(lambda m, dt: m.render_at(scene.now))
+        return self
+
+    def render_at(self, now: float) -> None:
+        a, dx, tint, split, g, p = tear_at(now, self.t0, self.t1, self.amp, self.seed,
+                                           self.split_frames, self.tint)
+        key = (round(a, 9), round(dx, 9), None if tint is None else _hex(tint), split, g)
+        if key == self._key:
+            return
+        self._key = key
+        if g == -1 or a <= 0:                           # gone
+            for m in (*self.mems, *self.split_c, *self.split_m):
+                m.points = EMPTY.copy()
+            return
+        if g == 0:                                      # untouched: the exact rest state
+            for r in self.rest:
+                r.m.points = r.p.copy()
+                _rest_style(r.m, r)
+            for m in (*self.split_c, *self.split_m):
+                m.points = EMPTY.copy()
+            return
+        off = tear_offsets(self.cy, g, p, self.seed, self.chunk, "y")
+        off[:, 0] += dx
+        for r, o in zip(self.rest, off):
+            r.m.points = r.p + o
+            _rest_style(r.m, r, a, tint)
+        for grp, sdx, col in ((self.split_c, -TEAR_SPLIT_DX, CYAN), (self.split_m, TEAR_SPLIT_DX, MAGENTA)):
+            for m, r, o in zip(grp, self.rest, off):
+                if split:
+                    m.points = r.p + o + np.array([sdx, 0.0, 0.0])
+                    _rest_style(m, r, TEAR_SPLIT_A * a, col)
+                else:
+                    m.points = EMPTY.copy()
+
+
+def tear_away(scene, st: "Handoff", t0: float = 0.0, t1: float = TEAR_TIME, **kw) -> "Tear | None":
+    """Tear a whole entry state out to black (b08's opening on E06): st.hud.tear(t0, t1, **kw)
+    and a Tear on st.token (replacing it in the scene, seed 11). Returns the token's Tear (None
+    if the state has no token). kw: amp, split_frames, tint, chunk (seed: HUD 8, token 11).
+    Call it right after enter(), between plays."""
+    kw.pop("seed", None)
+    if st.hud is not None:
+        st.hud.tear(t0, t1, **kw)
+    if st.token is None:
+        return None
+    return Tear(st.token, t0, t1, scene=scene, **kw)
 
 
 def amdahl(n: float, serial: float = 0.1) -> float:
@@ -2250,6 +2554,35 @@ def cut_times(t_end: float, collapse: float = COLLAPSE_TIME, settle: float = SET
     return f_col / 60, f_set / 60, f_exit / 60
 
 
+# ---- audio across a cut: a riser that never resolves, cut dead by the next beat's scratch
+def riser_to_cut(scene, t0: float | None = None, gain: float = 1.0,
+                 note: str = "climbs into the cut, never resolves") -> float:
+    """Cue a riser that starts at local time t0 (default: scene.t, i.e. call it right before the
+    play that starts the climb) and ends EXACTLY on the beat's end (the seam): synth's riser peaks
+    on its last sample and stops dead, so it never resolves; the next beat's scratch_cut() lands
+    on that sample (b06 'More GPUs…' -> b08's opening glitch). Returns the riser's dur."""
+    end = beat_duration(type(scene).__name__)
+    if end is None:
+        raise ValueError(f"{type(scene).__name__} is not in timeline.BEATS")
+    t0 = scene.t if t0 is None else t0
+    dur = round(end - t0, 4)
+    if dur < 0.2:
+        raise ValueError(f"riser_to_cut: only {dur:.3f} s left before the cut")
+    scene.cue("riser", dt=t0 - scene.t, gain=gain, note=note, dur=dur)
+    return dur
+
+
+def scratch_cut(scene, dur: float = TEAR_TIME, gain: float = 1.0,
+                note: str = "record scratch: the tear-away") -> None:
+    """The record scratch on a beat's opening (b08 frame 0, under tear_away): glitch(dur) +
+    noise_burst, and a true silence of the music bed + reverb for dur (the riser_to_cut riser of
+    the beat before has just stopped dead on the seam; cue sounds play over the silence). Call it
+    at the very top of beat() (scene.t == 0), next to the first play."""
+    scene.cue("glitch", gain=0.9 * gain, note=note, dur=dur)
+    scene.cue("noise_burst", gain=0.8 * gain, note=note)
+    scene.cue("silence", note="the bed cuts out under the scratch", dur=dur)
+
+
 def drive(scene, fn: Callable[[float], None], add: bool = True) -> Mobject:
     """The per-frame driver idiom: an empty Mobject whose updater calls fn(scene.now) every
     frame. Added on top of the scene now (so it runs after the mobjects already added; a Drift
@@ -2536,32 +2869,58 @@ def b09_worker_idx(f: int) -> int:
 # ==========================================================================
 # Handoff states: the contract between beats
 # ==========================================================================
-HANDOFF_NAMES = ("E01", "E02", "E03", "E04", "E05", "E06", "E07", "E08", "LOOP")
-CALC_LABEL = "CALCULATIONS AT ONCE"
+# Script v2 (timeline.py): b01 hook -> b03 CPU -> b04 GPU -> b06 data center -> b08 twist ->
+# b09 ending -> (loop) b01. 'E0N' = the exit of b0N = the entry of the next beat. The SIMD (b02),
+# server (b05) and planet (b07) beats were cut, and their states E02 / E05 / E07 retired with them.
+HANDOFF_NAMES = ("E01", "E03", "E04", "E06", "E08", "LOOP")
+RETIRED_HANDOFFS = {"E02": "b02 SIMD", "E05": "b05 8-GPU server", "E07": "b07 planet"}
 LOOP_KICKER = "PARALLEL COMPUTING"          # the topic, on the film's very first frame (and the replay's)
 LOOP_HEADLINE = "One at a time."
 LOOP_WORKER = 32                            # the LOOP frame's worker idx (b09 f209 == b01 f0)
 
-_HO_TOKEN = {"E01": ("plain", CYAN), "E02": ("core", CYAN), "E03": ("cpu", CYAN),
-             "E04": ("gpu", CYAN), "E05": ("node", CYAN), "E06": ("cluster", CYAN),
-             "E08": ("plain", AMBER)}
-# E07 is deliberately HUD-free: muted viewers read '1,689,600,000+' -> '350,000+' as a DROP, so b07
-# retires the counter once its card says '350,000+ GPUs' and b08 brings the HUD back as its
-# SPEEDUP meter. E07's Handoff still carries an EMPTY Hud (draws nothing) for b08 to schedule on.
-_HO_HUD = {"E02": ("16", INK, CALC_LABEL, INK, 0.70),
-           "E03": ("256", INK, CALC_LABEL, INK, 0.70),
-           "E04": ("16,896", INK, CALC_LABEL, INK, 0.70),
-           "E05": ("135,168", INK, CALC_LABEL, INK, 0.70),
-           "E06": ("1,689,600,000+", INK, CALC_LABEL, INK, 0.70),
-           "E07": (None, INK, None, INK, 0.70),
+_HO_TOKEN = {"E01": ("plain", CYAN),        # hook worker -> CPU core T6 (b03 HERO = 5)
+             "E03": ("cpu", CYAN),          # CPU -> card-flips into the GPU
+             "E04": ("gpu", CYAN),          # GPU -> box (c3, r3) of the data-center pod
+             "E06": ("cluster", CYAN),      # hall -> torn away by the twist's opening glitch
+             "E08": ("plain", AMBER)}       # the serial token -> the lone hook worker
+# The counter (CORES WORKING AT ONCE) first appears INSIDE b03 (E01 carries no HUD), climbs
+# 1 -> 16 -> 16,896 -> 1,689,600,000+ and never drops: b08 tears it out (tear_away) and brings
+# in its own SPEEDUP meter. E08 carries that meter's final reading.
+_HO_HUD = {"E03": ("16", INK, core_label("16"), INK, 0.70),
+           "E04": ("16,896", INK, core_label("16,896"), INK, 0.70),
+           "E06": ("1,689,600,000+", INK, core_label("1,689,600,000+"), INK, 0.70),
            "E08": ("10×", AMBER, "MAX SPEEDUP · 10% SERIAL", AMBER, 0.85)}
 
-BEAT_ENTRY = {"B01Hook": "LOOP", "B02Simd": "E01", "B03Cpu": "E02", "B04Gpu": "E03",
-              "B05Node": "E04", "B06DataCenter": "E05", "B07Planet": "E06",
-              "B08Amdahl": "E07", "B09Loop": "E08"}
-BEAT_EXIT = {"B01Hook": "E01", "B02Simd": "E02", "B03Cpu": "E03", "B04Gpu": "E04",
-             "B05Node": "E05", "B06DataCenter": "E06", "B07Planet": "E07",
+BEAT_ENTRY = {"B01Hook": "LOOP", "B03Cpu": "E01", "B04Gpu": "E03", "B06DataCenter": "E04",
+              "B08Amdahl": "E06", "B09Loop": "E08"}
+BEAT_EXIT = {"B01Hook": "E01", "B03Cpu": "E03", "B04Gpu": "E04", "B06DataCenter": "E06",
              "B08Amdahl": "E08", "B09Loop": "LOOP"}
+
+
+def handoff_contract(beats=None) -> list[tuple[str, str, str]]:
+    """[(beat A, beat B, handoff name)] for every cut of the timeline (default timeline.BEATS),
+    including the loop seam (last -> first). Raises ValueError if a timeline beat has no
+    BEAT_ENTRY/BEAT_EXIT, if exit(A) != entry(B), if a name is unknown, or if BEAT_ENTRY/BEAT_EXIT
+    list beats that are not in the timeline (stale entries)."""
+    if beats is None:
+        from timeline import BEATS as beats
+    order = [b[0] for b in beats]
+    missing = [c for c in order if c not in BEAT_ENTRY or c not in BEAT_EXIT]
+    if missing:
+        raise ValueError(f"no BEAT_ENTRY/BEAT_EXIT for {missing}")
+    stale = sorted((set(BEAT_ENTRY) | set(BEAT_EXIT)) - set(order))
+    if stale:
+        raise ValueError(f"BEAT_ENTRY/BEAT_EXIT list beats that are not in the timeline: {stale}")
+    seams = []
+    for k, a in enumerate(order):
+        b = order[(k + 1) % len(order)]
+        x, e = BEAT_EXIT[a], BEAT_ENTRY[b]
+        if x != e:
+            raise ValueError(f"{a} exits {x} but {b} enters {e}")
+        if x not in HANDOFF_NAMES:
+            raise ValueError(f"{a} -> {b}: unknown handoff state {x!r}")
+        seams.append((a, b, x))
+    return seams
 
 
 def loop_kicker() -> MarkupText:
@@ -2581,26 +2940,37 @@ class Handoff(VGroup):
     kicker (MarkupText)."""
 
 
+def _beat_state(table: dict, scene, what: str) -> str:
+    cls = type(scene).__name__
+    try:
+        return table[cls]
+    except KeyError:
+        raise KeyError(f"{cls} has no {what} handoff state: it is not in timeline.BEATS (script v2 "
+                       f"cut b02/b05/b07); pass a name explicitly, e.g. enter(self, 'E01')") from None
+
+
 def handoff_state(name: str) -> Handoff:
-    """EXACT boundary frame builder ('E01'..'E08' = exit of b0N = entry of b0N+1;
-    'LOOP' (aliases 'E09', 'E00') = b09's exit = b01's frame 0). Dust is not included.
-    Tokens are handoff_token() (1.7 units, bold glyph); HUDs are an unbound Hud at rest.
-    reel/tools/check_handoffs.py renders both sides of every boundary and compares them with
-    this builder bit for bit (30 and 60 fps).
-      E01  handoff_token('plain')
-      E02  token('core')    + HUD '16'             / CALCULATIONS AT ONCE (INK 0.70)
-      E03  token('cpu')     + HUD '256'            / ...
-      E04  token('gpu')     + HUD '16,896'         / ...
-      E05  token('node')    + HUD '135,168'        / ...
-      E06  token('cluster') + HUD '1,689,600,000+' / ... (fit to 6.9 wide)
-      E07  NOTHING (BG + dust): no token, no HUD number/label. st.hud is an EMPTY Hud (number and
-           label None, zero pixels) so the next beat can schedule its own HUD on it.
-      E08  token('plain', AMBER) (the serial token: fill 0.58, rim #FFD27A)
-           + HUD '10×' AMBER / 'MAX SPEEDUP · 10% SERIAL' (AMBER 0.85)
-      LOOP hook_state(32) (worker x1.4 + halo) + kicker 'PARALLEL COMPUTING' (kick, CYAN)
-           + card 'One at a time.' (H96 INK) + step_readout('STEP 032 / 320', AMBER)
+    """EXACT boundary frame builder ('E0N' = exit of b0N = entry of the next beat in
+    timeline.BEATS; 'LOOP' (aliases 'E09', 'E00') = b09's exit = b01's frame 0). Dust is not
+    included. Tokens are handoff_token() (1.7 units, bold glyph); HUDs are an unbound Hud at rest
+    (number INK, label INK 0.70). reel/tools/check_handoffs.py renders both sides of every
+    boundary and compares them with this builder bit for bit (30 and 60 fps).
+      E01  b01 -> b03  handoff_token('plain') (CYAN, fill 0.32). NO HUD: the counter first
+                       appears inside b03 (core_hud('1', pop_at=0.10)).
+      E03  b03 -> b04  token('cpu')     + HUD '16'             / CORES WORKING AT ONCE
+      E04  b04 -> b06  token('gpu')     + HUD '16,896'         / CORES WORKING AT ONCE
+      E06  b06 -> b08  token('cluster') + HUD '1,689,600,000+' / CORES WORKING AT ONCE (fit to
+                       6.9 wide). b08 tears both out to black by 0.30 (tear_away).
+      E08  b08 -> b09  token('plain', AMBER) (the serial token: fill 0.58, rim #FFD27A)
+                       + HUD '10×' AMBER / 'MAX SPEEDUP · 10% SERIAL' (AMBER 0.85)
+      LOOP b09 -> b01  hook_state(32) (worker x1.4 + halo) + kicker 'PARALLEL COMPUTING' (kick,
+                       CYAN) + card 'One at a time.' (H96 INK) + step_readout('STEP 032 / 320')
+    Retired with the cut beats (ValueError): E02 (b02 SIMD), E05 (b05 server), E07 (b07 planet).
     Z-order: token, then HUD (grid, card, readout, kicker for LOOP)."""
     key = {"E09": "LOOP", "E00": "LOOP"}.get(name, name)
+    if key in RETIRED_HANDOFFS:
+        raise ValueError(f"handoff state {name!r} was retired with the cut {RETIRED_HANDOFFS[key]} "
+                         f"beat (script v2); known: {HANDOFF_NAMES}")
     if key not in HANDOFF_NAMES:
         raise ValueError(f"unknown handoff state {name!r}; known: {HANDOFF_NAMES}")
     st = Handoff()
@@ -2627,8 +2997,9 @@ def handoff_state(name: str) -> Handoff:
 def enter(scene, name: str | None = None) -> Handoff:
     """Put the beat's entry state on screen (call first thing in beat()). Each part is added
     as its own top-level mobject (so scene.remove(st.token) works), and st.hud is bound to
-    the scene (schedule events on it). name defaults to BEAT_ENTRY[type(scene).__name__]."""
-    st = handoff_state(name or BEAT_ENTRY[type(scene).__name__])
+    the scene (schedule events on it; None for E01 and LOOP). name defaults to
+    BEAT_ENTRY[type(scene).__name__]."""
+    st = handoff_state(name or _beat_state(BEAT_ENTRY, scene, "entry"))
     scene.add(*st.submobjects)
     if st.hud is not None:
         st.hud.bind(scene)
@@ -2644,6 +3015,6 @@ def exit_to(scene, name: str | None = None) -> Handoff:
     for m in list(scene.mobjects):
         if m is not dust:
             scene.remove(m)
-    st = handoff_state(name or BEAT_EXIT[type(scene).__name__])
+    st = handoff_state(name or _beat_state(BEAT_EXIT, scene, "exit"))
     scene.add(st)
     return st
