@@ -1,0 +1,421 @@
+{
+ "summary": "Script v3 is the final version for sign-off. It starts from draft A, which both judges scored higher (8.5 and 8). The best lines from draft B are grafted in, and every must-fix from the judges is applied. Everything that was locked stays the same: 55.0 s total, the same six segment lengths, the hook's first second, all kickers, the counter 1 \u2192 16 \u2192 16,896 \u2192 1,689,600,000+ with its three LIME lines, 'Same math, / every number.', '10% serial / = max 10\u00d7.', 'Forever.' and the seamless loop.\n\nMORE INFORMATIVE TEXT. Each level keeps a short headline and gains one plain sub-line that says what is happening and why.\n- CPU: 'One CPU core. / It runs one task.' \u2192 '16 cores. / Each runs its own task.' \u2192 'One memory. / All 16 read and write it.'\n- GPU: '16? Cute. / A GPU has thousands of / tiny cores.' \u2192 'Groups of 32. / All 32 obey one command.' \u2192 'Same math, / every number.' \u2192 'For AI? / One GPU isn't enough.'\n- Data center: 'Server farm. / Each server has its own / GPUs and memory.' \u2192 'Messages. / They swap data to sync.' \u2192 '100,000+ / GPUs train one AI. / Each works on a slice.'\n- Twist: 'So\u2026 infinite / speed?' \u2192 'No. / Some work can't be split.' \u2192 'Million GPUs? / Only the 90% speeds up.' \u2192 '10% serial / = max 10\u00d7.' \u2192 'Forever. / \u221e GPUs won't change it.'\n\nThe four middle segments go from 20 cards and 72 words to 15 cards and 101 words. The bridge-only cards ('Need more?', 'Go bigger.', 'More GPUs\u2026') are folded into the cards next to them, so every card stays up long enough to read.\n\nCALMER MOTION.\n- Every collapse between levels now takes 0.80 s on ease_in_out_sine, followed by a 0.15 s settle with no overshoot (v2: 0.40 s on expo).\n- Every expand or flip now takes 0.80-0.90 s (v2: 0.24-0.50 s).\n- The GPU push-in and pull-back, the data-center pull-back, the twist's bar glide and the launch into the serial token are all smooth 0.80-0.90 s moves.\n- The record-scratch tear is replaced by a 0.80 s fade of the token and the counter, holding a constant value.\n- Removed: every camera shake, the RGB/glitch effects, text jitter, the 80 ms hard freeze, the counter climbing during the messages, and the accelerating heartbeat (it is now steady on the 0.5 s beat). Several sub-events are also trimmed.\n- Flashes, light waves, shock rings and text/counter slams stay.\n\nONE LIMIT TO KNOW. The four two-line headlines ('Same math, / every number.', 'So\u2026 infinite / speed?', '10% serial / = max 10\u00d7.', 'Why buy / 100,000 GPUs?') have no sub-line. This is a font-fit limit, not a choice. Measured with the real card(), two headline lines plus any S56 line reach down to 2.86-3.24, below the text zone's 3.35 floor. At leading 0.90 they either still fail (3.02-3.10) or their lines overlap. The cards around them carry the explanation.\n\nAll 16 cards from CPU to the ending pass motif.card(check=True), and so do the unchanged hook cards and the CTA. No motif text change is needed. The only overrides are leading 0.94 on 'Server farm.' and leading 0.72 on 'No.'.",
+ "segments": [
+  {
+   "id": "hook",
+   "duration": 5,
+   "kicker": "PARALLEL COMPUTING",
+   "cards": [
+    {
+     "t_in": 0,
+     "t_out": 1,
+     "lines": [
+      "H96: One at a time."
+     ],
+     "words": 4,
+     "floor_s": 2,
+     "visible_s": 1,
+     "visual": "LOCKED. Frame 0 is the same as the ending's last frame. On the 20\u00d716 grid of 320 task cells, the AMBER worker is mid-crawl on idx 32 and hops one cell every 3 frames with a bright trail. The camera creeps 1.0 \u2192 1.035, and the kicker is on from frame 0. At 0.45 the idle cells charge DIM \u2192 CYAN 0.45. f52-f59 (0.867-1.000) is the locked 8-frame micro-freeze: worker and camera stop. CALMER: the headline holds still instead of jittering. Reading time: the line is at full opacity for 1.10 s at the end of the ending plus 1.00 s here, so 2.10 s across the loop seam (floor 2.0). On the first play it stays readable at 0.40 until 2.70.",
+     "counter": "AMBER step readout STEP 032 / 320 \u2192 049 / 320 (frozen during the freeze); no HUD yet"
+    },
+    {
+     "t_in": 1,
+     "t_out": 2.7,
+     "lines": [
+      "H96: One at a time. [dims to 0.40; not counted]",
+      "H96: All at once. [CYAN, SLAM]"
+     ],
+     "words": 3,
+     "floor_s": 1.7,
+     "visible_s": 1.7,
+     "visual": "LOCKED HIT at 1.00. A radial white-to-cyan wave lights the other 319 cells within 0.35 s, with the white burst and the CYAN shock ring (all kept). CALMER: no impact shake. The lone worker stays AMBER on the top layer under a diagonal shimmer over the lit field. The payoff holds the full 1.70 s.",
+     "counter": "readout \u2192 320 WORKERS \u00b7 1 STEP (CYAN)"
+    },
+    {
+     "t_in": 2.7,
+     "t_out": 4.95,
+     "lines": [
+      "H84: It scales\u2026",
+      "H84: then stalls. [AMBER]"
+     ],
+     "words": 4,
+     "floor_s": 2,
+     "visible_s": 2.25,
+     "visual": "POPs at f162 on the calm lit field under a softer diagonal light pulse while the slow linear push-in continues (1.035 \u2192 1.06). The readout fades out over 0.30 s from 3.25 (v2 had a hard leave). The card is read for 1.20 s before anything moves. 3.90-4.833: the push-in on the worker now uses ease_in_out_sine instead of ease_in_out_expo, in the same window. The other cells fade out 4.05-4.70. The worker morphs AMBER \u2192 glowing CYAN token 4.20-4.833, lands with no overshoot, and stays static to 5.00.",
+     "counter": "320 WORKERS \u00b7 1 STEP, fading out 3.25-3.55; then nothing"
+    }
+   ],
+   "transition_out": "Push-in 3.90 \u2192 4.833 (0.933 s, ease_in_out_sine, no expo rush), a soft tick on the landing, then the static token 4.833-5.00. Kicker and card hard-cut at 4.95. b01 keeps its own T_* constants and must not pick up the new motif defaults. It meets the CPU's smooth 0.90 s expand.",
+   "removed_from_v2": [
+    "camera impact shake on the 1.00 hit (the wave, burst, ring and slam stay)",
+    "headline jitter during the f52-f59 micro-freeze (the freeze itself stays)",
+    "ease_in_out_expo rush on the 3.90-4.833 push-in (now ease_in_out_sine)",
+    "hard leave of the readout at 3.25 (now a 0.30 s fade)"
+   ]
+  },
+  {
+   "id": "cpu",
+   "duration": 9.5,
+   "kicker": "LEVEL 1/3 \u00b7 ONE CPU",
+   "cards": [
+    {
+     "t_in": 0.017,
+     "t_out": 3.05,
+     "lines": [
+      "H96: That worker? (auto-fits to ~77 px)",
+      "S56: It's one CPU core. ['CPU core.' CYAN]"
+     ],
+     "words": 6,
+     "floor_s": 2.6,
+     "visible_s": 3.033,
+     "visual": "Card and kicker POP on story frame 1 with a soft entry ring. EXPAND 0.00-0.90 (ease_in_out_sine; v2 was 0.50 s ease_out_expo): the hook's token is core T6 (HERO = 5) of a 4\u00d74 grid of 16 cores. The other 15 fade in DIM with no T labels, the MAGENTA SHARED MEMORY bar fades in dim below, and the SIMD lane bars stay hidden. 0.90-1.30 is calm. 1.30-2.50: T6 runs ONE task, once. A MAGENTA fetch packet leaves SHARED MEMORY, the progress fill climbs, a LIME done flash fires, then a LIME write-back packet. The other 15 cores stay dark. 2.50-3.05: T6 hums. The card is read 1.28 s before the task fires.",
+     "counter": "1 \u00b7 CORE WORKING AT ONCE (the HUD's first appearance fades in 0.30-0.60 instead of POPping)"
+    },
+    {
+     "t_in": 3.05,
+     "t_out": 6.1,
+     "lines": [
+      "H96: 16 cores. ['16' CYAN]",
+      "S56: Each runs its own task."
+     ],
+     "words": 7,
+     "floor_s": 2.9,
+     "visible_s": 3.05,
+     "visual": "Swap onto a calm stage: T6 hums, the other 15 sit idle, and the T1-T16 labels fade in dim 3.15-3.55. Read 1.20 s. 4.25 POWER-ON: every core flashes INK \u2192 CYAN behind a CYAN shock ring from the grid centre (kept), and each core swells softly as the ring passes. Each core then starts its OWN task on its own clock (its own fill rate and fetch/write timing), visibly out of phase, and the memory bar flashes. The payoff holds 1.85 s.",
+     "counter": "1 until 4.25, then SLAM 1 \u2192 16 \u00b7 LIME '16-CORE RYZEN 9 9950X' (4.25-6.05, 1.80 s), then the plural label CORES WORKING AT ONCE"
+    },
+    {
+     "t_in": 6.1,
+     "t_out": 9.45,
+     "lines": [
+      "H96: One memory. ['memory.' MAGENTA]",
+      "S56: All 16 read and write it."
+     ],
+     "words": 8,
+     "floor_s": 3.2,
+     "visible_s": 3.35,
+     "visual": "Swap after the LIME line has left at 6.05. 6.10-7.10 is calm: traffic eases to a low hum, the SHARED MEMORY bar brightens, and the T labels step back to 0.5. 7.10-8.05: MAGENTA packets stream from the one shared bar into every core and LIME results stream back into the same bar, which flashes wherever a packet leaves or lands. Tasks of different lengths finish at their own moments under a slow stage drift. 8.05-8.50: traffic drains and the CPU package outline draws on. 8.50-9.30: smooth collapse. The card is read 1.00 s before the traffic starts.",
+     "counter": "16 \u00b7 CORES WORKING AT ONCE (rides the cut into E03)"
+    }
+   ],
+   "transition_out": "COLLAPSE 8.50-9.30 (0.80 s ease_in_out_sine; v2 was 0.40 s ease_in_out_expo from 8.933) into handoff_token('cpu') (E03). Settle 9.30-9.45 (0.15 s ease_out_cubic, 0.94 \u2192 1.0, no ease_out_back overshoot), then static 9.45-9.50. Kicker and card hard-cut at 9.45. This is cut_times(9.5, collapse=0.80, settle=0.15) = (8.50, 9.30, 9.45). Audio: a gentle riser 7.70 \u2192 8.50 into a soft whoosh down, with a tick on the settle. The GPU then opens with a smooth 0.80 s flip.",
+   "removed_from_v2": [
+    "card 'That worker? / One CPU core.' (now 'One CPU core.' + 'It runs one task.')",
+    "sub-line '16 different jobs.' (now 'Each runs its own task.')",
+    "card 'They share / one memory.' (now 'One memory.' + 'All 16 read and write it.')",
+    "card 'Need more?' (pure bridge; the GPU's '16? Cute.' carries it)",
+    "T6's second solo task run",
+    "0.50 s ease_out_expo expand, 0.40 s expo collapse and the ease_out_back settle overshoot",
+    "HUD POP at 0.10 (now a fade-in)"
+   ]
+  },
+  {
+   "id": "gpu",
+   "duration": 12,
+   "kicker": "LEVEL 2/3 \u00b7 ONE GPU",
+   "cards": [
+    {
+     "t_in": 0.017,
+     "t_out": 3.8,
+     "lines": [
+      "H84: 16? Cute. ['16?' CYAN]",
+      "S56: A GPU has thousands of",
+      "S56: tiny cores. ['tiny cores.' CYAN]"
+     ],
+     "words": 9,
+     "floor_s": 3.5,
+     "visible_s": 3.783,
+     "visual": "Default leading 0.98. FLIP 0.00-0.80 (ease_in_out_sine, no glitch; v2 was 0.40 s with a glitch): the CPU token turns over like a card and lands as the GPU token (8\u00d78 pixel glyph). This is replacement, not containment. Card and kicker POP on story frame 1. The token rests 0.80-1.05. 1.05-1.85: the token's base opens into the die, and 3,072 tiny cells appear in a soft radial wave and settle to a dim hum. 1.50-2.00: the HUD winds up. 2.00 LIGHT WAVE: every cell flashes INK, then CYAN, racing out from the centre behind a shock ring (kept). 2.30-2.90: ONE diagonal dispatch wave of 32-cell groups (v2 had three), then a busy shimmer. The card is read 1.03 s before the die opens and 1.98 s before the light wave.",
+     "counter": "16 \u00b7 CORES WORKING AT ONCE; log-roll 1.50-2.00; SLAM 16,896 at 2.00 \u00b7 LIME 'H100: 16,896 CUDA CORES' (2.00-3.80, 1.80 s)"
+    },
+    {
+     "t_in": 3.8,
+     "t_out": 7.15,
+     "lines": [
+      "H96: Groups of 32. ['32' CYAN]",
+      "S56: All 32 obey one command."
+     ],
+     "words": 8,
+     "floor_s": 3.2,
+     "visible_s": 3.35,
+     "visual": "Swap on the frame the LIME line leaves (no card lands under a LIME line), onto the calm, shimmering die. 4.10-4.90: a smooth camera push-in (0.80 s ease_in_out_sine; v2 was a 0.30 s rush) onto ONE group of 32 cells, outlined as a LIME block. It starts 0.30 s after the card lands. 4.90-5.20: the group's bus charges and all 32 brighten together. Lockstep steps at 5.20, 5.55 and 5.90: one INK instruction beam (the 'command') fires down the bus and all 32 cells recolour on the SAME frame, CYAN, then LIME, then each its own value colour. The payoff holds to 6.25. 6.25-7.05: smooth pull-back to the whole die (0.80 s; v2 was 0.30 s), then still 7.05-7.15. The first step fires 1.40 s after the card lands.",
+     "counter": "16,896 \u00b7 CORES WORKING AT ONCE"
+    },
+    {
+     "t_in": 7.15,
+     "t_out": 9.25,
+     "lines": [
+      "H84: Same math,",
+      "H84: every number. ['every number.' CYAN]"
+     ],
+     "words": 4,
+     "floor_s": 2,
+     "visible_s": 2.1,
+     "visual": "Swap onto the calm, humming die; read 1.00 s. 8.15-8.85: six waves of 16 groups, scattered over the die (never a top-to-bottom scanline), develop the shaded ball. Every cell runs the same formula on its own number. 8.90: a burst of light from the ball's centre, with a soft pop and a shock ring (kept). No sub-line: this is a font-fit limit (see risks).",
+     "counter": "16,896 \u00b7 CORES WORKING AT ONCE"
+    },
+    {
+     "t_in": 9.25,
+     "t_out": 11.95,
+     "lines": [
+      "H96: For AI? ['AI' CYAN]",
+      "S56: One GPU isn't enough."
+     ],
+     "words": 6,
+     "floor_s": 2.6,
+     "visible_s": 2.7,
+     "visual": "Swap over the finished ball under a slow push-in (1.0 \u2192 1.02). The die keeps its idle hum; v2's repaint wave is cut. 11.00-11.80: smooth collapse, 1.75 s after the card lands.",
+     "counter": "16,896 \u00b7 CORES WORKING AT ONCE (rides the cut into E04)"
+    }
+   ],
+   "transition_out": "COLLAPSE 11.00-11.80 (0.80 s ease_in_out_sine; v2 was 0.40 s from 11.433) into handoff_token('gpu') (E04). Settle 11.80-11.95 (0.15 s ease_out_cubic), static to 12.00. Kicker and card hard-cut at 11.95. This is cut_times(12.0, 0.80, 0.15) = (11.00, 11.80, 11.95). A soft whoosh down, with a tick on the settle. The data center then opens with a 0.90 s ease_in_out_sine expand.",
+   "removed_from_v2": [
+    "sub-line 'Meet the GPU.' (now 'A GPU has thousands of / tiny cores.')",
+    "card 'Thousands of / tiny cores.' (merged into the '16? Cute.' card)",
+    "sub-line 'One instruction.' (now 'All 32 obey one command.')",
+    "'For AI? / Not enough.' two-line headline (now 'For AI?' + 'One GPU isn't enough.')",
+    "0.12 s glitch on the CPU\u2192GPU flip (the flip is now 0.80 s and smooth)",
+    "0.30 s camera rush push-in and 0.30 s pull-back (now 0.80 s each)",
+    "two of the three dispatch waves",
+    "the light-step repaint over the finished ball",
+    "0.40 s collapse and the settle overshoot"
+   ]
+  },
+  {
+   "id": "datacenter",
+   "duration": 12.5,
+   "kicker": "LEVEL 3/3 \u00b7 DATA CENTER",
+   "cards": [
+    {
+     "t_in": 0.017,
+     "t_out": 4.3,
+     "lines": [
+      "H84: Server farm.",
+      "S56: Each server has its own",
+      "S56: GPUs and memory. ['memory.' MAGENTA]"
+     ],
+     "words": 10,
+     "floor_s": 3.8,
+     "visible_s": 4.283,
+     "visual": "Leading 0.94; this and 'No.' are the only overrides. Card and kicker POP on story frame 1 with the entry ring (kept). EXPAND 0.00-0.90 (ease_in_out_sine; v2 was 0.50 s): the GPU token becomes one box (c3, r3) in a pod of 8 racks \u00d7 8 boxes. The hero outline glows INK, while the other 63 boxes, the rack lines and the ToR/spine switches fade in dim and the network breathes faintly. 0.90-1.45 is calm, with only the hero computing. 1.45-2.65: the pod powers on rack by rack in a slow CYAN wave. Every box computes on its own data with out-of-sync CYAN flashes, and nothing travels between boxes. 2.65-4.30: busy hum. The card is read 1.43 s before the power-on.",
+     "counter": "16,896 \u00b7 CORES WORKING AT ONCE (holds: an honest undercount while the pod computes)"
+    },
+    {
+     "t_in": 4.3,
+     "t_out": 8.1,
+     "lines": [
+      "H96: Messages. [MAGENTA]",
+      "S56: They swap data to sync."
+     ],
+     "words": 6,
+     "floor_s": 2.6,
+     "visible_s": 3.8,
+     "visual": "Swap. 4.30-5.50 is calm: the boxes hum and the network lines brighten faintly. 5.50-6.50 SYNC, one cycle: 16 MAGENTA messages hop like letters, up the sender's rack to its top-of-rack switch, over an uplink to a spine, then down into a DIFFERENT rack. Each switch flashes as a message passes and each receiver flashes INK. At 6.40 every box applies the same update (LIME flash). 6.80-7.70: a smooth pull-back (0.90 s ease_in_out_sine) shrinks the pod into 16 squares of a 56\u00d756 hall (3,136 squares) that overfills the frame. 7.70-8.10: the hall rests and the bed dips to a hush 8.00-8.10, replacing v2's 80 ms hard freeze. The messages fire 1.20 s after the card lands.",
+     "counter": "16,896 \u00b7 CORES WORKING AT ONCE, HELD through the pull-back (no log-roll, so a viewer never reads the climb as caused by the messages)"
+    },
+    {
+     "t_in": 8.133,
+     "t_out": 12.45,
+     "lines": [
+      "H84: 100,000+ [CYAN, SLAM at 8.10; INK on its first 2 frames]",
+      "S56: GPUs train one AI. [POP 2 frames later]",
+      "S56: Each works on a slice. [POP with it]"
+     ],
+     "words": 10,
+     "floor_s": 3.8,
+     "visible_s": 4.317,
+     "visual": "Default leading 0.98. THE BIGGEST DROP at local 8.10 = film 34.60 s (62.9%). The hall flashes INK \u2192 CYAN with a radial burst and a CYAN shock ring (kept); v2's 0.16 s impact shake is removed. Messages glide along the trunks. 9.35-10.55: one all-reduce, a MAGENTA gather into the hall centre and then a LIME broadcast back out (each GPU's slice result combined and shared), while the network grid overlay draws on. It fires 1.22 s after the card is fully in. 10.55-11.50: SCREENSHOT HOLD under a slow push-in (cover frame \u2248 local 10.8 = film 37.3). 11.00-11.50: an outline draws on around the hall window.",
+     "counter": "SLAM 16,896 \u2192 1,689,600,000+ at 8.10 \u00b7 LIME '100,000+ GPUs \u00d7 16,896' (8.10-9.90, 1.80 s), then CORES WORKING AT ONCE; rides the cut into E06"
+    }
+   ],
+   "transition_out": "COLLAPSE 11.50-12.30 (0.80 s ease_in_out_sine; v2 was 0.40 s from 11.933) into handoff_token('cluster') (E06), with the 1,689,600,000+ HUD riding the cut. Settle 12.30-12.45 (ease_out_cubic), static to 12.50. Kicker and card hard-cut at 12.45. This is cut_times(12.5, 0.80, 0.15) = (11.50, 12.30, 12.45). Audio: the riser crests on the seam and decays into the twist's drone instead of being cut dead by a scratch.",
+   "removed_from_v2": [
+    "card 'Many boxes. / No shared memory.' (now 'Server farm.' + 'Each server has its own / GPUs and memory.')",
+    "card 'So they pass / messages.' (now 'Messages.' + 'They swap data to sync.')",
+    "card 'Go bigger.' and its push-in (the pod\u2192hall pull-back now plays under 'Messages.')",
+    "card 'More GPUs\u2026' and its ease-back (a bridge; the twist's 'So\u2026 infinite / speed?' carries it)",
+    "the faster second sync cycle",
+    "the HUD log-roll during the pull-back (the HUD holds, then slams at the drop)",
+    "the 80 ms hard freeze before the drop",
+    "the 0.16 s impact shake on the drop",
+    "the last gather before the collapse",
+    "0.50 s expand and 0.40 s collapse"
+   ]
+  },
+  {
+   "id": "twist",
+   "duration": 12.5,
+   "kicker": "FINAL BOSS: AMDAHL'S LAW",
+   "cards": [
+    {
+     "t_in": 0.017,
+     "t_out": 1.85,
+     "lines": [
+      "H84: So\u2026 infinite",
+      "H84: speed?"
+     ],
+     "words": 3,
+     "floor_s": 1.7,
+     "visible_s": 1.833,
+     "visual": "A SMOOTH FADE 0.00-0.80 replaces the record-scratch tear. The cluster token AND the whole 1,689,600,000+ HUD fade to black together (ease_in_out_sine, opacity only), so the count is never seen dropping. The question POPs on story frame 1 and holds still (no jitter); no kicker yet. 0.80-1.40: one big CYAN job bar captioned 'TIME TO FINISH' wipes in at centre (0.60 s ease_in_out_sine) and 'GPUs: 1' fades in. v2's camera lean-in is dropped. 1.40-1.85: hush. No sub-line: this is a font-fit limit, and the question has nothing to explain yet.",
+     "counter": "1,689,600,000+ fades out 0.00-0.80 at a constant value, then nothing"
+    },
+    {
+     "t_in": 1.85,
+     "t_out": 4.55,
+     "lines": [
+      "H150: No. [AMBER, SLAM]",
+      "S56: Some work can't be split. [\"can't\" AMBER]"
+     ],
+     "words": 6,
+     "floor_s": 2.6,
+     "visible_s": 2.7,
+     "visual": "Leading 0.72. The kicker FINAL BOSS: AMDAHL'S LAW (AMBER, tracking 80) cuts in with the SLAM. The bar splits: the left 10% becomes the AMBER serial block and the right 90% stays CYAN. Bar labels arrive at 1.95: '10% can't split' (AMBER) and '90% can split' (CYAN). Read 1.20 s while the block breathes. 3.05-3.65: ONE slow split attempt. A thin INK crack draws through the AMBER block, and its halves ease apart and then ease back together (low thunk, no glitch). 3.65-4.45: the bar group glides to the top (0.80 s ease_in_out_sine; v2 was a 0.30 s whip) while the SPEEDUP-vs-GPUs graph (log axis) draws in under it. Still 4.45-4.55.",
+     "counter": "1.0\u00d7 \u00b7 SPEEDUP (a new meter with its own label, fading in at 1.95, 1.15 s after the old counter finished fading)"
+    },
+    {
+     "t_in": 4.55,
+     "t_out": 7.6,
+     "lines": [
+      "H96: Million GPUs? ['GPUs?' CYAN]",
+      "S56: Only the 90% speeds up. ['90%' CYAN]"
+     ],
+     "words": 7,
+     "floor_s": 2.9,
+     "visible_s": 3.05,
+     "visual": "Swap on the still, empty graph ('GPUs: 1'); read 1.00 s. Doublings at 5.55, 5.90, 6.25 and 6.60 take the count to 2, 4, 8, then 16. The CYAN 90% splits into ever-thinner rows that finish sooner, the AMBER block never shrinks, and the Amdahl curve grows. 6.75-7.30: the count climbs smoothly to 'GPUs: 1,000,000'. The speedup turns AMBER and settles as the curve flattens onto the dashed wall. 'THE WALL: 10\u00d7' fades in at 7.30, and the stage is still from 7.45.",
+     "counter": "1.8\u00d7 \u2192 3.0\u00d7 \u2192 4.7\u00d7 \u2192 6.4\u00d7, then settles at 9.9\u00d7 (AMBER, floor-truncated) \u00b7 SPEEDUP"
+    },
+    {
+     "t_in": 7.6,
+     "t_out": 9.7,
+     "lines": [
+      "H84: 10% serial ['10% serial' AMBER]",
+      "H84: = max 10\u00d7. ['10\u00d7' AMBER]"
+     ],
+     "words": 4,
+     "floor_s": 2,
+     "visible_s": 2.1,
+     "visual": "'GPUs: \u221e' cross-fades in (v2's glitch-snap is removed) with an AMBER burst and a shock ring at the wall (kept). Axis titles and bar labels fade 7.60-7.90, and THE WALL label steps back to 0.6. Light flows up the curve into the wall 7.75-8.55. A STEADY heartbeat on the bed's 0.5 s grid (v2's accelerated): lubs at 8.50, 9.00 and 9.50, each swelling the AMBER block with a ring. By design this card lands with its own payoff slam. No sub-line: the takeaway is itself the explanation, and a third line cannot fit.",
+     "counter": "SLAM 10\u00d7 \u00b7 MAX SPEEDUP \u00b7 10% SERIAL (AMBER)"
+    },
+    {
+     "t_in": 9.7,
+     "t_out": 12.45,
+     "lines": [
+      "H96: Forever. [AMBER]",
+      "S56: \u221e GPUs won't change it."
+     ],
+     "words": 6,
+     "floor_s": 2.6,
+     "visible_s": 2.75,
+     "visual": "Swap between lubs. Steady lubs at 10.00, 10.50 and 11.00 swell the AMBER block with rings. Read 1.80 s. At 11.50 the next lub launches the AMBER block into the bright AMBER serial token (E08).",
+     "counter": "10\u00d7 \u00b7 MAX SPEEDUP \u00b7 10% SERIAL (rides the cut into E08)"
+    }
+   ],
+   "transition_out": "Launch 11.50-12.30: a 0.80 s ease_in_out_sine glide-and-shrink of the AMBER block into the serial token (E08); v2 was 0.40 s from 11.933. Settle 12.30-12.45 (ease_out_cubic), static to 12.50. Kicker and card hard-cut at 12.45, and the 10\u00d7 HUD rides the cut. The final lub leads into a soft whoosh down and a tick on the settle. The ending's pull-back is now 0.90 s.",
+   "removed_from_v2": [
+    "RECORD SCRATCH tear (scan tears, CYAN/MAGENTA RGB split, AMBER flicker) that ripped the token and counter out, with its glitch + noise_burst audio",
+    "independent line jitter on 'So\u2026 infinite / speed?'",
+    "camera lean-in on the job bar",
+    "card 'Some work / can't be split.' (now the sub-line of 'No.')",
+    "the second split attempt and the glitch on each crack",
+    "0.30 s whip to the graph (now a 0.80 s glide)",
+    "'A million / GPUs?' two-line headline (now 'Million GPUs?' + 'Only the 90% speeds up.')",
+    "'GPUs: \u221e' glitch-snap (now a cross-fade)",
+    "accelerating heartbeat (now steady on the 0.5 s grid)",
+    "0.40 s launch into the serial token"
+   ]
+  },
+  {
+   "id": "ending",
+   "duration": 3.5,
+   "kicker": "PARALLEL COMPUTING (POPs at 2.40 with the headline; none before)",
+   "cards": [
+    {
+     "t_in": 0.017,
+     "t_out": 2.4,
+     "lines": [
+      "H84: Why buy",
+      "H84: 100,000 GPUs? ['100,000' CYAN]"
+     ],
+     "words": 4,
+     "floor_s": 2,
+     "visible_s": 2.383,
+     "visual": "The text is LOCKED. The card POPs on frame 1. The pull-back 0.00-0.90 now uses ease_in_out_sine (v2 was 0.60 s ease_out_quart): the AMBER token was cell 0 of the hook grid all along, and it fills into the lone solid-amber worker as its halo grows. It ends at f54, before the locked count-in. No sub-line: the clock is locked and the CTA plays that role.",
+     "counter": "10\u00d7 meter fades out 0.00-0.30 (v2 dropped it away in 0.12 s), then nothing"
+    },
+    {
+     "t_in": 0.683,
+     "t_out": 2.4,
+     "lines": [
+      "S56: Wrong answers only \u2193 [CTA in the STEP_TOP slot]"
+     ],
+     "words": 3,
+     "floor_s": 1.7,
+     "visible_s": 1.717,
+     "visual": "LOCKED. The CTA POPs at 0.433 with a BG knockout over the settling grid and is fully in at 0.683. The worker pulses twice (f84, f100) while the arrow nudges down, and from f113 (1.883) it crawls on b01's exact 3-frame hop clock.",
+     "counter": ""
+    },
+    {
+     "t_in": 2.4,
+     "t_out": 3.5,
+     "lines": [
+      "H96: One at a time."
+     ],
+     "words": 4,
+     "floor_s": 2,
+     "visible_s": 1.1,
+     "visual": "LOCKED. The question and CTA hard-cut out, and the kicker PARALLEL COMPUTING (CYAN), the headline and the AMBER step readout POP in. The worker lands on idx 32 on the last frame (f209), which is exactly film frame 0, so the loop is seamless. The line continues at full opacity into hook 0.00-1.00, giving 2.10 s across the seam (floor 2.0). On a rewatch it also reads as the serial 10%.",
+     "counter": "STEP 010 / 320 \u2192 STEP 032 / 320 on the last frame"
+    }
+   ],
+   "transition_out": "Locked seamless loop: f209 = film frame 0 ('PARALLEL COMPUTING' + 'One at a time.' + STEP 032 / 320), and the hop ticks run straight across the seam. Unchanged.",
+   "removed_from_v2": [
+    "0.60 s ease_out_quart pull-back (now 0.90 s ease_in_out_sine, still ending at f54, before the locked f84 count-in)",
+    "0.12 s drop-away of the 10\u00d7 meter (now a 0.30 s fade)"
+   ]
+  }
+ ],
+ "caption": "1 worker \u2192 16 CPU cores (each runs its own task, all share one memory) \u2192 16,896 tiny CUDA cores in one GPU (groups of 32 obey one command) \u2192 1.7 BILLION CUDA cores across 100,000+ GPUs, in servers that share no memory, so they swap data to stay in sync. Then the final boss shows up: if 10% of the job can't be split, you max out at 10\u00d7 faster. Forever. So why buy 100,000 GPUs? Wrong answers only \u2193",
+ "checks": [
+  "TEXT FIT (I measured it myself): I built every card from CPU to the ending, with its colours, using the repo's real motif.card(check=True) (Inter Display Black/Bold; effective-size floors 65 for H styles and 39 for S56; assert_safe; TTZ bottom \u2265 3.35). All pass. Bottoms: c1 4.138, c2 3.914, c3 4.145; g1 3.380, g2 4.131, g3 3.786, g4 3.771; d1 3.412, d2 3.836, d3 3.375; t1 3.476, t2 3.381, t3 4.128, t4 3.701, t5 3.840; e1 3.976. The unchanged hook cards also pass ('One at a time. / All at once.' 3.881; 'It scales\u2026 / then stalls.' 3.712; 'One at a time.' 4.923), and so does the CTA at top = STEP_TOP (47.7 px). Leading overrides use only card()'s existing argument: d1 at 0.94 (it is 3.355 at the default, too thin) and t2 'No.' at 0.72. Every other card uses the default 0.98.",
+  "CORRECTION OF DRAFT A'S CLAIM: H84 + 2\u00d7S56 does NOT need leading 0.94. g1 passes at the default (3.380, gaps 0.271/0.145) and so does d3 (3.375, headline gap 0.092 instead of 0.059 at 0.94). Only d1 keeps 0.94. Rejected after measuring: 'Messages.' + 'They swap results' / 'to stay in sync.' fails at 3.091 (3.157 at 0.94, with gaps of only 0.011/0.003, because 'g' descends); 'Servers swap results' / 'to stay in sync.' fails at 3.205; 'Network.' + the same two lines fails at 3.091.",
+  "TWO-LINE HEADLINE + SUB-LINE FONT LIMIT (my measurements): 'Same math, / every number.' + an S56 line gives 3.243, and at leading 0.90 it reaches 3.377 only with overlapping lines (gap -0.012). 'So\u2026 infinite / speed?' + S56 gives 2.863 (3.016 at 0.90). '10% serial / = max 10\u00d7.' + S56 gives 2.939 (3.095 at 0.90). So those four cards carry no sub-line. This is a font limit, not a choice.",
+  "HEADLINE CHARACTERS (\u2264 15 max, ideally \u2264 10-11): the longest are the locked 'One at a time.' at 14 (76.4 px). These are 13: 'One CPU core.' 73.0, 'Groups of 32.' 77.0, 'every number.' 72.4, 'Million GPUs?' 74.9 (this replaces 'A million GPUs?' at 65.3, which passed the 65 floor by only 0.3) and '100,000 GPUs?' 67.1 (locked). Then 'Server farm.' 12 \u2192 82.8, 'So\u2026 infinite' 12 \u2192 84, 'One memory.' 11 \u2192 78.5, '10% serial' / '= max 10\u00d7.' 10 \u2192 84, 'Same math,' 10, 'Messages.' 9 \u2192 96, '16 cores.' 9 \u2192 96, '16? Cute.' 9 \u2192 84, '100,000+' 8 \u2192 84, 'Forever.' 8 \u2192 96, 'For AI?' 7 \u2192 96, 'No.' 3 \u2192 150.",
+  "EXPLANATION CHARACTERS (\u2264 26 max, ideally \u2264 22): 25 'All 16 read and write it.' (48.2 px) and 'Some work can't be split.' (43.3); 24 'All 32 obey one command.' (41.0); 23 'Each runs its own task.' (47.4), 'Each server has its own' (46.2), 'They swap data to sync.' (44.9), 'Only the 90% speeds up.' (43.5) and '\u221e GPUs won't change it.' (44.3); 22 'A GPU has thousands of' (44.7) and 'Each works on a slice.' (49.8); 21 'One GPU isn't enough.' (48.6); 18 'GPUs train one AI.'; 17 'It runs one task.' (56.0); 16 'GPUs and memory.'; 11 'tiny cores.'. Nothing sits at the 26-char cap anymore. 'They swap data to sync.' replaces 'They swap results to sync.' (26 chars, 40.9 px) and keeps the purpose.",
+  "LINES PER CARD: every card has \u2264 3 lines. The 3-line cards are g1, d1 and d3, each 1 H84 line + 2 S56 lines; every other card has 1-2 lines. Ink gaps between adjacent lines are \u2265 0.042 everywhere; the tightest are 'One memory.' and 'Groups of 32.' at 0.043 and 'Messages.' at 0.051. The exception is the locked ending question at 0.034, unchanged from v2.",
+  "READING FLOORS (0.3 s \u00d7 words + 0.8; bare '=' and '\u2193' not counted; '16?', '10%', '10\u00d7', '\u221e', '90%' and '100,000+' count as words), checked in Python as visible / floor (margin). CPU: 3.033/2.9 (+0.13), 3.05/2.9 (+0.15), 3.35/3.2 (+0.15). GPU: 3.783/3.5 (+0.28), 3.35/3.2 (+0.15), 2.10/2.0 (+0.10), 2.70/2.6 (+0.10). DC: 4.283/3.8 (+0.48), 3.80/2.6 (+1.20), 4.317/3.8 (+0.52). Twist: 1.833/1.7 (+0.13), 2.70/2.6 (+0.10), 3.05/2.9 (+0.15), 2.10/2.0 (+0.10), 2.75/2.6 (+0.15). Hook: 1.70/1.7 (locked) and 2.25/2.0. Ending: 2.383/2.0 and CTA 1.717/1.7 (locked). 'One at a time.' is at full opacity for 2.10 s across the loop seam (1.10 at the end of the ending + 1.00 at the start of the hook).",
+  "LIME LINES are each up 1.80 s (floor 1.5): '16-CORE RYZEN 9 9950X' CPU 4.25-6.05 (6.88 wide), 'H100: 16,896 CUDA CORES' GPU 2.00-3.80 (6.90, auto-fit) and '100,000+ GPUs \u00d7 16,896' DC 8.10-9.90 (6.74). No card lands while a LIME line is up: g2 lands on the frame its LIME line leaves, and c3 lands 0.05 s after. The one exception is the drop card, which lands WITH its own LIME line by design, as in v2.",
+  "READ-BEFORE-ACTION: each card lands on a calm stage and is read before the animation it describes. CPU: c1 1.28 s before T6's task, c2 1.20 s before power-on, c3 1.00 s before traffic. GPU: g1 1.03 s before the die opens and 1.98 s before the light wave; g2 1.40 s before the first lockstep step (and the push-in starts 0.30 s after the card lands, not on its landing frame); g3 1.00 s before the ball waves; g4 1.75 s before the collapse. DC: d1 1.43 s before power-on, d2 1.20 s before the messages, d3 1.22 s before the all-reduce. Twist: t2 1.20 s before the split attempt, t3 1.00 s before the first doubling, t5 1.80 s before the launch. Hook: 'It scales\u2026' 1.20 s before the push-in. By design, d3, t2 and t4 land with their own payoff slam (the drop, the bar split, \u221e with 10\u00d7).",
+  "DURATIONS: 5.0 + 9.5 + 12.0 + 12.5 + 12.5 + 3.5 = 55.0 s (checked in Python). Film cuts are 5.0 / 14.5 / 26.5 / 39.0 / 51.5 / 55.0, so the ending's locked clock and the f209 seam are untouched. cut_times(T, collapse=0.80, settle=0.15) gives (8.50, 9.30, 9.45) for 9.5, (11.00, 11.80, 11.95) for 12.0 and (11.50, 12.30, 12.45) for 12.5. Every listed event time is on the 60 fps grid; 0.867 / 4.833 / 0.433 / 0.683 are the rounded f52 / f290 / f26 / f41.",
+  "CALMER TRANSITIONS, BUDGETED inside the fixed slots: each level boundary now takes 0.80 s collapse (sine) + 0.15 s settle (cubic, no overshoot) + 0.05 s hold, plus a 0.80-0.90 s smooth expand or flip. That is about 1.8-1.9 s per boundary, against about 1.07 s in v2. The hook push-in is 0.933 s on sine, and the ending pull-back is 0.90 s on sine. Other camera moves inside levels are now 0.80-0.90 s: the GPU push-in and pull-back, the DC pull-back, the twist bar glide and the launch. The counter fades out at a constant value over 0.80 s instead of tearing. Removed: every camera shake, glitch, RGB split and text jitter, plus the 80 ms freeze.",
+  "CARD AND WORD COUNT (CPU to twist): v2 had 20 cards and 72 words; v3 has 15 cards and 101 words (CPU 3/22, GPU 4/27, DC 3/26, twist 5/26). The longest cards are d1 and d3 at 10 words.",
+  "KICKERS (measured via kick()): 'PARALLEL COMPUTING' 18 chars, 5.52 wide; 'LEVEL 1/3 \u00b7 ONE CPU' 19, 4.84; 'LEVEL 2/3 \u00b7 ONE GPU' 19, 4.94; 'LEVEL 3/3 \u00b7 DATA CENTER' 23, 6.14; 'FINAL BOSS: AMDAHL'S LAW' 24, 6.81 at tracking 80. All are \u2264 26 chars and \u2264 6.9 wide. HUD labels: 'CORES WORKING AT ONCE' 6.38 and 'CORE WORKING AT ONCE' 6.06.",
+  "COUNTER PATH never drops: 1 \u2192 16 \u2192 16,896 \u2192 1,689,600,000+ (100,000 \u00d7 16,896 = 1,689,600,000). In the data center the HUD holds at 16,896 through power-on, messages and pull-back, then SLAMs straight to 1,689,600,000+ at the drop. It fades out at a constant value in the twist (0.00-0.80). The separately labelled SPEEDUP meter enters at 1.95 and only climbs. Amdahl values S(N) = 1/(0.1 + 0.9/N), floor-rounded: 1.8, 3.0, 4.7, 6.4, 9.9; 10\u00d7 appears only at \u221e.",
+  "ACCURACY against facts.json: CPU cores each run their own task and share one memory (cpu_consumer_amd; dc_message_passing pitfall). 'tiny cores' and 'All 32 obey one command' follow gpu_cuda_core_definition and gpu_warp_size, and the LIME line names the NVIDIA H100, where the warp is 32. 'Each server has its own GPUs and memory' + 'They swap data to sync' follow dc_message_passing / all-reduce; the line says servers, not GPUs, so it respects the NVLink-node pitfall, and so does the caption. '100,000+ GPUs train one AI. Each works on a slice.' follows dc_meta_llama and dc_colossus1, and 'slice' covers data, tensor and pipeline parallelism. 'Only the 90% speeds up' and '10% serial = max 10\u00d7' follow amdahl_law. 'Million GPUs?' is posed as a hypothetical. There is no CPU-to-GPU ratio and no per-core 'faster' claim anywhere.",
+  "MUST-FIX LEDGER: (1) 'That's our worker.' is replaced by the mechanism line 'It runs one task.'. (2) The referent in d1 is fixed: 'Each server has its own / GPUs and memory.'. (3) The caption says 'servers that share no memory'. (4) The HUD holds at 16,896 through the pull-back and slams at the drop. (5) The GPU's opening is de-loaded: one dispatch wave, g2 waits for the LIME line to end, and the push-in starts 0.30 s after the card lands. (6) Unneeded 0.94 leading is dropped on g1 and d3. (7) The 26-char line and the 65.3 px headline are replaced. (8) 'No.' stays at H150; 'For AI? / One GPU isn't enough.' and '10% serial / = max 10\u00d7.' are kept; every sub-line is a complete statement ('A GPU has thousands of / tiny cores.', '\u221e GPUs won't change it.'); the heartbeat is steady; the ending pull-back ends consistently at f54. (9) The font-fit limit on the 2-line headlines is stated plainly in the summary and the risks."
+ ],
+ "risks": [
+  "FONT-FIT LIMIT, to tell the user: the four two-line headlines ('Same math, / every number.', 'So\u2026 infinite / speed?', '10% serial / = max 10\u00d7.' and the locked 'Why buy / 100,000 GPUs?') have no sub-line. This is not an editorial choice. With the real fonts, two headline lines plus any S56 line reach down to 2.86-3.24, against the 3.35 text-zone floor. At leading 0.90 they still fail (3.02-3.10), or pass only with overlapping lines. If the user wants sub-lines there anyway, the only route is a motif change: lower TTZ_BOTTOM from 3.35 to about 3.27 (the STAGE top is 3.25), or raise CARD_TOP. Either change needs every beat's stage clearance re-checked. Never relax the assert for a single card.",
+  "CPU opener choice: 'One CPU core. / It runs one task.' (73.0/56.0 px) was chosen because it teaches what a core does, as judge 1 asked. A measured fallback that keeps v2's headline voice is B's 'That worker? / It's one CPU core.' (76.8/56.0, bottom 4.089, 6 words). Pedant note: a 9950X core can run 2 threads (SMT). The line describes what is on screen and never says 'only one at a time'.",
+  "'They swap data to sync.' (44.9 px) replaces 'They swap results to sync.' (26 chars, 40.9 px) for size margin, and still says why. Swap back if 'results' reads better to the user; it also passes card().",
+  "Thin reading margins of +0.10 s on g3, g4, t2 and t4 (+0.13 on c1 and t1). Every card must POP or SLAM at full opacity (no fade-in frames), and text keeps hard-cutting at t_exit. Re-run the floor check after any re-time.",
+  "The GPU opener 'A GPU has thousands of / tiny cores.' is read for 1.03 s before the die opens. The die opening is the very thing the line names, so it illustrates rather than interrupts, and the payoff light wave is 1.98 s after landing. A full 9-word read before any motion is not possible inside a 12.0 s level that opens with a 0.80 s flip.",
+  "Smaller type: the 3-line cards force H84 where v2 used H96 ('16? Cute.' and '100,000+' drop from 96 to 84 px, still with the INK\u2192CYAN flash, burst, ring and HUD slam). S56 lines over 22 characters render at 41-49 px instead of 56; the smallest is 'All 32 obey one command.' at 41.0 against the 39 floor. The tightest ink gaps are 0.043 on 'One memory.' and 'Groups of 32.'.",
+  "Hook styling vs the lock: the hook's timing is unchanged (crawl, f52-f59 freeze, 'All at once.' at 1.00, swap at f162, push 3.90-4.833). But the headline jitter in the freeze and the impact shake at 1.00 are removed, because the user asked to calm glitches and shakes. If the user counts them as part of the locked first second, restore them; they are the only exceptions.",
+  "Audio follows the visuals: the record-scratch audio (glitch + noise_burst + bed cut) and the GPU-flip glitch SFX are removed, the DC riser now crests and decays into the twist drone, and the heartbeat is steady on the 0.5 s grid. The user only named visuals, so restore the scratch sound if they want it kept.",
+  "With 'Go bigger.' and 'More GPUs\u2026' gone, the scale-up is carried by the smooth pod\u2192hall pull-back under 'Messages.' and the HUD slam at the drop. A muted viewer may not register 'bigger' until the drop, 0.40 s after the camera rests. Also, the GPU token becomes one box while the text says each server has its own GPUs (plural). If that reads as one box = one GPU, an optional visual tweak is 8 tiny GPU glyphs inside the hero box; the HUD stays an honest undercount either way.",
+  "Pedant risks: 'For AI? One GPU isn't enough.' is about training large models, since small models do run on one GPU (v2 made the same claim). 'Forever. / \u221e GPUs won't change it.' assumes a fixed-size job; the pinned Gustafson comment covers that. 'Groups of 32' is NVIDIA-specific (AMD CDNA uses 64), which is safe because the LIME line names the H100.",
+  "The biggest drop moves from film 33.88 s (61.6%) to 34.60 s (62.9%), and the cover frame moves to about film 37.3. The calmer transitions make the tail feel slower. If analytics show drop-off, the first lever is d2's 1.20 s of floor slack.",
+  "Implementation is more than re-timing. (1) motif.py: COLLAPSE_TIME 0.40 \u2192 0.80 on ease_in_out_sine; SETTLE_TIME 0.12 \u2192 0.15 on ease_out_cubic with no back overshoot; EXPAND_TIME 0.50 \u2192 0.90 on ease_in_out_sine. b01 keeps its own push window. (2) b03: one T6 task run, the HUD fades in, power-on at 4.25. (3) b04: a 0.80 s flip without glitch, a 0.80 s die-open, one dispatch wave, a 0.80 s push-in and pull-back, no repaint. (4) b06: no drop shake and no 80 ms freeze, one sync cycle, the HUD held at 16,896 and then slammed at 8.10, no last gather. (5) b08: tear_away/scratch_cut replaced by a 0.80 s fade of the E06 token + HUD; riser_to_cut replaced by a crest-and-decay; one split attempt; whip \u2192 glide; 'GPUs: \u221e' cross-fades in; steady heartbeat; 0.80 s launch. (6) b09: 0.90 s sine pull-back, HUD fade over 0.30 s. (7) Cards still hard-cut at t_exit. (8) Re-run tools/check_handoffs.py at 30 and 60 fps, because every collapse and settle time moves. Then ask the user before the final 1080\u00d71920 @ 60 fps render, as user_decisions requires."
+ ],
+ "user_decisions": {
+  "approved": "2026-10-23: user approved script v3 to build (preview first)",
+  "cpu_opener": "USE 'That worker? / It's one CPU core.' (call-back to the hook worker) instead of 'One CPU core. / It runs one task.'",
+  "scratch_sound": "SOFTEN: no record-scratch / glitch / noise-burst SFX at the data center -> twist cut; use a soft swell (e.g. pad_swell or a gentle whoosh) into the twist to match the calm fade",
+  "kept_from_v2": "counter CORES WORKING AT ONCE (singular for 1), game framing kickers, 'Same math, / every number.', 'Forever.', seamless loop, 55.0 s with the same segment durations",
+  "calm_motion": "remove camera shakes, RGB-split/glitch effects, text jitter, the 80 ms hard freeze and the accelerating heartbeat; level-to-level collapse 0.80 s and expand/flip 0.80-0.90 s on ease_in_out_sine, settle 0.15 s ease_out_cubic without overshoot; counter fades out (0.80 s) instead of tearing. KEEP flashes, light waves, shock rings and text/counter slams.",
+  "final_render": "ASK THE USER before the final full-scale (1080x1920 @ 60 fps) render"
+ }
+}
