@@ -41,7 +41,7 @@ Times are from the pacing rules in `film-style.md` §2 and are approximate until
 
 | ≈ Time | Beat | On screen |
 |---|---|---|
-| 0–2.75 s | **Hook** | One glowing card (lavender) at the centre. The question rises in over 4 lines (size 46, block centred at y = +5.0, glyph stagger ≈ 0.009 s so all 53 glyphs are in by ≈ 0.8 s): "How many cards / have more [orders] / than seconds since / the [Big Bang?]" ("orders" lavender, "Big Bang?" cyan). Sub-line "Guess before it ends." The start label rises from ≈ 0.45 s: size text "1 order", title ONE CARD, line "It can only lie [one] way." HUD fades in at 2.5–2.95 s showing **1** |
+| 0–2.75 s | **Hook** | One glowing card (lavender) at the centre. The question rises in over 4 lines (size 42, 1.04 em baseline to baseline, block centred at y = +4.78, glyph stagger ≈ 0.009 s so all 53 glyphs are in by 0.79 s): "How many cards / have more [orders] / than seconds since / the [Big Bang?]" ("orders" lavender, "Big Bang?" cyan). Sub-line "Guess before it ends." The start label rises from ≈ 0.45 s: size text "1 order", title ONE CARD, line "It can only lie [one] way." HUD fades in at 2.5–2.95 s showing **1** |
 | 2.75–5.6 s | **Teach the mechanic** | Cards 2 to 6, one at a time (0.70, 0.60, 0.46, 0.40, 0.36 s, each with a 0.06 s settle). The new card hovers while its *k* possible places glow (before, between and after the cards), then slides into one. "×2", "×3" … "×6" pops beside the HUD, together with the digit change and a pluck. The readout goes 2 → 6 → 24 → 120 → 720 orders. For cards 2 and 3, the 2 and then 6 possible orders flash as tiny ghost rows, so the count is seen, not just read. Phase label: size text "1 × 2 × 3 × 4 × …", title ADD A CARD, line "Each new card has [one more] place." (fit 28.9) |
 | 5.6–7.2 s | Sprint | Cards 7–13. The row of cards rises into a **ring of 52 slots** around the centre, filling one slot per card. The readout races 5,040 → 6.2 × 10⁹ |
 | 7.2 s | Stop · card 14 | EVERYONE ALIVE, with the YOU pin on Earth's night side |
@@ -199,18 +199,36 @@ These are for the post package, which is written later in the order of `lumiera_
   (6.2 × 10²³ against 5.0 × 10²³ molecules).
   - The first followed card 14 too closely, and the second had the thinnest margin (× 1.24).
   - The figures are kept in this file's git history in case a later film wants them.
+- **The 4-line hook layout (checked in a still, October 2026).** Size 42, spaced 1.04 em baseline
+  to baseline, block centred at y = +4.78.
+  - Measured: top +5.96 (the cover crop is +6.0), bottom +3.60, 0.15 above the sub-line, widest
+    line 5.18 units.
+  - Size 46 centred at +5.0, as first proposed, put the top at +6.32, outside the cover crop.
+  - Stacking the lines by ink boxes made the spacing uneven, because two of the four lines have no
+    descenders. Baseline spacing fixes it.
 
 ## Open decisions
 
-1. **A 4-line hook.** At size 46 it fits the width (widest line 5.69 units), but its height is
-   checked only on paper (block centred at y = +5.0, below y = +6.7). Confirm with a still, the first
-   time a test frame is rendered.
-2. **New accents** (time `#D4FF5C`, cards `#E08BFF`). Check them in stills against
+1. **New accents** (time `#D4FF5C`, cards `#E08BFF`). Check them in stills against
    the deep-space ground before they're final.
-3. **The ring of 52 slots.** This is the main new drawing work, along with gathering from points of
+2. **The ring of 52 slots.** This is the main new drawing work, along with gathering from points of
    light.
    - Simpler fallback: keep a growing row of cards under the subject.
    - Cost of the fallback: it gets crowded past ~20 cards and has to compress into a fanned deck.
+
+## Test stills
+
+`stills.py` poses single frames with The Doubling's engine (imported from `../doubling_film`) to
+check layout before the film is built. Only the hook frame exists so far.
+
+```bash
+manim -r 1080,1920 -s --disable_caching stills.py HookFrame            # the hook frame (≈ 1.9 s, the cover)
+GUIDES=1 manim -r 1080,1920 -s --disable_caching stills.py HookFrame   # with the safe zones drawn over it
+```
+
+The scene prints the hook's measured extents. `HOOK_SIZE`, `HOOK_PITCH` (em) and `HOOK_Y` override
+the layout for comparisons. Needs Manim 0.18 or later with the Pango and Cairo headers, as in
+`../doubling_film/README.md`.
 
 ## Sources
 

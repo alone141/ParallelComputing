@@ -235,7 +235,7 @@ uncertainty. The hook's answer MUST also hold from below: one step earlier, the 
 
 | Role | Font | Size | Notes |
 |---|---|---|---|
-| Hook question | Inter Display Bold | 50 | **Sentence case.** 3 short lines, block centred at y = +4.75 with a 0.16 line gap. A question that needs 4 lines MAY use them at size 46, block centred at y = +5.0, with the glyph stagger shortened (≈ 0.009 s) so it is still in by ≈ 0.8 s; check with a still that it stays below y = +6.7 and clears the sub-line. The mechanic word in lavender, the target word in cyan, the rest Starlight |
+| Hook question | Inter Display Bold | 50 | **Sentence case.** 3 short lines, block centred at y = +4.75 with a 0.16 line gap. A question that needs 4 lines MAY use them at size 42, spaced 1.04 em baseline to baseline, block centred at y = +4.78, with the glyph stagger shortened (≈ 0.009 s) so it is still in by ≈ 0.8 s. That keeps its top at ≈ +5.96, inside the cover crop (§1), and ≈ 0.15 units above the sub-line (measured in `shuffle_film/stills.py`). Space hook lines by baseline, not by stacking their ink boxes, whenever some lines have no descenders, or the spacing turns uneven. The mechanic word in lavender, the target word in cyan, the rest Starlight |
 | Hook sub-line | Inter Regular | 27 | "Guess before it ends." in Mist, at y = +3.3 |
 | Stop / phase title | Inter Display Bold, CAPS | 60, fit to ≤ 6.8 units | "THE MILKY WAY" |
 | Comparison / note line | Inter Medium | 31 (29 when two lines) | Sentence case, Mist Light. The `[bracketed]` number is in the accent. Fit down to ≤ 6.8 units, never below 26; if it still doesn't fit, shorten the line. Only notes may use two lines |
