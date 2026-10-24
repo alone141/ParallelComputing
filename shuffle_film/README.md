@@ -1,163 +1,169 @@
 # The Shuffle
 
-> **Status: treatment.** Nothing here is built or rendered yet. Style rules for all Lumiera films are
-> in [`../playbook/film-style.md`](../playbook/film-style.md); this film follows them, using the
-> count-film variants in §4 (*Films that count*). Re-check every source in "The numbers" before
-> scripting (`playbook/ideas.md`).
+> **Status: treatment, with test stills.** The film itself is not built yet. Style rules for all
+> Lumiera films are in [`../playbook/film-style.md`](../playbook/film-style.md); this film follows
+> them, using the count-film variants in §4 (*Films that count*). Re-check every source in "The
+> numbers" before scripting (`playbook/ideas.md`).
 
-A ~44-second vertical (9:16) film for the **Pure Patterns** pillar. It starts with one card and adds
-cards one at a time. A deck of 2 cards can lie in 2 orders, 3 cards in 6, 4 cards in 24: each new
-card has one more place to go, so it multiplies the orders by the deck's new size. The count passes
-the people alive at **14** cards, the seconds since the Big Bang at **20**, the atoms in Earth at
-**42**, and a full deck of 52 reaches about 8.07 × 10⁶⁷ orders.
+A ~32-second vertical (9:16) film for the **Pure Patterns** pillar. Cards are dealt one at a time from
+a full shuffled deck. The first card can be any of 52, the next any of the 51 left, then 50, so each
+card multiplies the possible orders.
+
+- **6 cards:** more orders than people alive.
+- **11 cards:** more orders than seconds since the Big Bang.
+- **All 52 cards:** about 8.07 × 10⁶⁷ orders.
+
+The film ends by imagining shuffles on cosmic scales, each of which still sees almost none of them.
 
 | | |
 |---|---|
 | Format | 1080×1920, 60 fps, with-sound and silent versions (`film-style.md` §1) |
-| Length | ≈ 43.6 s. That is under the 45 s default on purpose: the two weakest stops were cut (see [Decided](#decided)), and holds may not be padded (`film-style.md` §1) |
-| Hook | "How many cards have more orders than seconds since the Big Bang? Guess before it ends." |
-| Answer | 20 cards. **Never** in the cover, title, caption, description, tags or comments (`brand.md` §6) |
-| Payoff | "Not even half a deck." (20 of 52 cards) |
-| Outro | "52" CARDS · "Every good shuffle / is almost certainly new." |
-| Mechanic | A deck of *k* cards has 1 × 2 × 3 × … × *k* orders (*k* factorial) |
+| Length | ≈ 32.4 s. A deliberately short cut, as `film-style.md` §1 allows |
+| Hook | "How many cards dealt have more orders than seconds since the Big Bang? Guess before it ends." |
+| Answer | 11 cards. **Never** in the cover, title, caption, description, tags or comments (`brand.md` §6) |
+| Payoff | "Not even a quarter of the deck." (11 of 52 cards) |
+| Ending | Three "imagine" beats, then the outro: "52" CARDS DEALT · "Every good shuffle / is almost certainly new." |
+| Mechanic | Dealing *k* cards from a full deck gives 52 × 51 × … × (53 − *k*) possible orders |
 
 ## Why this film
 
-- **The question is honest and answerable in your head.** We expect many guesses near a full
-  deck. The true answer, 20, lands well before that, and 19 cards fall clearly short (1.2 × 10¹⁷ against
+- **The question is honest and answerable in your head.** We expect many guesses near the full deck.
+  The true answer, 11, lands at about 9 s, and 10 cards fall clearly short (5.7 × 10¹⁶ against
   4.35 × 10¹⁷), so the answer does not hang on a rounding.
-- **It teaches why.** The film shows the *one more place* rule, so the viewer sees why the count
-  explodes, not just that it does. That is the Patterns pillar's promise.
-- **It reuses the toolkit.** The ×*k* pops play the role of The Doubling's ×2, and it keeps the HUD,
-  the STEP chip (as CARD), the YOU pin, the meter, the payoff brackets, the answer ring and the loop.
-- **It links to The Doubling.** A full deck's orders are about 226 doublings, against the 205 that
-  span the observable universe. That makes a good fact for the description and comments.
+- **It is short.** At about 32 s the payoff lands early, and the "imagine" beats give the ending its
+  lift.
+- **It teaches why.** The ×52, ×51, ×50 pops show that each card multiplies by the cards still left.
+- **It reuses the toolkit.** It keeps the HUD, the STEP chip (as CARD), the YOU pin, the meter, the
+  payoff brackets, the answer ring and the loop.
 
 Risks are listed under [Open decisions](#open-decisions).
 
 ## Structure
 
-Times are from the pacing rules in `film-style.md` §2 and are approximate until `story.py` exists.
+Times follow the pacing rules in `film-style.md` §2, except for the beats (§4, *Films that count*).
+They are approximate until `story.py` exists.
 
 | ≈ Time | Beat | On screen |
 |---|---|---|
-| 0–2.75 s | **Hook** | One glowing card (lavender) at the centre. The question rises in over 4 lines (size 42, 1.04 em baseline to baseline, block centred at y = +4.78, glyph stagger ≈ 0.009 s so all 53 glyphs are in by 0.79 s): "How many cards / have more [orders] / than seconds since / the [Big Bang?]" ("orders" lavender, "Big Bang?" cyan). Sub-line "Guess before it ends." The start label rises from ≈ 0.45 s: size text "1 order", title ONE CARD, line "It can only lie [one] way." HUD fades in at 2.5–2.95 s showing **1** |
-| 2.75–5.6 s | **Teach the mechanic** | Cards 2 to 6, one at a time (0.70, 0.60, 0.46, 0.40, 0.36 s, each with a 0.06 s settle). The new card hovers while its *k* possible places glow (before, between and after the cards), then slides into one. "×2", "×3" … "×6" pops beside the HUD, together with the digit change and a pluck. The readout goes 2 → 6 → 24 → 120 → 720 orders. For cards 2 and 3, the 2 and then 6 possible orders flash as tiny ghost rows, so the count is seen, not just read. Phase label: size text "1 × 2 × 3 × 4 × …", title ADD A CARD, line "Each new card has [one more] place." (fit 28.9) |
-| 5.6–7.2 s | Sprint | Cards 7–13. The row of cards rises into a **ring of 52 slots** around the centre, filling one slot per card. The readout races 5,040 → 6.23 × 10⁹ |
-| 7.2 s | Stop · card 14 | EVERYONE ALIVE, with the YOU pin on Earth's night side |
-| 11.0 s | **Payoff** · card 20 | SINCE THE BIG BANG. Answer ring around the HUD, then the note "Not even [half] a deck." with the meter brackets |
-| 17.1 s | Stop · card 27 | YOU (the atoms in you), YOU pin on the pictogram |
-| 20.3–22.8 s | Long stretch | Cards 28–41 in a ≈ 2.5 s sprint. Phase label: size text "CARDS 28 → 41", title KEEP ADDING, line "Each card multiplies by its [number]." (fit 29.4) |
-| 22.8 s | Stop · card 42 | EARTH |
-| 26.7 s | Stop · card 46 | THE SUN |
-| 30.4 s | Stop · card 48 | THE PLANCK TIME (with a note) |
-| 34.8 s | **Final stop** · card 52 | THE WHOLE DECK. The ring closes |
-| 39.4–43.6 s | **Outro** | The HUD "52" flies to the centre (Magenta glow). Label CARDS, summary "Every good shuffle / is almost certainly new." The ring gathers back into one card, and the frame glides back to frame 0 |
+| 0–2.75 s | **Hook** | A full deck (lavender line art) at the centre. The question rises in over 4 lines (size 42, 1.04 em baseline to baseline, block centred at y = +4.78, glyph stagger 0.0085 s so all 58 glyphs are in by 0.80 s): "How many cards [dealt] / have more orders than / seconds since / the [Big Bang?]" ("dealt" lavender, "Big Bang?" cyan). Sub-line "Guess before it ends." The start label rises from ≈ 0.45 s: size text "52 cards", title A FULL DECK, line "Deal it [one card] at a time." HUD fades in at 2.5–2.95 s showing **0** (CARDS DEALT) |
+| 2.75–4.7 s | **Teach the mechanic** | Cards 1 to 3 are dealt one at a time (0.70, 0.60, 0.46 s, each with a 0.06 s settle) into the first slots of a **ring of 52**. "×52", "×51", "×50" pop beside the HUD with the digit change and a pluck. The readout goes 52 → 2,652 → 132,600 orders. Phase label: size text "52 × 51 × 50 × …", title DEAL A CARD, line "Each card has [one fewer] choice." |
+| 5.3 s | Stop · card 6 | EVERYONE ALIVE, with the YOU pin on Earth's night side |
+| 9.1 s | **Payoff** · card 11 | SINCE THE BIG BANG. Answer ring around the HUD, then the note "Not even [a quarter] of the deck." with the meter brackets |
+| 14.5–17.0 s | Long stretch | Cards 12–52 in a ≈ 2.5 s sprint. Phase label: size text "CARDS 12 → 52", title KEEP DEALING, line "The last card has [no choice]." |
+| 17.0 s | **Final stop** · card 52 | THE WHOLE DECK. The ring closes. Line "52 × 51 × 50 × … × 2 × 1", then at ≈ 1.2 s the note "Imagine [shuffling] since the Big Bang." |
+| 20.0 s | Imagine 1 | A SHUFFLE A SECOND |
+| 22.6 s | Imagine 2 | EVERYONE, EVERY SECOND |
+| 25.2 s | Imagine 3 | EVERY PLANCK TIME |
+| 28.2–32.4 s | **Outro** | The HUD "52" flies to the centre (Magenta glow). Label CARDS DEALT, summary "Every good shuffle / is almost certainly new." The ring gathers back into the deck, and the frame glides back to frame 0 |
 
-## The stops
+## The stops and beats
 
-Each stop has the label block of `film-style.md` §5: chip, size text, title, line, and sometimes a
-note. All lines are measured at their font size against the 6.8-unit limit. Where one needs fitting,
-the size it fits at is given (never below 26).
+Each has the label block of `film-style.md` §5. Stops carry a chip; the start, the phase labels and
+the beats don't, so their size text takes the accent. All lines are measured at their font size
+against the 6.8-unit limit. Where one needs fitting, the size it fits at is given (never below 26).
 
-| Card | Chip | Size text | Title | Line (and note) | Accent | Row |
+| At | Chip | Size text | Title | Line (and note) | Accent | Row |
 |---|---|---|---|---|---|---|
-| 1 | none (the start) | 1 order | ONE CARD | It can only lie [one] way. | lavender `#B9A6FF` | none |
-| 14 | CARD 14 | 8.3 billion people | EVERYONE ALIVE (fit 58.9) | More orders than [people alive] | cyan `#6CF2FF` (people) | pass row: 0 → 8.3 billion people |
-| 20 | CARD 20 | 4.35 × 10¹⁷ seconds | SINCE THE BIG BANG (fit 48.8) | More orders than [every second]. Note at ≈ 2.5 s: "Not even [half] a deck." | time `#D4FF5C` (new) | pass row: 0 → 435 quadrillion seconds |
-| 27 | CARD 27 | ≈ 7 × 10²⁷ atoms | YOU | More than the [atoms] in you | cyan `#6CF2FF` | pass row: 0 → 7 × 10²⁷ atoms |
-| 42 | CARD 42 | ≈ 1.3 × 10⁵⁰ atoms | EARTH | More orders than its [atoms] | Earth `#4DA3FF` | pass row: 0 → 1.3 × 10⁵⁰ atoms |
-| 46 | CARD 46 | ≈ 10⁵⁷ atoms | THE SUN | More orders than its [atoms] | Sun `#FFB13B` | pass row: 0 → 10⁵⁷ atoms |
-| 48 | CARD 48 | 8.07 × 10⁶⁰ since the Big Bang | THE PLANCK TIME (fit 55.5) | More than the [Planck times] so far (fit 30.6). Note at ≈ 1.8 s: "Where known physics [runs out]." | Planck `#B9A6FF` | pass row: 0 → 8.07 × 10⁶⁰ Planck times |
-| 52 | CARD 52 | 8.07 × 10⁶⁷ orders | THE WHOLE DECK (fit 56.0) | 1 × 2 × 3 × … × 52. Note at ≈ 1.3 s: "[10 million] orders for every / Planck time since the Big Bang." | cards `#E08BFF` (new) | copies row with the note: 0 → 10 million per Planck time |
+| start | none | 52 cards | A FULL DECK | Deal it [one card] at a time. | lavender `#B9A6FF` | none |
+| card 6 | CARD 6 | 8.3 billion people | EVERYONE ALIVE (fit 58.9) | More orders than [people alive] | cyan `#6CF2FF` (people) | pass row: 0 → 8.3 billion people |
+| card 11 | CARD 11 | 4.35 × 10¹⁷ seconds | SINCE THE BIG BANG (fit 48.8) | More orders than [every second]. Note at ≈ 2.5 s: "Not even [a quarter] of the deck." | time `#D4FF5C` | pass row: 0 → 435 quadrillion seconds |
+| card 52 | CARD 52 | 8.07 × 10⁶⁷ orders | THE WHOLE DECK (fit 56.0) | 52 × 51 × 50 × … × 2 × 1. Note at ≈ 1.2 s: "Imagine [shuffling] since the Big Bang." (fit 27.7) | cards `#E08BFF` | none |
+| imagine 1 | none | 4.35 × 10¹⁷ shuffles | A SHUFFLE A SECOND | At most [1 in 1.85 × 10⁵⁰] of the orders (fit ≈ 28) | time `#D4FF5C` | copies row: 0 → 1.85 × 10⁵⁰ per shuffle |
+| imagine 2 | none | 3.61 × 10²⁷ shuffles | EVERYONE, EVERY SECOND (fit) | At most [1 in 2.23 × 10⁴⁰] of the orders (fit ≈ 28) | cyan `#6CF2FF` (people) | copies row: 0 → 2.23 × 10⁴⁰ per shuffle |
+| imagine 3 | none | 8.07 × 10⁶⁰ shuffles | EVERY PLANCK TIME | Still at most [1 in 10 million] | Planck `#B9A6FF` | copies row: 0 → 10 million per shuffle |
 
-- **Hue spacing.** The two new accents are at least 30° of hue from their neighbouring stops:
-  - time (76°) sits between two cyan stops (186°), 110° from each;
-  - cards (284°) sits 31° from the Planck lavender (253°) and 32° from the outro's magenta (316°).
-- **Two YOU moments.** The pin is shown at card 14 (you among everyone alive) and card 27 (the atoms
-  in you).
-- **Payoff meter.** At card 20 the meter brackets read **20** (cyan, start to answer) and **32**
-  (Mist Light, answer to the full deck).
+- **The beats** are phase labels after the final stop, about 2.6 s each (3.0 s for the last).
+  - The HUD stays on 52 and the closed ring stays in the cards accent.
+  - Each beat has its own drawing inside the ring: the Big Bang spiral, a crowd of cyan points, and
+    the Planck dot in its dashed reticle.
+  - Each beat's row lines up copies of all those shuffles across the orders, so its counter ends on
+    the line's number.
+- **The payoff meter brackets** at card 11 read **11** (cyan, start to answer) and **41** (Mist Light,
+  answer to the full deck).
+- **YOU** appears at card 6, as one of everyone alive. The crowd in imagine 2 is cyan, because people
+  stand in for you.
 
 ## How it looks
 
 - **The hero is the deck.**
-  - During the teaching it is a short row of cards at the centre, with the possible places drawn as
-    glowing slots.
-  - From card 7 the row rises into a ring of 52 card slots (radius 2.55 units, centred at
-    y = +0.22, slots 0.19 × 0.27), which fills one slot per card, clockwise from the top.
-    - Its bottom slot ends at y ≈ −2.47, 0.17 above the chip.
-    - Its left edge (x ≈ −2.69) stays clear of the meter and the payoff brackets' labels.
+  - It starts as a full deck at the centre: the top card over a few stepped edges.
+  - Dealt cards fill a ring of 52 card slots (radius 2.55 units, centred at y = +0.22, slots
+    0.19 × 0.27), clockwise from the top.
+  - Its bottom slot ends at y ≈ −2.47, 0.17 above the chip, and its left edge (x ≈ −2.69) stays
+    clear of the meter and the bracket labels.
 - **Inside the ring:**
-  - Each stop's reference is drawn in light: Earth's night side with city lights, a cosmic
-    timeline spiralling out from a bright point, the people pictogram, Earth, the Sun, and the Planck dot with
-    its dashed reticle (an echo of The Doubling's start).
-  - The objects do **not** zoom by scale. Counts are not sizes, and the Planck time after the Sun
-    would read as a lie on a size zoom.
+  - Each stop's reference is drawn in light: Earth's night side with city lights, the Big Bang
+    spiral, the orders cloud at card 52, and the beats' drawings.
+  - The objects do **not** zoom by scale: counts are not sizes.
   - Each object gathers from points of light as it arrives and scatters into the warp as it leaves.
-- **The pass row** sits under the count readout, where The Doubling's ruler was (y = +3.75, 5.2
-  wide).
-  - The reference fills over 0.7 s with its live counter, then the orders overtake it in lavender
-    over 0.8 s.
-  - The counter rides 0.3 below the track and starts no further left than the track, so it clears
-    the payoff brackets.
+- **The row** sits under the count readout, where The Doubling's ruler was (y = +3.75, 5.2 wide).
+  - On a pass row, the reference fills over 0.7 s with its live counter, then the orders overtake it
+    in lavender over 0.8 s.
+  - The beats use copies rows instead, because their reference would fill less than 2% of the track.
+  - The counter rides 0.3 below the track and starts no further left than the track.
 - **The orders** are a faint lavender cloud of points behind the reference. They brighten and swirl
   with the rate of growth, and the warp streaks follow the same rate.
-- **Background:** near-black. It shifts to blue near Earth, warm near the Sun and violet at the
-  Planck time and the full deck, always within `film-style.md` §3.
+- **Background:** near-black, warm-green near the Big Bang and violet from card 52, always within
+  `film-style.md` §3.
 
 ## Sound
 
 The palette is The Doubling's (`film-style.md` §7):
-- **Plucks:** cards 2–6 get the rising pluck.
+- **Plucks:** cards 1–3 get the rising pluck.
 - **Ticks:** one tick per card in the sprints.
-- **Stop bells:** each regular stop gets a bell.
+- **Stop bells:** each regular stop gets a bell, and each beat a quieter one.
 - **Big reveals:**
-  - the "You" chord at card 27 (YOU);
-  - the payoff chord and answer shimmer at card 20;
+  - the "You" chord at card 6;
+  - the payoff chord and answer shimmer at card 11;
   - the finale chord at card 52.
 - **Pad:** its brightness follows the count (log₂ of the orders) rather than size.
 
 ## The numbers
 
-A deck of *k* cards has *k* factorial orders. The orders of 52 cards are exactly
-80,658,175,170,943,878,571,660,636,856,403,766,975,289,505,440,883,277,824,000,000,000,000
-≈ 8.07 × 10⁶⁷. A stop sits at the first card whose orders beat the reference.
+Dealing *k* cards from a full deck gives 52 × 51 × … × (53 − *k*) possible orders. All 52 give
+exactly 80,658,175,170,943,878,571,660,636,856,403,766,975,289,505,440,883,277,824,000,000,000,000
+≈ 8.07 × 10⁶⁷ (52 factorial). A stop sits at the first card whose orders beat the reference.
 
 - **The ×above column** is the margin at the stop: the orders at the stop divided by the reference.
-- **The ×below column** is the same ratio one card earlier: the orders one card earlier divided by
-  the reference.
+- **The ×below column** is the same ratio one card earlier.
 
 | Card | Orders | Reference used | Source | × above | × below |
 |---|---|---|---|---|---|
-| 14 | 8.72 × 10¹⁰ | 8.3 billion people alive (mid-2026) | UN DESA, *World Population Prospects 2024* (projection for 2026) | 10.5 | 0.75 |
-| **20** | **2.43 × 10¹⁸** | **4.35 × 10¹⁷ s since the Big Bang** (13.787 Gyr × 3.156 × 10⁷ s per Julian year) | Planck Collaboration 2018, VI (13.787 ± 0.020 Gyr) | **5.6** | **0.28** |
-| 27 | 1.09 × 10²⁸ | ≈ 7 × 10²⁷ atoms in a 70 kg adult | Freitas, *Nanomedicine* Vol. I (1999); the usual textbook figure. **Verify before scripting** | 1.56 | 0.06 |
-| 42 | 1.41 × 10⁵¹ | ≈ 1.33 × 10⁵⁰ atoms in Earth | Jefferson Lab Science Education, "How many atoms are in the Earth?" | 10.6 | 0.25 |
-| 46 | 5.50 × 10⁵⁷ | ≈ 10⁵⁷ atoms in the Sun (computed: M☉ = 1.988 × 10³⁰ kg with the surface mix X = 0.738, Y = 0.249, Z = 0.013 gives 9.5 × 10⁵⁶) | Asplund et al. 2009 (composition); IAU 2015 (mass) | 5.8 | 0.13 |
-| 48 | 1.24 × 10⁶¹ | 8.07 × 10⁶⁰ Planck times since the Big Bang (4.35 × 10¹⁷ s ÷ 5.391247 × 10⁻⁴⁴ s) | CODATA 2018 (Planck time) | 1.54 | 0.03 |
-| 52 | 8.07 × 10⁶⁷ | 52 factorial ÷ 8.07 × 10⁶⁰ = 9.99 × 10⁶ → "10 million orders for every Planck time" (0.05% off) | exact | — | — |
+| 6 | 1.47 × 10¹⁰ | 8.3 billion people alive (mid-2026) | UN DESA, *World Population Prospects 2024* (projection for 2026) | 1.77 | 0.038 |
+| **11** | **2.41 × 10¹⁸** | **4.35 × 10¹⁷ s since the Big Bang** (13.787 Gyr × 3.156 × 10⁷ s per Julian year) | Planck Collaboration 2018, VI (13.787 ± 0.020 Gyr) | **5.54** | **0.13** |
+| 52 | 8.07 × 10⁶⁷ | — | exact | — | — |
 
-- **Every stop beats its reference by at least 54%** (the Planck time, × 1.54), as the count-film
-  rule in `film-style.md` §4 asks.
-- **The hook's answer is robust from below too:** 19 cards give only 0.28 of the seconds since the
+| Beat | Shuffles | Orders per shuffle (52 factorial ÷ shuffles) | On screen | Source |
+|---|---|---|---|---|
+| A shuffle a second since the Big Bang | 4.35 × 10¹⁷ | 1.854 × 10⁵⁰ | 1 in 1.85 × 10⁵⁰ (0.2% off) | Planck 2018 |
+| Everyone alive, a shuffle a second since the Big Bang | 8.3 × 10⁹ × 4.35 × 10¹⁷ = 3.61 × 10²⁷ | 2.234 × 10⁴⁰ | 1 in 2.23 × 10⁴⁰ (0.2% off) | UN WPP 2024, Planck 2018 |
+| A shuffle every Planck time since the Big Bang | 4.35 × 10¹⁷ s ÷ 5.391247 × 10⁻⁴⁴ s = 8.07 × 10⁶⁰ | 9.995 × 10⁶ | 1 in 10 million (0.05% off) | CODATA 2018 |
+
+- **Both stops beat their reference by at least 77%** (card 6, × 1.77), as the count-film rule in
+  `film-style.md` §4 asks.
+- **The hook's answer is robust from below too:** 10 cards give only 0.13 of the seconds since the
   Big Bang.
-- **The YOU stop (card 27) holds for anyone under about 109 kg**, since bodies carry about 10²⁶
-  atoms per kg. The description says "a 70 kg adult".
+- **The beats say "at most"** because S shuffles can show at most S different orders. Repeats only
+  lower it.
 - **The Doubling callback, for post text only:** 52 factorial ≈ 2^225.6, about **226 doublings**,
   against The Doubling's 205.
 
 ### Qualifiers to keep
 
+- **"Dealt" is what makes 11 true.** Dealing 11 cards from a full deck gives 52 × 51 × … × 42
+  ≈ 2.41 × 10¹⁸ orders. A deck of only 11 cards has just 11 factorial ≈ 4.0 × 10⁷.
+  - The hook says "dealt", the start label says A FULL DECK, and the pops show ×52, ×51, ×50, so the
+    film never invites the second reading.
+  - Post text should keep "dealt from a full deck" too.
 - **Every good shuffle is almost certainly new.** "Good" means well mixed: about seven riffle
   shuffles of a 52-card deck (Bayer & Diaconis 1992). A deck fresh from the box is always in the same
   order, so the first good shuffle is what makes it new.
-- **Why "almost certainly":** suppose all 8.3 billion people had shuffled once a second since the
-  Big Bang (3.6 × 10²⁷ shuffles). The chance that any two of those shuffles ever matched would still
-  be about 8 × 10⁻¹⁴, about 1 in 12 trillion. This goes in the description, not on screen.
+- **Why "almost certainly":** even imagine 2's 3.6 × 10²⁷ shuffles give only about an 8 × 10⁻¹⁴
+  chance that any two ever matched, about 1 in 12 trillion. This goes in the description, not on
+  screen.
 - **Not more than the atoms in the universe.** 52 factorial is about 10¹² times *fewer* than the
-  atoms in the observable universe (about 10⁸⁰). Never imply otherwise. It makes a good honest
-  answer to the comments that will claim it.
+  atoms in the observable universe (about 10⁸⁰). Never imply otherwise; it makes a good honest answer
+  in the comments.
 - **The Planck time** is "where known physics runs out", never "the shortest possible time".
 - **No "52!" in any post text or on screen.** It reads as an exclamation mark (`brand.md` §4).
   Write "52 factorial", or the product.
@@ -166,18 +172,15 @@ A deck of *k* cards has *k* factorial orders. The orders of 52 cards are exactly
 
 These are for the post package, which is written later in the order of `lumiera_brand/FIRST_POST.md`.
 
-- **Cover:** the hook frame (≈ 1.9 s): the card, the 4-line question and the sub-line.
-- **Shorts title ideas** (no answer): "How many cards out-count the seconds since the Big Bang?"
-  (56 characters) · "A deck of cards against the age of the universe" (47 characters).
-- **Pinned comment:** "Lock in your guess: how many cards does it take? One number." (62 characters)
+- **Cover:** the hook frame (≈ 1.9 s): the deck, the 4-line question and the sub-line.
+- **Shorts title ideas** (no answer): "Deal from a full deck: how many cards beat the Big Bang?"
+  (56 characters) · "Cards dealt against the age of the universe" (43 characters).
+- **Pinned comment:** "Lock in your guess: how many cards does it take? One number." (60 characters)
 - **Description stops:**
-  - 14 cards · everyone alive
+  - 6 cards · everyone alive
   - ??? · every second since the Big Bang (your guess)
-  - 27 · the atoms in you
-  - 42 · Earth
-  - 46 · the Sun
-  - 48 · the Planck time
   - 52 · the whole deck
+  - then the three "imagine" beats
 - **Hashtags** (the Patterns set, at most 5): #math #mathematics #probability #science
   #scienceexplained.
 
@@ -187,77 +190,73 @@ These are for the post package, which is written later in the order of `lumiera_
   Vsauce's "Math Magic", and many written explainers (Puzzlewocky, Mental Floss). Their framing is
   almost always the full deck ("8 × 10⁶⁷", "how long would 52 factorial seconds take").
 - **What is ours:**
-  - a deck that grows card by card, showing *why* the count explodes;
+  - the deal shown card by card, showing *why* the count explodes;
   - the "how many cards beat the Big Bang" threshold, which our searches did not turn up;
-  - honest qualifiers that the viral versions skip (a *good* shuffle; fewer than the atoms in the
-    universe).
+  - the escalating "imagine" beats;
+  - honest qualifiers that the viral versions skip (a *good* shuffle; "at most"; fewer than the atoms
+    in the universe).
 - **Errors to avoid:**
   - a summary seen in the check quotes 8.65 × 10⁶⁷, where the right figure is 8.07 × 10⁶⁷;
   - it is easy to confuse dealt sequences (52 × 51 × …) with the orders of a smaller deck
-    (*k* factorial). Even the search tool's own summary slipped on this.
-
-  The second is why this film counts a growing deck: "11 cards" is true for deals from a full deck
-  but false for 11 cards' own orders.
+    (*k* factorial). Even the search tool's own summary slipped on this, which is why "dealt" stays in
+    every line.
 
 ## Decided
 
-- **Optional stops dropped (October 2026).** Two stops were cut: the Milky Way at card 15
-  (1.3 × 10¹² orders against 100–400 billion stars) and a tablespoon of water at card 24
-  (6.2 × 10²³ against 5.0 × 10²³ molecules).
-  - The first followed card 14 too closely, and the second had the thinnest margin (× 1.24).
-  - The figures are kept in this file's git history in case a later film wants them.
-- **The 4-line hook layout (checked in a still, October 2026).** Size 42, spaced 1.04 em baseline
-  to baseline, block centred at y = +4.78.
-  - Measured: top +5.96 (the cover crop is +6.0), bottom +3.60, 0.15 above the sub-line, widest
-    line 5.18 units.
-  - Size 46 centred at +5.0, as first proposed, put the top at +6.32, outside the cover crop.
-  - Stacking the lines by ink boxes made the spacing uneven, because two of the four lines have no
-    descenders. Baseline spacing fixes it.
-- **The payoff layout (checked in four stills, October 2026).** The four moments are arrival
-  (+0.35 s), mid-row (+0.85 s), row end (+2.0 s) and late hold (+3.6 s), and none has overlapping
-  text.
-  - The first render had the live counter (clamped at x ≥ −3.4) running into the 32 bracket's line.
-    Starting it no further left than the track fixed that.
-  - The overlap check in `stills.py` now covers the bracket lines too.
-- **The final-stop layout (checked in four stills, October 2026).** The four moments are arrival
-  (+0.35 s), mid-row (+2.05 s), row end (+2.8 s) and late hold (+4.0 s), and none has overlapping
-  text.
-  - The two-line note's last baseline is at −4.796, just inside the −4.8 limit, so its wording can't
-    grow.
-  - The count readout now shows three significant figures. One decimal would have put
-    "8.1 × 10⁶⁷" over the size text's "8.07 × 10⁶⁷".
+- **A short dealing cut, answer 11 (October 2026).**
+  - The first treatment grew a deck card by card (answer 20, ≈ 44 s, with stops at the atoms in you,
+    Earth, the Sun and the Planck time).
+  - It was cut to a ≈ 32 s film that deals from a full deck and ends on three "imagine" beats.
+  - The earlier figures are in this file's git history.
+- **The 4-line hook layout (checked in stills).** Size 42, spaced 1.04 em baseline to baseline,
+  block centred at y = +4.78.
+  - Measured: top +5.96 (the cover crop is +6.0), 0.15 above the sub-line, widest line 5.98 units.
+  - Size 46 centred at +5.0 broke the cover crop. Stacking the lines by ink boxes spaced them
+    unevenly.
+- **The payoff, final-stop and beat layouts (checked in stills).** There is no overlapping text at
+  the payoff's arrival, mid-row, row end and late hold, at the final stop's arrival and note, or in
+  the three beats.
+  - The pass row's counter starts no further left than the track, after a first render ran it into a
+    bracket line.
+  - The count readout shows three significant figures, so it matches the size text at card 52.
+  - Each beat's counter ends on its line's rounded number. The first render ended imagine 3 on
+    "9,994,565" against a line of "10 million".
 
 ## Open decisions
 
-1. **New accents.**
-   - Time (`#D4FF5C`) is in the payoff still, in the chip, the spiral and the highlighted word.
-   - Cards (`#E08BFF`) is in the final-stop still, on the closed ring, the chip and the note's number.
-2. **The ring of 52 slots.** It is shown at card 20 in the payoff still. It is the main new
-   drawing work, along with gathering from points of light.
-   - Simpler fallback: keep a growing row of cards under the subject.
+1. **The new accents.** Time (`#D4FF5C`) and cards (`#E08BFF`) are both in the stills. They need
+   your verdict.
+2. **The beat pacing.** 2.6 s per beat is tight for "At most 1 in 1.85 × 10⁵⁰ of the orders". Check
+   it in the first animatic, and lengthen the beats if needed (≈ +1 s in all).
+3. **Stand-in drawings.** The Big Bang spiral, the crowd, the Planck dot and the orders cloud are
+   placeholders for the build.
+4. **The ring of 52 slots.** It is the main new drawing work, along with gathering from points of
+   light.
+   - Simpler fallback: a growing row of dealt cards under the subject.
    - Cost of the fallback: it gets crowded past ~20 cards and has to compress into a fanned deck.
 
 ## Test stills
 
-`stills.py` poses single frames with The Doubling's engine (imported from `../doubling_film`) to
-check layout before the film is built: the hook frame, the payoff stop (card 20) and the final
-stop (card 52).
+`stills.py` poses single frames with The Doubling's engine (imported from `../doubling_film`) to check
+layout before the film is built: the hook frame, the payoff (card 11), the final stop (card 52) and
+the three beats.
 
 ```bash
 manim -r 1080,1920 -s --disable_caching stills.py HookFrame            # the hook frame (≈ 1.9 s, the cover)
-manim -r 1080,1920 -s --disable_caching stills.py PayoffFrame          # card 20, 3.6 s into the hold
-manim -r 1080,1920 -s --disable_caching stills.py FinalFrame           # card 52, 4.0 s into the hold
+manim -r 1080,1920 -s --disable_caching stills.py PayoffFrame          # card 11, 3.6 s into the hold
+manim -r 1080,1920 -s --disable_caching stills.py FinalFrame           # card 52, with its note
+manim -r 1080,1920 -s --disable_caching stills.py ImagineSecond        # the first beat (also ImagineEveryone, ImaginePlanck)
 GUIDES=1 manim -r 1080,1920 -s --disable_caching stills.py PayoffFrame # with the safe zones drawn over it
 ```
 
-- **Other moments:** `PayoffArrival`, `PayoffMidRow`, `PayoffRowEnd` and the matching `Final*` scenes
-  pose the other moments from `film-style.md` §8.
-- **Printed checks:** the hook scene prints its measured extents; the payoff scenes print every text
-  box and any overlap with other text, the ring's slots, the meter or the bracket lines.
-- **Stand-ins:** the Big Bang spiral and the orders cloud stand in for the final drawings.
+- **Other moments:** `PayoffArrival`, `PayoffMidRow`, `PayoffRowEnd` and `FinalArrival` pose the
+  other moments from `film-style.md` §8.
+- **Printed checks:** the hook scene prints its measured extents; the stop scenes print every text box
+  and any overlap with other text, the ring's slots, the meter or the bracket lines.
 - **Layout overrides:** `HOOK_SIZE`, `HOOK_PITCH` (em) and `HOOK_Y` override the hook layout for
-  comparisons. Needs Manim 0.18 or later with the Pango and Cairo headers, as in
-`../doubling_film/README.md`.
+  comparisons.
+- **Requirements:** Manim 0.18 or later with the Pango and Cairo headers, as in
+  `../doubling_film/README.md`.
 
 ## Sources
 
@@ -267,9 +266,6 @@ GUIDES=1 manim -r 1080,1920 -s --disable_caching stills.py PayoffFrame # with th
 - CODATA 2018 recommended values (Planck time 5.391247 × 10⁻⁴⁴ s).
 - UN DESA Population Division, *World Population Prospects 2024*. The 2026 figure is via aggregators
   ([StatisticsTimes](https://www.statisticstimes.com/m/demographics/world-population.php)); confirm on the UN site.
-- Atoms in Earth: [Jefferson Lab Science Education](https://education.jlab.org/qa/mathatom_05.html).
-- Solar composition: Asplund, M. et al. (2009). "The chemical composition of the Sun". *ARA&A* 47.
-- Atoms in a 70 kg body: Freitas, R. A. (1999). *Nanomedicine, Volume I*, Landes Bioscience.
 - Coverage: [Puzzlewocky](https://puzzlewocky.com/brain-teasers/probability-puzzles/every-shuffle-of-a-deck-of-cards-is-probably-unique-in-history/),
   [Mental Floss](https://www.mentalfloss.com/article/92408/how-many-ways-can-you-sort-deck-cards),
   [Vsauce "Math Magic" transcript](https://rosetta.to/u/vsauce/math-magic).
