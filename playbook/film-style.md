@@ -209,32 +209,18 @@ Reuse these. They are what makes a film recognisably ours. The geometry and code
 
 ### Films that count
 
-Some films climb a count instead of a size (*The Shuffle*: the possible orders as cards are dealt from a
-full deck, `shuffle_film/`). They keep the structure of §2 and the devices above, with these changes:
-
-| Device | In a count film |
-|---|---|
-| **`n` and the HUD** | `n` is the count itself (cards dealt), from 0 at the start to the final stop, where it stays: nothing drifts past the last stop. The HUD shows `n`, labelled with the unit ("CARDS DEALT"), and 0 when it fades in. During a hold `n` sits exactly on the stop |
-| **Count readout** | The size readout becomes a count readout in the same font and place ("2.41 × 10¹⁸ orders"): exact with commas below 10⁷, then three significant figures with a raised exponent, so it agrees with a size text showing the same count. It appears with the first step, follows the smooth curve through the counts between whole steps, and dims to 40% during the beats. There is no ruler; the pass row's track takes its place |
-| **Chip** | Names the unit in the singular ("CARD 11"). The number rule is unchanged |
-| **Movement** | No zoom by scale (§3): counts are not sizes, and references don't come in size order. Each reference gathers from points of light as it arrives (≈ 0.7 s) and scatters as it leaves (≈ 0.35 s). The hero object (the deck) steps back while a reference holds the centre. Warp streaks follow the rate at which the count grows |
-| **Pass row** | Replaces the measuring row: a track under the count readout (y = +3.75, 5.2 units wide) whose end stands for the stop's count. The reference fills first in its accent over 0.7 s with a live counter, then the count overtakes it in lavender over 0.8 s. The counter rides 0.3 below the track, starts no further left than the track, uses the notation of the stop's size text ("8.3 billion people", "4.35 × 10¹⁷ seconds"; one decimal below ten of a unit) and MUST end on the size text's figure |
-| **Comparison line** | States the pass in words ("More orders than [people alive]"). Show a ratio only when both sides are well defined |
-| **Pops** | Show each step's multiplier while the mechanic is taught ("×52", "×51", "×50") |
-| **Progress meter** | Linear in the count, from the start to the final stop, so its brackets agree with any fraction the reframing line states ("Not even a quarter of the deck"). Brackets are labelled in the film's unit and take the accents of what they span (the answer's accent, and Mist Light); cyan is only for the viewer's own distance. The YOU tag sits at the stop about people |
-| **YOU pin** | Shown with the stop about people, fading with its drawing |
-
-**Passing a reference.** A stop sits at the first step whose count beats its reference, and it MUST beat it by
-at least ~20% (for a range, its upper end), so the claim survives the reference's uncertainty. The hook's
-answer MUST also hold from below: one step earlier, the count falls at least ~20% short.
-
-**Beats after the final stop.** A count film MAY follow its final stop with up to three beats that set the
-final count against something new (*The Shuffle*'s "imagine" beats). Each is a phase label (§2) with its own
-drawing inside the hero and a row, about 3 s long; the HUD holds the final count. A beat's row has no live
-counter, because its figure is too large to read as it spins: the line carries the figure, and the row shows
-the comparison as one point of light that the count sweeps past. A setup note at the final stop introduces the
-beats ("Imagine a good shuffle every second since the Big Bang."). A bound stated as "at most 1 in N" MUST
-round N down, never up; where the rounded figure is the natural one ("10 million"), say "about" instead.
+A film MAY climb a count instead of a size (*The Shuffle*: the possible orders as cards are dealt from a
+full deck, `shuffle_film/`). It follows the general aesthetics and structure of this guide, not The
+Doubling's scaling: it does not zoom by scale, because counts are not sizes, so references gather from
+points of light instead, and `n` is the count itself, shown by the HUD with its unit ("CARDS DEALT") and by
+a chip that names the unit ("CARD 11"). The size readout becomes a count readout in the same place (three
+significant figures above 10⁷, so it agrees with the size text), and the ruler's place goes to a pass row:
+the reference fills first in its colour with a live counter in the size text's notation, then the count
+overtakes it in lavender, and the counter ends on the size text's figure. The meter is linear in the count.
+Up to three beats MAY follow the final stop to set the final count against something new; the HUD holds the
+count and the line carries each beat's figure. A stop beats its reference by at least ~20%, the hook's
+answer also holds from below, and a bound written "at most 1 in N" rounds N down ("about" otherwise). The
+film's README holds its measurements.
 
 ---
 

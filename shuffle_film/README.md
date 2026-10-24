@@ -221,7 +221,8 @@ three Doubling frames were re-rendered pixel-identical to prove it.
   under a line saying "not even a quarter".
 - **Accents:** lime for time and the Big Bang; violet for the whole deck, 31° of hue from lavender and 32°
   from magenta, which clears the §3 rule.
-- **No zoom by scale.** References gather from points of light.
+- **No zoom by scale.** References gather from points of light. A count film follows the house look and
+  structure, not The Doubling's scaling devices (the owner, October 2026).
 - **Counters match the size text's notation** on the same frame.
 - **Layout measured in stills:** the 4-line hook at size 42, 1.04 em, centred at +4.75 (top +5.93, widest
   line 5.98 units); ring radius 2.55; the two-line note's descenders at −4.89.
