@@ -64,7 +64,7 @@ the size it fits at is given (never below 26).
 |---|---|---|---|---|---|---|
 | 1 | none (the start) | 1 order | ONE CARD | It can only lie [one] way. | lavender `#B9A6FF` | none |
 | 14 | CARD 14 | 8.3 billion people | EVERYONE ALIVE (fit 58.9) | More orders than [people alive] | cyan `#6CF2FF` (people) | pass row: 0 → 8.3 billion people |
-| 20 | CARD 20 | 4.35 × 10¹⁷ seconds | SINCE THE BIG BANG (fit 48.8) | More orders than [every second]. Note at ≈ 2.5 s: "Not even [half] a deck." | time `#D4FF5C` (new) | pass row: 0 → 4.35 × 10¹⁷ seconds |
+| 20 | CARD 20 | 4.35 × 10¹⁷ seconds | SINCE THE BIG BANG (fit 48.8) | More orders than [every second]. Note at ≈ 2.5 s: "Not even [half] a deck." | time `#D4FF5C` (new) | pass row: 0 → 435 quadrillion seconds |
 | 27 | CARD 27 | ≈ 7 × 10²⁷ atoms | YOU | More than the [atoms] in you | cyan `#6CF2FF` | pass row: 0 → 7 × 10²⁷ atoms |
 | 42 | CARD 42 | ≈ 1.3 × 10⁵⁰ atoms | EARTH | More orders than its [atoms] | Earth `#4DA3FF` | pass row: 0 → 1.3 × 10⁵⁰ atoms |
 | 46 | CARD 46 | ≈ 10⁵⁷ atoms | THE SUN | More orders than its [atoms] | Sun `#FFB13B` | pass row: 0 → 10⁵⁷ atoms |
@@ -84,9 +84,10 @@ the size it fits at is given (never below 26).
 - **The hero is the deck.**
   - During the teaching it is a short row of cards at the centre, with the possible places drawn as
     glowing slots.
-  - From card 7 the row rises into a ring of 52 card slots (radius ≈ 2.7 units, centred at
-    y = +0.22), which fills one slot per card. Its bottom (y ≈ −2.48) stays above the label block,
-    and its left edge (x ≈ −2.7) stays clear of the meter.
+  - From card 7 the row rises into a ring of 52 card slots (radius 2.55 units, centred at
+    y = +0.22, slots 0.19 × 0.27), which fills one slot per card, clockwise from the top.
+    - Its bottom slot ends at y ≈ −2.47, 0.17 above the chip.
+    - Its left edge (x ≈ −2.69) stays clear of the meter and the payoff brackets' labels.
 - **Inside the ring:**
   - Each stop's reference is drawn in light: Earth's night side with city lights, a cosmic
     timeline spiralling out from a bright point, the people pictogram, Earth, the Sun, and the Planck dot with
@@ -94,6 +95,12 @@ the size it fits at is given (never below 26).
   - The objects do **not** zoom by scale. Counts are not sizes, and the Planck time after the Sun
     would read as a lie on a size zoom.
   - Each object gathers from points of light as it arrives and scatters into the warp as it leaves.
+- **The pass row** sits under the count readout, where The Doubling's ruler was (y = +3.75, 5.2
+  wide).
+  - The reference fills over 0.7 s with its live counter, then the orders overtake it in lavender
+    over 0.8 s.
+  - The counter rides 0.3 below the track and starts no further left than the track, so it clears
+    the payoff brackets.
 - **The orders** are a faint lavender cloud of points behind the reference. They brighten and swirl
   with the rate of growth, and the warp streaks follow the same rate.
 - **Background:** near-black. It shifts to blue near Earth, warm near the Sun and violet at the
@@ -206,28 +213,41 @@ These are for the post package, which is written later in the order of `lumiera_
   - Size 46 centred at +5.0, as first proposed, put the top at +6.32, outside the cover crop.
   - Stacking the lines by ink boxes made the spacing uneven, because two of the four lines have no
     descenders. Baseline spacing fixes it.
+- **The payoff layout (checked in four stills, October 2026).** The four moments are arrival
+  (+0.35 s), mid-row (+0.85 s), row end (+2.0 s) and late hold (+3.6 s), and none has overlapping
+  text.
+  - The first render had the live counter (clamped at x ≥ −3.4) running into the 32 bracket's line.
+    Starting it no further left than the track fixed that.
+  - The overlap check in `stills.py` now covers the bracket lines too.
 
 ## Open decisions
 
-1. **New accents** (time `#D4FF5C`, cards `#E08BFF`). Check them in stills against
-   the deep-space ground before they're final.
-2. **The ring of 52 slots.** This is the main new drawing work, along with gathering from points of
-   light.
+1. **New accents.**
+   - Time (`#D4FF5C`) is in the payoff still, in the chip, the spiral and the highlighted word.
+   - Cards (`#E08BFF`) is unseen until a final-stop still.
+2. **The ring of 52 slots.** It is shown at card 20 in the payoff still. It is the main new
+   drawing work, along with gathering from points of light.
    - Simpler fallback: keep a growing row of cards under the subject.
    - Cost of the fallback: it gets crowded past ~20 cards and has to compress into a fanned deck.
 
 ## Test stills
 
 `stills.py` poses single frames with The Doubling's engine (imported from `../doubling_film`) to
-check layout before the film is built. Only the hook frame exists so far.
+check layout before the film is built: the hook frame and the payoff stop (card 20).
 
 ```bash
 manim -r 1080,1920 -s --disable_caching stills.py HookFrame            # the hook frame (≈ 1.9 s, the cover)
-GUIDES=1 manim -r 1080,1920 -s --disable_caching stills.py HookFrame   # with the safe zones drawn over it
+manim -r 1080,1920 -s --disable_caching stills.py PayoffFrame          # card 20, 3.6 s into the hold
+GUIDES=1 manim -r 1080,1920 -s --disable_caching stills.py PayoffFrame # with the safe zones drawn over it
 ```
 
-The scene prints the hook's measured extents. `HOOK_SIZE`, `HOOK_PITCH` (em) and `HOOK_Y` override
-the layout for comparisons. Needs Manim 0.18 or later with the Pango and Cairo headers, as in
+- **Payoff moments:** `PayoffArrival`, `PayoffMidRow` and `PayoffRowEnd` pose the payoff's other
+  moments from `film-style.md` §8.
+- **Printed checks:** the hook scene prints its measured extents; the payoff scenes print every text
+  box and any overlap with other text, the ring's slots, the meter or the bracket lines.
+- **Stand-ins:** the Big Bang spiral and the orders cloud stand in for the final drawings.
+- **Layout overrides:** `HOOK_SIZE`, `HOOK_PITCH` (em) and `HOOK_Y` override the hook layout for
+  comparisons. Needs Manim 0.18 or later with the Pango and Cairo headers, as in
 `../doubling_film/README.md`.
 
 ## Sources
