@@ -202,6 +202,8 @@ def guides():
 class HookFrame(Scene):
     """The hook frame (≈ 1.9 s, also the cover): the full deck, the question, the sub-line and the start label."""
 
+    HOOK, LABEL = True, True
+
     def __init__(self, **kwargs):
         super().__init__(camera_class=FilmCamera, **kwargs)
 
@@ -209,11 +211,16 @@ class HookFrame(Scene):
         t, n = 1.9, 0.0
         bg = Rectangle(width=9.4, height=16.4, stroke_width=0, fill_color="#08061A", fill_opacity=1)
         nebula = sprite("glow", 14.6, LAVENDER, alpha=0.2, at=(0.0, Y0))
+        mobs = [bg, nebula, *idle_warp(n, t, LAVENDER), *deck(2.9, LAVENDER)]
+        if self.LABEL:
+            mobs += label_block("52 cards", "A FULL DECK", "Deal it [one card] at a time.", LAVENDER)
+        if not self.HOOK:
+            self.add(*mobs, PostFX())
+            return
         q = baseline_lines(HOOK_LINES, HOOK_SIZE, HOOK_PITCH, HOOK_Y, font=INTER_DISPLAY, weight=BOLD,
                            color=WHITE_TXT, t2c={"dealt": LAVENDER, "Big Bang?": CYAN})
         sub = text("Guess before it ends.", 27, color=MUTED).move_to([0, SUB_Y, 0])
-        block = label_block("52 cards", "A FULL DECK", "Deal it [one card] at a time.", LAVENDER)
-        mobs = [bg, nebula, *idle_warp(n, t, LAVENDER), *deck(2.9, LAVENDER), q, sub, *block]
+        mobs += [q, sub]
         if os.environ.get("GUIDES"):
             mobs += guides()
         self.add(*mobs, PostFX())
@@ -226,6 +233,18 @@ class HookFrame(Scene):
         print(f"  widest line {max(r.width for r in q):.3f} (limit {SAFE_W})")
         print(f"  sub-line top {sub.get_top()[1]:.3f}, gap to hook {q.get_bottom()[1] - sub.get_top()[1]:.3f}")
         print(f"  {glyphs} glyphs, last lands at {(glyphs - 1) * HOOK_STAGGER + HOOK_DUR_IN:.2f} s")
+
+
+class LoopFrame(HookFrame):
+    """Frame 0, before any text, which is also where the outro glides back to so the film loops."""
+
+    HOOK, LABEL = False, False
+
+
+class StartFrame(HookFrame):
+    """After the question leaves (2.1 s) and before the first card lands: the deck and its label."""
+
+    HOOK = False
 
 
 # ---------------------------------------------------------------------------
@@ -274,7 +293,8 @@ def counter_spec(value, digit_h, noun):
         for div, name in ((1e18, "quintillion"), (1e15, "quadrillion"), (1e12, "trillion"), (1e9, "billion"),
                           (1e6, "million")):
             if value >= 1e7 and value >= div:
-                words = f"{value / div:,.0f} {name}"
+                q = value / div
+                words = f"{q:.1f} {name}" if q < 10 else f"{q:,.0f} {name}"  # "8.3 billion", "435 quadrillion"
                 break
         head = [(c, 1.0, 0.0) for c in words]
     return head + [(" ", 0.6, 0)] + [(c, 1.0, 0.0) for c in noun]
@@ -394,6 +414,25 @@ class StopScene(Scene):
         return [Line([x0, ROW_Y, 0], [x1, ROW_Y, 0], stroke_width=10, color=color, stroke_opacity=0.22),
                 Line([x0, ROW_Y, 0], [x1, ROW_Y, 0], stroke_width=3.2, color=color)]
 
+    def pass_row(self, ref, noun, color):
+        """The reference fills first in its accent (0.5–1.2 s into the hold), then the orders overtake it in
+        lavender (1.2–2.0 s): 1.5 s in all (film-style.md §4)."""
+        at = self.AT
+        fill_ref = ease_in_out(clamp01((at - 0.5) / 0.7))
+        fill_count = ease_in_out(clamp01((at - 1.2) / 0.8))
+        x_ref = ROW_X0 + (ROW_X1 - ROW_X0) * ref / orders(self.CARD)
+        mobs, texts = self.track(), []
+        for x0, x1, c in [(ROW_X0, mix(ROW_X0, x_ref, fill_ref), color), (x_ref, mix(x_ref, ROW_X1, fill_count), LAVENDER)]:
+            if x1 - x0 > 0.005:
+                mobs += self.glow_line(x0, x1, c)
+        if fill_ref >= 1:
+            mobs.append(Line([x_ref, ROW_Y - 0.13, 0], [x_ref, ROW_Y + 0.13, 0], stroke_width=2.2, color=color))
+        if at >= 0.5:
+            cnt, t = self.row_counter(ref * fill_ref, noun, (ROW_X0 + mix(ROW_X0, x_ref, fill_ref)) / 2, color)
+            mobs += cnt
+            texts.append(t)
+        return mobs, texts
+
     def copies_row(self, progress, count, noun, color):
         """Copies of the smaller count lining up across the orders (film-style.md §4): a glowing line with
         ~90 beads and a star at the growing end, its counter climbing to ``count``."""
@@ -460,8 +499,6 @@ class PayoffFrame(StopScene):
 
     def construct(self):
         at = self.AT
-        fill_ref = ease_in_out(clamp01((at - 0.5) / 0.7))  # the reference fills first...
-        fill_count = ease_in_out(clamp01((at - 1.2) / 0.8))  # ...then the count overtakes it (1.5 s in all)
         noted = at >= 2.5
 
         bg = Rectangle(width=9.4, height=16.4, stroke_width=0, fill_color="#09090F", fill_opacity=1)
@@ -475,18 +512,9 @@ class PayoffFrame(StopScene):
             mobs.append(sprite("ring", hh, TIME, alpha=0.9 * (1 - at / 1.2) ** 1.5, at=(0.0, 5.6),
                                r0=0.8, inner=0.02, outer=0.06))
 
-        # pass row: the reference fills in its accent, then the orders overtake it in lavender
-        x_ref = ROW_X0 + (ROW_X1 - ROW_X0) * SECONDS / orders(self.CARD)
-        mobs += self.track()
-        for x0, x1, c in [(ROW_X0, mix(ROW_X0, x_ref, fill_ref), TIME), (x_ref, mix(x_ref, ROW_X1, fill_count), LAVENDER)]:
-            if x1 - x0 > 0.005:
-                mobs += self.glow_line(x0, x1, c)
-        if fill_ref >= 1:
-            mobs.append(Line([x_ref, ROW_Y - 0.13, 0], [x_ref, ROW_Y + 0.13, 0], stroke_width=2.2, color=TIME))
-        if at >= 0.5:
-            cnt, t = self.row_counter(SECONDS * fill_ref, "seconds", (ROW_X0 + mix(ROW_X0, x_ref, fill_ref)) / 2, TIME)
-            mobs += cnt
-            texts.append(t)
+        row, rt = self.pass_row(SECONDS, "seconds", TIME)
+        mobs += row
+        texts += rt
 
         meter, mt = self.meter()
         mobs += meter
@@ -604,3 +632,133 @@ class ImaginePlanck(ImagineSecond):
 
     def drawing(self):
         return planck_dot()
+
+
+
+# ---------------------------------------------------------------------------
+# The other key frames, for the animatic (animatic.py)
+# ---------------------------------------------------------------------------
+
+
+def you_pin(at):
+    """The YOU pin (film-style.md §4), its target ring on ``at``."""
+    x, y = at
+    cap = RoundedRectangle(width=0.9, height=0.4, corner_radius=0.2, fill_color=CYAN, fill_opacity=1,
+                           stroke_width=0).move_to([x, y + 0.6, 0])
+    lab = text("YOU", 21, font=INTER_DISPLAY, weight=BOLD, color="#03121A", tracking=0.035).move_to([x, y + 0.6, 0])
+    stem = Line([x, y + 0.4, 0], [x, y + 0.1, 0], stroke_width=2.6, color=CYAN)
+    ring = Circle(radius=0.075, stroke_color=CYAN, stroke_width=2.6, fill_color=CYAN, fill_opacity=0.25).move_to([x, y, 0])
+    return [sprite("glow", 0.9, CYAN, alpha=0.75, at=at), stem, ring, cap, lab]
+
+
+def night_earth(radius=1.45, seed=12):
+    """Stand-in drawing: Earth's night side, its city lights as cyan points (people)."""
+    rng = np.random.default_rng(seed)
+    r = radius * 0.92 * np.sqrt(rng.uniform(0, 1, 260))
+    th = rng.uniform(0, 2 * np.pi, 260)
+    body = Circle(radius=radius, stroke_color="#4DA3FF", stroke_width=1.6, stroke_opacity=0.5, fill_color="#0A1430",
+                  fill_opacity=1).move_to([0, Y0, 0])
+    return [sprite("glow", 2 * radius * 1.6, "#4DA3FF", alpha=0.25, at=(0.0, Y0)), body] + [
+        Circle(radius=0.016, stroke_width=0, fill_color=CYAN, fill_opacity=op).move_to([x, Y0 + y, 0])
+        for x, y, op in zip(r * np.cos(th), r * np.sin(th), rng.uniform(0.3, 0.9, 260))]
+
+
+class EveryoneFrame(StopScene):
+    """Card 6: more orders than people alive, with the YOU pin; 2.4 s into its 3.2 s hold."""
+
+    AT, CARD, ACCENT = 2.4, 6, CYAN
+
+    def construct(self):
+        bg = Rectangle(width=9.4, height=16.4, stroke_width=0, fill_color="#050C13", fill_opacity=1)
+        glows, slots = deck_ring(self.CARD)
+        mobs = [bg, sprite("glow", 14.6, CYAN, alpha=0.12, at=(0.0, Y0)), *idle_warp(self.CARD, self.AT, CYAN),
+                *orders_cloud(), *night_earth(), *you_pin((0.42, Y0 + 0.38)), *glows, *slots]
+        hud, texts = self.hud()
+        row, rt = self.pass_row(PEOPLE, "people", CYAN)
+        meter, mt = self.meter()
+        mobs += hud + row + meter
+        texts += rt + mt
+        head, title, line = label_block("8.3 billion people", "EVERYONE ALIVE", "More orders than [people alive]", CYAN,
+                                        chip="CARD 6")
+        mobs += [head, title, line]
+        texts += [("chip + size", head), ("title", title), ("line", line)]
+        self.finish(mobs, texts, slots)
+
+
+class EveryoneArrival(EveryoneFrame):
+    AT = 0.35
+
+
+class TeachCard1(StopScene):
+    """Teaching the mechanic: card 1 lands with its ×52 pop."""
+
+    AT, CARD, ACCENT = 9.0, 1, LAVENDER  # a late AT: steps don't punch or flash like stops
+
+    def construct(self):
+        bg = Rectangle(width=9.4, height=16.4, stroke_width=0, fill_color="#08061A", fill_opacity=1)
+        glows, slots = deck_ring(self.CARD)
+        mobs = [bg, sprite("glow", 14.6, LAVENDER, alpha=0.2, at=(0.0, Y0)), *idle_warp(self.CARD, 3.0, LAVENDER),
+                *deck(2.3, LAVENDER), *glows, *slots]
+        hud, texts = self.hud()
+        pop = text(f"×{CARDS - self.CARD + 1}", 40, font=INTER_DISPLAY, weight=BOLD, color=LAVENDER).move_to([1.75, 5.62, 0])
+        meter, mt = self.meter()
+        mobs += hud + [pop] + self.track() + meter
+        texts += [("pop", pop)] + mt
+        block = label_block("52 × 51 × 50 × …", "DEAL A CARD", "Each card has [one fewer] choice.", LAVENDER)
+        mobs += list(block)
+        texts += [("size text", block[0]), ("title", block[1]), ("line", block[2])]
+        self.finish(mobs, texts, slots)
+
+
+class TeachCard2(TeachCard1):
+    CARD = 2
+
+
+class TeachCard3(TeachCard1):
+    CARD = 3
+
+
+class SprintEarly(StopScene):
+    """The long stretch, cards 12 → 52, partway through."""
+
+    AT, CARD, ACCENT = 9.0, 22, DECK
+
+    def construct(self):
+        bg = Rectangle(width=9.4, height=16.4, stroke_width=0, fill_color="#09071A", fill_opacity=1)
+        glows, slots = deck_ring(self.CARD)
+        mobs = [bg, sprite("glow", 14.6, LAVENDER, alpha=0.15, at=(0.0, Y0)), *idle_warp(self.CARD, 15.0, LAVENDER),
+                *orders_cloud(count=500, seed=5, colors=(LAVENDER, DECK), brightness=1.2), *glows, *slots]
+        hud, texts = self.hud()
+        meter, mt = self.meter()
+        mobs += hud + self.track() + meter
+        texts += mt
+        block = label_block("CARDS 12 → 52", "KEEP DEALING", "The last card has [no choice].", LAVENDER)
+        mobs += list(block)
+        texts += [("size text", block[0]), ("title", block[1]), ("line", block[2])]
+        self.finish(mobs, texts, slots)
+
+
+class SprintLate(SprintEarly):
+    CARD = 44
+
+
+class OutroFrame(Scene):
+    """The outro (film-style.md §2): the counter flown to the centre with a Magenta glow, its label and
+    the summary, before the glide back to frame 0."""
+
+    def __init__(self, **kwargs):
+        super().__init__(camera_class=FilmCamera, **kwargs)
+
+    def construct(self):
+        bg = Rectangle(width=9.4, height=16.4, stroke_width=0, fill_color="#0B0414", fill_opacity=1)
+        counter = MonoLine(MonoFont(size=104, weight=BOLD), 4)
+        counter.show([(ch, 2.15, 0.0) for ch in "52"], (0, 0.95))
+        for slot in counter.submobjects:
+            slot.fill_rgbas[:, :3] = hex_rgb("#FFD1F3")
+        label = text("CARDS DEALT", 26, weight=MEDIUM, color=BODY, tracking=0.13).move_to([0, -0.78, 0])
+        summary = VGroup(text("Every good shuffle", 34, weight=MEDIUM, color=WHITE_TXT),
+                         text("is almost certainly new.", 34, weight=MEDIUM, color=WHITE_TXT)).arrange(DOWN, buff=0.14)
+        summary.move_to([0, -1.95, 0])
+        self.add(bg, sprite("glow", 14.6, "#FF6FD8", alpha=0.1, at=(0.0, Y0)), *idle_warp(52, 30.0, DECK),
+                 *orders_cloud(count=500, seed=6, colors=(LAVENDER, DECK), brightness=0.6),
+                 sprite("glow", 6.5, "#FF6FD8", alpha=0.45, at=(0.0, 0.95)), counter, label, summary, PostFX())

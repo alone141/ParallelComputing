@@ -226,8 +226,8 @@ These are for the post package, which is written later in the order of `lumiera_
 
 1. **The new accents.** Time (`#D4FF5C`) and cards (`#E08BFF`) are both in the stills. They need
    your verdict.
-2. **The beat pacing.** 2.6 s per beat is tight for "At most 1 in 1.85 × 10⁵⁰ of the orders". Check
-   it in the first animatic, and lengthen the beats if needed (≈ +1 s in all).
+2. **The beat pacing.** 2.6 s per beat is tight for "At most 1 in 1.85 × 10⁵⁰ of the orders". Judge
+   it in the animatic (below), and lengthen the beats if needed (≈ +1 s in all).
 3. **Stand-in drawings.** The Big Bang spiral, the crowd, the Planck dot and the orders cloud are
    placeholders for the build.
 4. **The ring of 52 slots.** It is the main new drawing work, along with gathering from points of
@@ -255,8 +255,35 @@ GUIDES=1 manim -r 1080,1920 -s --disable_caching stills.py PayoffFrame # with th
   and any overlap with other text, the ring's slots, the meter or the bracket lines.
 - **Layout overrides:** `HOOK_SIZE`, `HOOK_PITCH` (em) and `HOOK_Y` override the hook layout for
   comparisons.
+- **Animatic frames:** `LoopFrame` (frame 0), `StartFrame`, `TeachCard1`–`3`, `EveryoneArrival`,
+  `EveryoneFrame` (card 6), `SprintEarly`, `SprintLate` and `OutroFrame` are the animatic's other key
+  frames.
 - **Requirements:** Manim 0.18 or later with the Pango and Cairo headers, as in
   `../doubling_film/README.md`.
+
+## Animatic
+
+`animatic.py` is a timed storyboard of the whole cut, for judging pacing before the build. It is a
+review tool, not the film: nothing moves inside a frame, and the sound is a click track, not the score.
+- **Picture:** it holds 21 key frames from `stills.py` for their real durations, with 0.2 s
+  crossfades. During a crossfade two frames' text overlap; in the film, labels leave and enter in
+  turn.
+- **Overlay:** a burned-in timecode and beat label, and a progress bar along the bottom.
+- **Sound:** a click track built from the same timeline:
+  - a tick per card;
+  - plucks on cards 1–3;
+  - the reveal booms and chords of `film-style.md` §7 at cards 6, 11 and 52;
+  - a quieter bell per beat;
+  - the outro swell.
+
+```bash
+python animatic.py            # renders the frames it needs (540×960), then the MP4, in ≈ 40 s
+FORCE=1 python animatic.py    # re-renders every frame first
+```
+
+- **Output:** `media/animatic/the_shuffle_animatic.mp4` (32.4 s, 30 fps; `media/` stays out of git).
+- **Timeline:** the frame list in the script follows "Structure" above. Change a time there and
+  re-run.
 
 ## Sources
 
