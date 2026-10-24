@@ -148,7 +148,6 @@ additive glows, and procedural textures for the Sun, galaxies and so on. Backgro
 | Galaxy | `#C7A6FF` |
 | Universe | `#FF6FD8` magenta |
 | Time / the Big Bang | `#D4FF5C` (first used in The Shuffle; confirm in its stills) |
-| Water | `#6BFFB0` (first used in The Shuffle; confirm in its stills) |
 | Cards (the full deck) | `#E08BFF` (first used in The Shuffle; confirm in its stills) |
 
 A **new subject** gets its accent once: at least ~30° of hue away from neighbouring stops, never cyan
