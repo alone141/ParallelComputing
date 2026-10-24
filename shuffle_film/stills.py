@@ -6,11 +6,13 @@ built (README.md).  Nothing here animates.
 
     manim -r 1080,1920 -s --disable_caching stills.py HookFrame      # the cover
     manim -r 1080,1920 -s --disable_caching stills.py PayoffFrame    # card 20, late in the hold
+    manim -r 1080,1920 -s --disable_caching stills.py FinalFrame     # card 52, late in the hold
     GUIDES=1 manim ... stills.py PayoffFrame                         # safe zones drawn over it
 
-PayoffArrival, PayoffMidRow and PayoffRowEnd pose the other moments that
+The *Arrival, *MidRow and *RowEnd scenes pose the other moments that
 film-style.md §8 asks to check.  The scenes print what they measure: the
-hook's extents, and any text that overlaps other text, the ring or the meter.
+hook's extents, and any text that overlaps other text, the ring, the meter
+or the payoff brackets.
 """
 
 from __future__ import annotations
@@ -22,13 +24,13 @@ import sys
 from pathlib import Path
 
 import numpy as np
-from manim import BOLD, MEDIUM, RIGHT, UP, Circle, DashedLine, Line, Rectangle, RoundedRectangle, Scene, Square, VGroup, VMobject, config
+from manim import BOLD, DOWN, MEDIUM, RIGHT, UP, Circle, DashedLine, Line, Rectangle, RoundedRectangle, Scene, Square, VGroup, VMobject, config
 
 # Reuse The Doubling's engine until this film has its own.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "doubling_film"))
 from engine import (  # noqa: E402
     INTER, INTER_DISPLAY, MONO, FilmCamera, MonoFont, MonoLine, PostFX, clamp01, ease_in_out, ease_out, fit_width,
-    hex_rgb, mix, sci_spec, text,
+    hex_rgb, mix, text,
 )
 from visuals import D0, R0, polyline_points, sprite  # noqa: E402
 
@@ -85,9 +87,12 @@ def baseline_lines(rows, size, pitch, y, t2c=None, **kw):
 
 
 def markup(s, size, accent, **kw):
-    """Text with [highlighted] spans, as in The Doubling."""
-    hl = re.findall(r"\[(.+?)\]", s)
-    return text(s.replace("[", "").replace("]", ""), size, t2c={h: accent for h in hl}, **kw)
+    """Text with [highlighted] spans, as in The Doubling; ``\\n`` makes extra centred lines."""
+    rows = []
+    for row in s.split("\n"):
+        hl = re.findall(r"\[(.+?)\]", row)
+        rows.append(text(row.replace("[", "").replace("]", ""), size, t2c={h: accent for h in hl}, **kw))
+    return rows[0] if len(rows) == 1 else VGroup(*rows).arrange(DOWN, buff=0.1)
 
 
 def label_block(size_text, title, line, accent):
@@ -190,7 +195,7 @@ class HookFrame(Scene):
 
 
 # ---------------------------------------------------------------------------
-# The payoff stop (card 20)
+# Stops
 # ---------------------------------------------------------------------------
 
 
@@ -211,6 +216,21 @@ def count_text(value):
     return f"{int(round(value)):,}"
 
 
+def count_spec(value, digit_h, unit):
+    """The count readout: exact with commas below 10⁷, then three significant figures with a
+    raised exponent, so it matches a size text that shows the same count ("8.07 × 10⁶⁷")."""
+    if value < 1e7:
+        return [(c, 1.0, 0.0) for c in f"{int(value):,} {unit}"]
+    e = int(math.floor(math.log10(value)))
+    mant = value / 10**e
+    if round(mant, 2) >= 10:
+        mant, e = mant / 10, e + 1
+    spec = [(c, 1.0, 0.0) for c in f"{mant:.2f}"]
+    spec += [(" ", 0.45, 0), ("×", 1.0, 0.0), (" ", 0.45, 0), ("1", 1.0, 0.0), ("0", 1.0, 0.0)]
+    spec += [(c, 0.6, digit_h * 0.55) for c in str(e)]
+    return spec + [(" ", 0.6, 0)] + [(c, 1.0, 0.0) for c in unit]
+
+
 def deck_ring(dealt, accent=LAVENDER):
     """52 card slots clockwise from the top; the first ``dealt`` are filled."""
     glows, slots = [], []
@@ -227,14 +247,16 @@ def deck_ring(dealt, accent=LAVENDER):
     return glows, slots
 
 
-def orders_cloud(count=260, radius=2.25, seed=4):
-    """The orders: a faint lavender dust behind the reference."""
+def orders_cloud(count=260, radius=2.25, seed=4, colors=(LAVENDER,), brightness=1.0):
+    """The orders: a faint dust of points behind the reference."""
     rng = np.random.default_rng(seed)
     r = radius * np.sqrt(rng.uniform(0, 1, count))
     th = rng.uniform(0, 2 * np.pi, count)
-    return [Circle(radius=rad, stroke_width=0, fill_color=LAVENDER, fill_opacity=op).move_to([x, Y0 + y, 0])
-            for x, y, rad, op in zip(r * np.cos(th), r * np.sin(th), rng.uniform(0.008, 0.02, count),
-                                     rng.uniform(0.12, 0.5, count))]
+    cols = rng.choice(len(colors), count)
+    return [Circle(radius=rad, stroke_width=0, fill_color=colors[c], fill_opacity=min(op * brightness, 1.0))
+            .move_to([x, Y0 + y, 0])
+            for x, y, rad, op, c in zip(r * np.cos(th), r * np.sin(th), rng.uniform(0.008, 0.02, count),
+                                        rng.uniform(0.12, 0.5, count), cols)]
 
 
 def big_bang(accent=TIME, r_max=1.35, turns=3):
@@ -243,15 +265,12 @@ def big_bang(accent=TIME, r_max=1.35, turns=3):
     r = r_max * (th / th[-1]) ** 0.85
     pts = np.c_[r * np.cos(th + np.pi / 2), Y0 + r * np.sin(th + np.pi / 2)]
     out = [sprite("glow", 2.8, accent, alpha=0.45, at=(0.0, Y0))]
-    chunks = np.array_split(np.arange(len(pts)), 6)
-    for k, idx in enumerate(chunks):
-        seg = pts[max(idx[0] - 1, 0): idx[-1] + 1]
+    for k, idx in enumerate(np.array_split(np.arange(len(pts)), 6)):
         v = VMobject(stroke_color=accent, stroke_width=2.6, stroke_opacity=0.35 + 0.1 * k, fill_opacity=0)
-        v.points = polyline_points(seg)
+        v.points = polyline_points(pts[max(idx[0] - 1, 0): idx[-1] + 1])
         out.append(v)
-    out += [sprite("star", 0.85, "#F4FFD6", spikes=0.35, at=(0.0, Y0)),
-            sprite("star", 0.32, "#FFFFFF", spikes=0.0, at=tuple(pts[-1]))]
-    return out
+    return out + [sprite("star", 0.85, "#F4FFD6", spikes=0.35, at=(0.0, Y0)),
+                  sprite("star", 0.32, "#FFFFFF", spikes=0.0, at=tuple(pts[-1]))]
 
 
 def chip_block(step, size_text, title, line, accent):
@@ -264,113 +283,84 @@ def chip_block(step, size_text, title, line, accent):
     chip_txt.move_to(chip)
     head = VGroup(VGroup(chip, chip_txt), a).arrange(RIGHT, buff=0.26).move_to([0, -2.86, 0])
     ti = fit_width(text(title, 60, font=INTER_DISPLAY, weight=BOLD, color=WHITE_TXT), SAFE_W).move_to([0, -3.51, 0])
-    c = fit_width(markup(line, 31, accent, color=BODY, weight=MEDIUM), SAFE_W)
-    c.move_to([0, -4.21 - (c.height - 0.32) / 2, 0])
+    two = "\n" in line
+    c = fit_width(markup(line, 29 if two else 31, accent, color=BODY, weight=MEDIUM), SAFE_W)
+    # a two-line note grows downward; nudged as in The Doubling so its last baseline stays at or above -4.8
+    c.move_to([0, -4.21 - (c.height - 0.32) / 2 + (0.05 if two else 0.0), 0])
     return head, ti, c
 
 
-class PayoffFrame(Scene):
-    """Card 20, the answer: ``AT`` seconds after the stop arrives (late in the 5.4 s hold by default)."""
+class StopScene(Scene):
+    """A stop ``AT`` seconds after it arrives, with the shared HUD, meter, row track and overlap report."""
 
-    AT = 3.6
-    REF, REF_NOUN = 13.787e9 * 365.25 * 86400, "seconds"  # seconds since the Big Bang
+    AT, CARD, ACCENT = 0.0, 20, TIME
 
     def __init__(self, **kwargs):
         super().__init__(camera_class=FilmCamera, **kwargs)
 
-    def construct(self):
-        at, dealt = self.AT, 20
-        orders = float(math.factorial(dealt))
+    def hud(self):
+        """The counter (it punches and flashes on arrival), its label and the count readout."""
+        at = self.AT
         punch = math.sin(math.pi * at / 0.5) if at <= 0.5 else 0.0
         flash = math.exp(-at / 0.45)
-        fill_ref = ease_in_out(clamp01((at - 0.5) / 0.7))  # the reference fills first...
-        fill_count = ease_in_out(clamp01((at - 1.2) / 0.8))  # ...then the count overtakes it (1.5 s in all)
-        noted = at >= 2.5
-
-        bg = Rectangle(width=9.4, height=16.4, stroke_width=0, fill_color="#09090F", fill_opacity=1)
-        nebula = sprite("glow", 14.6, TIME, alpha=0.12, at=(0.0, Y0))
-        glows, slots = deck_ring(dealt)
-        mobs = [bg, nebula, *idle_warp(dealt, at, TIME), *orders_cloud(), *big_bang(), *glows, *slots]
-
-        # HUD: counter, label, count readout
-        big = MonoFont(size=104, weight=BOLD)
-        counter = MonoLine(big, 4)
-        counter.show([(ch, 1 + 0.16 * punch, 0.0) for ch in str(dealt)], (0, 5.6))
-        col = mix(np.ones(3), hex_rgb(TIME), 0.85 * flash)
+        counter = MonoLine(MonoFont(size=104, weight=BOLD), 4)
+        counter.show([(ch, 1 + 0.16 * punch, 0.0) for ch in str(self.CARD)], (0, 5.6))
+        col = mix(np.ones(3), hex_rgb(self.ACCENT), 0.85 * flash)
         for slot in counter.submobjects:
             slot.fill_rgbas[:, :3] = col
-        hud_label = text("CARDS", 19, weight=MEDIUM, color=MUTED, tracking=0.09).move_to([0, 6.55, 0])
+        label = text("CARDS", 19, weight=MEDIUM, color=MUTED, tracking=0.09).move_to([0, 6.55, 0])
         small = MonoFont(size=30, weight=MEDIUM, letters=True)
-        readout = MonoLine(small, 20, color="#9FB3D9")
-        readout.show(sci_spec(orders, digit_h=small.digit_h, unit="orders"), (0, 4.5))
-        mobs += [hud_label, readout]
+        readout = MonoLine(small, 22, color="#9FB3D9")
+        readout.show(count_spec(float(math.factorial(self.CARD)), small.digit_h, "orders"), (0, 4.5))
+        mobs = [label, readout]
         if flash > 0.01:
-            mobs.append(sprite("glow", 3.2, TIME, alpha=0.35 * flash, at=(0.0, 5.6)))
+            mobs.append(sprite("glow", 3.2, self.ACCENT, alpha=0.35 * flash, at=(0.0, 5.6)))
         mobs.append(counter)
-        if at <= 1.2:  # answer ring
-            hh = mix(1.4, 5.0, ease_out(at / 1.2))
-            mobs.append(sprite("ring", hh, TIME, alpha=0.9 * (1 - at / 1.2) ** 1.5, at=(0.0, 5.6),
-                               r0=0.8, inner=0.02, outer=0.06))
+        return mobs, [("hud label", label), ("counter", counter), ("readout", readout)]
 
-        # pass row: the reference fills in its accent, then the orders overtake it in lavender
-        x_ref = ROW_X0 + (ROW_X1 - ROW_X0) * self.REF / orders
-        row = [Line([ROW_X0, ROW_Y, 0], [ROW_X1, ROW_Y, 0], stroke_width=2, color="#27304A")]
-        row += [Line([x, ROW_Y - 0.1, 0], [x, ROW_Y + 0.1, 0], stroke_width=1.6, color="#5D6B8C") for x in (ROW_X0, ROW_X1)]
-        for x0, x1, c in [(ROW_X0, mix(ROW_X0, x_ref, fill_ref), TIME), (x_ref, mix(x_ref, ROW_X1, fill_count), LAVENDER)]:
-            if x1 - x0 > 0.005:
-                row += [Line([x0, ROW_Y, 0], [x1, ROW_Y, 0], stroke_width=10, color=c, stroke_opacity=0.22),
-                        Line([x0, ROW_Y, 0], [x1, ROW_Y, 0], stroke_width=3.2, color=c)]
-        if fill_ref >= 1:
-            row.append(Line([x_ref, ROW_Y - 0.13, 0], [x_ref, ROW_Y + 0.13, 0], stroke_width=2.2, color=TIME))
-        mobs += row
-        texts = []
-        if at >= 0.5:
-            font_count = MonoFont(size=21, weight=BOLD, letters=True)
-            label = f"{count_text(self.REF * fill_ref)} {self.REF_NOUN}"
-            w = len(label) * font_count.adv
-            # rides the middle of the reference fill, but starts no further left than the track,
-            # which keeps it clear of the meter and the payoff brackets
-            x = min(max((ROW_X0 + mix(ROW_X0, x_ref, fill_ref)) / 2, ROW_X0 + w / 2), 3.3 - w / 2)
-            shadow = MonoLine(font_count, 40, color="#000000", stroke_width=8, stroke_color="#000000")
-            line = MonoLine(font_count, 40)
-            chars = [(ch, 1.0, 0.0) for ch in label]
-            shadow.alpha = 0.78
-            shadow.show(chars, (x, ROW_Y - 0.3))
-            line.show(chars, (x, ROW_Y - 0.3))
-            for slot in line.submobjects:
-                slot.fill_rgbas[:, :3] = mix(hex_rgb(TIME), np.ones(3), 0.4)
-            mobs += [shadow, line]
-            texts.append(("row counter", line))
-
-        # meter: log2 of the orders, from one card to the full deck
-        y20 = meter_y(dealt)
-        fill = Line([MX, MY0, 0], [MX, y20, 0], stroke_width=3.2)
+    def meter(self):
+        """log2 of the orders, from one card to the full deck."""
+        y = meter_y(self.CARD)
+        fill = Line([MX, MY0, 0], [MX, y, 0], stroke_width=3.2)
         fill.set_stroke([LAVENDER, DECK]).set_sheen_direction(UP)
-        meter = [Line([MX, MY0, 0], [MX, MY1, 0], stroke_width=2, color="#27304A"), fill]
+        mobs = [Line([MX, MY0, 0], [MX, MY1, 0], stroke_width=2, color="#27304A"), fill]
         for card_n, acc in STOPS:
             tk = Line([MX - 0.08, meter_y(card_n), 0], [MX + 0.08, meter_y(card_n), 0], stroke_width=2.2, color=acc)
-            tk.set_stroke(opacity=1.0 if card_n <= dealt else 0.3)
-            meter.append(tk)
+            mobs.append(tk.set_stroke(opacity=1.0 if card_n <= self.CARD else 0.3))
         start = text("1", 17, font=MONO, color=MUTED).move_to([MX, MY0 - 0.26, 0])
-        meter += [start, sprite("star", 0.55, "#FFFFFF", spikes=0.0, at=(MX, y20))]
-        mobs += meter
-        texts.append(("meter start", start))
-        if noted:  # payoff brackets: 20 cards to the answer (cyan), 32 still to add (Mist Light)
-            bx = MX + 0.74
-            br_a = VGroup(Line([bx, MY0, 0], [bx, y20 - 0.04, 0], stroke_width=2.2, color=CYAN),
-                          Line([bx - 0.07, y20 - 0.04, 0], [bx, y20 - 0.04, 0], stroke_width=2.2, color=CYAN))
-            br_b = VGroup(Line([bx, y20 + 0.04, 0], [bx, MY1, 0], stroke_width=1.8, color=MUTED),
-                          Line([bx - 0.07, MY1, 0], [bx, MY1, 0], stroke_width=1.8, color=MUTED))
-            la = text("20", 20, font=MONO, weight=BOLD, color=CYAN).move_to([bx + 0.3, (MY0 + y20) / 2, 0])
-            lb = text("32", 20, font=MONO, weight=BOLD, color=BODY).move_to([bx + 0.3, (y20 + MY1) / 2, 0])
-            mobs += [br_a, br_b, la, lb]
-            texts += [("bracket 20", la), ("bracket 32", lb), ("bracket line 20", br_a), ("bracket line 32", br_b)]
+        mobs += [start, sprite("star", 0.55, "#FFFFFF", spikes=0.0, at=(MX, y))]
+        return mobs, [("meter start", start)]
 
-        head, title, line = chip_block("CARD 20", "4.35 × 10¹⁷ seconds", "SINCE THE BIG BANG",
-                                       "Not even [half] a deck." if noted else "More orders than [every second]", TIME)
-        mobs += [head, title, line]
-        texts += [("hud label", hud_label), ("counter", counter), ("readout", readout), ("chip + size", head),
-                  ("title", title), ("note" if noted else "line", line)]
+    @staticmethod
+    def track():
+        """The row's track, under the count readout where The Doubling's ruler was."""
+        out = [Line([ROW_X0, ROW_Y, 0], [ROW_X1, ROW_Y, 0], stroke_width=2, color="#27304A")]
+        return out + [Line([x, ROW_Y - 0.1, 0], [x, ROW_Y + 0.1, 0], stroke_width=1.6, color="#5D6B8C")
+                      for x in (ROW_X0, ROW_X1)]
+
+    @staticmethod
+    def glow_line(x0, x1, color):
+        return [Line([x0, ROW_Y, 0], [x1, ROW_Y, 0], stroke_width=10, color=color, stroke_opacity=0.22),
+                Line([x0, ROW_Y, 0], [x1, ROW_Y, 0], stroke_width=3.2, color=color)]
+
+    @staticmethod
+    def row_counter(label, x_mid, color):
+        """The live counter, 0.3 below the track; it starts no further left than the track, which
+        keeps it clear of the meter and the payoff brackets."""
+        font = MonoFont(size=21, weight=BOLD, letters=True)
+        w = len(label) * font.adv
+        x = min(max(x_mid, ROW_X0 + w / 2), 3.3 - w / 2)
+        shadow = MonoLine(font, 40, color="#000000", stroke_width=8, stroke_color="#000000")
+        line = MonoLine(font, 40)
+        chars = [(ch, 1.0, 0.0) for ch in label]
+        shadow.alpha = 0.78
+        shadow.show(chars, (x, ROW_Y - 0.3))
+        line.show(chars, (x, ROW_Y - 0.3))
+        for slot in line.submobjects:
+            slot.fill_rgbas[:, :3] = mix(hex_rgb(color), np.ones(3), 0.4)
+        return [shadow, line], ("row counter", line)
+
+    def finish(self, mobs, texts, slots):
         if os.environ.get("GUIDES"):
             mobs += guides()
         self.add(*mobs, PostFX())
@@ -395,9 +385,69 @@ class PayoffFrame(Scene):
                 found.append(f"{na} / ring")
             if na != "meter start" and hit(a, (MX - 0.1, MY0, MX + 0.1, MY1)):
                 found.append(f"{na} / meter")
-        print(f"payoff at +{self.AT:.2f} s: " + ("no overlaps" if not found else "OVERLAPS: " + ", ".join(found)))
+        name = type(self).__name__
+        print(f"{name} (card {self.CARD}, +{self.AT:.2f} s): " + ("no overlaps" if not found else "OVERLAPS: " + ", ".join(found)))
         for n, b in boxes:
-            print(f"  {n:12s} x {b[0]:+.2f} … {b[2]:+.2f}   y {b[1]:+.2f} … {b[3]:+.2f}")
+            print(f"  {n:15s} x {b[0]:+.2f} … {b[2]:+.2f}   y {b[1]:+.2f} … {b[3]:+.2f}")
+
+
+class PayoffFrame(StopScene):
+    """Card 20, the answer, late in its 5.4 s hold."""
+
+    AT, CARD, ACCENT = 3.6, 20, TIME
+    REF, REF_NOUN = 13.787e9 * 365.25 * 86400, "seconds"  # seconds since the Big Bang
+
+    def construct(self):
+        at = self.AT
+        orders = float(math.factorial(self.CARD))
+        fill_ref = ease_in_out(clamp01((at - 0.5) / 0.7))  # the reference fills first...
+        fill_count = ease_in_out(clamp01((at - 1.2) / 0.8))  # ...then the count overtakes it (1.5 s in all)
+        noted = at >= 2.5
+
+        bg = Rectangle(width=9.4, height=16.4, stroke_width=0, fill_color="#09090F", fill_opacity=1)
+        nebula = sprite("glow", 14.6, TIME, alpha=0.12, at=(0.0, Y0))
+        glows, slots = deck_ring(self.CARD)
+        mobs = [bg, nebula, *idle_warp(self.CARD, at, TIME), *orders_cloud(), *big_bang(), *glows, *slots]
+        hud, texts = self.hud()
+        mobs += hud
+        if at <= 1.2:  # answer ring
+            hh = mix(1.4, 5.0, ease_out(at / 1.2))
+            mobs.append(sprite("ring", hh, TIME, alpha=0.9 * (1 - at / 1.2) ** 1.5, at=(0.0, 5.6),
+                               r0=0.8, inner=0.02, outer=0.06))
+
+        # pass row: the reference fills in its accent, then the orders overtake it in lavender
+        x_ref = ROW_X0 + (ROW_X1 - ROW_X0) * self.REF / orders
+        mobs += self.track()
+        for x0, x1, c in [(ROW_X0, mix(ROW_X0, x_ref, fill_ref), TIME), (x_ref, mix(x_ref, ROW_X1, fill_count), LAVENDER)]:
+            if x1 - x0 > 0.005:
+                mobs += self.glow_line(x0, x1, c)
+        if fill_ref >= 1:
+            mobs.append(Line([x_ref, ROW_Y - 0.13, 0], [x_ref, ROW_Y + 0.13, 0], stroke_width=2.2, color=TIME))
+        if at >= 0.5:
+            cnt, t = self.row_counter(f"{count_text(self.REF * fill_ref)} {self.REF_NOUN}",
+                                      (ROW_X0 + mix(ROW_X0, x_ref, fill_ref)) / 2, TIME)
+            mobs += cnt
+            texts.append(t)
+
+        meter, mt = self.meter()
+        mobs += meter
+        texts += mt
+        if noted:  # payoff brackets: 20 cards to the answer (cyan), 32 still to add (Mist Light)
+            y20, bx = meter_y(self.CARD), MX + 0.74
+            br_a = VGroup(Line([bx, MY0, 0], [bx, y20 - 0.04, 0], stroke_width=2.2, color=CYAN),
+                          Line([bx - 0.07, y20 - 0.04, 0], [bx, y20 - 0.04, 0], stroke_width=2.2, color=CYAN))
+            br_b = VGroup(Line([bx, y20 + 0.04, 0], [bx, MY1, 0], stroke_width=1.8, color=MUTED),
+                          Line([bx - 0.07, MY1, 0], [bx, MY1, 0], stroke_width=1.8, color=MUTED))
+            la = text("20", 20, font=MONO, weight=BOLD, color=CYAN).move_to([bx + 0.3, (MY0 + y20) / 2, 0])
+            lb = text("32", 20, font=MONO, weight=BOLD, color=BODY).move_to([bx + 0.3, (y20 + MY1) / 2, 0])
+            mobs += [br_a, br_b, la, lb]
+            texts += [("bracket 20", la), ("bracket 32", lb), ("bracket line 20", br_a), ("bracket line 32", br_b)]
+
+        head, title, line = chip_block("CARD 20", "4.35 × 10¹⁷ seconds", "SINCE THE BIG BANG",
+                                       "Not even [half] a deck." if noted else "More orders than [every second]", TIME)
+        mobs += [head, title, line]
+        texts += [("chip + size", head), ("title", title), ("note" if noted else "line", line)]
+        self.finish(mobs, texts, slots)
 
 
 class PayoffArrival(PayoffFrame):
@@ -410,3 +460,62 @@ class PayoffMidRow(PayoffFrame):
 
 class PayoffRowEnd(PayoffFrame):
     AT = 2.0
+
+
+class FinalFrame(StopScene):
+    """Card 52, the whole deck, late in its 4.6 s hold: the ring closes, and the note's copies row
+    lines up 10 million copies of every Planck time since the Big Bang across the orders."""
+
+    AT, CARD, ACCENT = 4.0, 52, DECK
+    COPIES = 1e7  # 52 factorial / 8.07e60 Planck times since the Big Bang = 9.99e6
+    NOTE = "[10 million] orders for every\nPlanck time since the Big Bang."
+
+    def construct(self):
+        at = self.AT
+        noted = at >= 1.3  # the note, and its row, enter 1.3 s into the hold
+        progress = ease_in_out(clamp01((at - 1.3) / 1.5))
+
+        bg = Rectangle(width=9.4, height=16.4, stroke_width=0, fill_color="#0A0514", fill_opacity=1)
+        nebula = sprite("glow", 14.6, DECK, alpha=0.2, at=(0.0, Y0))
+        glows, slots = deck_ring(self.CARD, DECK)
+        mobs = [bg, nebula, *idle_warp(self.CARD, at, DECK), sprite("glow", 4.6, DECK, alpha=0.35, at=(0.0, Y0)),
+                *orders_cloud(count=900, radius=2.3, seed=6, colors=(LAVENDER, DECK), brightness=1.6), *glows, *slots]
+        hud, texts = self.hud()
+        mobs += hud + self.track()
+
+        # copies row: the Planck times since the Big Bang are too few to show on a pass row
+        # (1e-7 of the track), so 10 million copies of them line up across the orders instead
+        if noted and progress > 0:
+            x1 = mix(ROW_X0, ROW_X1, progress)
+            mobs += self.glow_line(ROW_X0, x1, LAVENDER)
+            beads = np.linspace(ROW_X0, ROW_X1, 90)
+            mobs += [Circle(radius=0.022, stroke_width=0, fill_color="#FFFFFF", fill_opacity=0.9).move_to([x, ROW_Y, 0])
+                     for x in beads if x <= x1]
+            mobs.append(sprite("star", 0.4, "#FFFFFF", spikes=0.35, at=(x1, ROW_Y)))
+            cnt, t = self.row_counter(f"{count_text(self.COPIES * progress)} per Planck time", (ROW_X0 + x1) / 2, LAVENDER)
+            mobs += cnt
+            texts.append(t)
+
+        meter, mt = self.meter()
+        mobs += meter
+        texts += mt
+        head, title, line = chip_block("CARD 52", "8.07 × 10⁶⁷ orders", "THE WHOLE DECK",
+                                       self.NOTE if noted else "1 × 2 × 3 × … × 52", DECK)
+        mobs += [head, title, line]
+        texts += [("chip + size", head), ("title", title), ("note" if noted else "line", line)]
+        self.finish(mobs, texts, slots)
+        if noted:
+            last = self.NOTE.split("\n")[-1]
+            print(f"  note's last baseline {baseline(line[-1], last):+.3f} (limit -4.8)")
+
+
+class FinalArrival(FinalFrame):
+    AT = 0.35
+
+
+class FinalMidRow(FinalFrame):
+    AT = 2.05
+
+
+class FinalRowEnd(FinalFrame):
+    AT = 2.8
