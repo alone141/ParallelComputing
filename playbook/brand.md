@@ -97,8 +97,6 @@ fixed colour meanings for films are in `film-style.md` §3.
   draw the exponent as raised, smaller digits, as the HUD readout does, because the font has no
   superscript minus. Static film text that needs an exponent (a stop's size text) is set in Inter
   Medium with Unicode superscripts instead (`film-style.md` §5).
-- **Factorials:** write "52 factorial" in captions, descriptions and comments, and the product
-  ("1 × 2 × 3 × … × 52") on screen. Never "52!": it reads as an exclamation mark, which §5 bans.
 - **Fonts:** Inter 4.0 or later (the Inter Display family exists only from 4.0) and JetBrains Mono 2.x.
   Both are free and open-source. Don't substitute other fonts. Renderers replace a missing family
   without warning, so check the fonts are installed before rendering.
