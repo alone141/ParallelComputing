@@ -1,5 +1,9 @@
 # The Shuffle: a guide for the agent who builds it
 
+> **The film has since been built** (October 2026). [`README.md`](README.md) is the current treatment and
+> numbers table, and the playbook's *Films that count* section holds the rules that were agreed. This guide is
+> kept as the record of the exploration that preceded it.
+
 > **These are suggestions, not rules.** This guide collects what one round of exploration with
 > the channel's owner found in October 2026: an idea, checked numbers, a possible shape, layouts
 > that worked, and mistakes worth not repeating. Take what helps, change what doesn't, and ask the
