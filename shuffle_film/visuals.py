@@ -18,7 +18,7 @@ from manim.constants import CapStyleType, LineJointType
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from doubling_film import assets  # noqa: E402
-from doubling_film.engine import Sprite, Texture, ease_in_out, ease_out, hex_rgb, mix, smooth  # noqa: E402
+from doubling_film.engine import Sprite, Texture, clamp01, ease_in_out, ease_out, hex_rgb, mix, smooth  # noqa: E402
 
 import textures  # noqa: E402
 
@@ -154,7 +154,7 @@ class CardRing:
 
     def __init__(self, deck: Deck):
         self.deck = deck
-        self.slots, self.glows, self.slot_rest, self.deck_rest, self.angles = [], [], [], [], []
+        self.slots, self.sockets, self.glows, self.slot_rest, self.deck_rest, self.angles = [], [], [], [], [], []
         for i in range(52):
             a = math.pi / 2 - 2 * math.pi * (i + 0.5) / 52
             x, y = RING_R * math.cos(a), Y0 + RING_R * math.sin(a)
@@ -166,33 +166,48 @@ class CardRing:
             big = RoundedRectangle(width=deck.w * 0.5, height=deck.h * 0.5, corner_radius=0.03 * deck.h,
                                    stroke_width=1.1).move_to([0, Y0, 0])
             self.slots.append(slot)
+            sock = RoundedRectangle(width=SLOT_W, height=SLOT_H, corner_radius=0.035, stroke_color="#B9A6FF",
+                                    stroke_width=1.1, stroke_opacity=1.0, fill_opacity=0.0)
+            sock.points = rest.copy()
+            self.sockets.append(sock)
             self.slot_rest.append(rest)
             self.deck_rest.append(big.points.copy())
             self.angles.append(a)
             self.glows.append(sprite("glow", 0.55, "#B9A6FF", alpha=0.35, at=(x, y)))
             self.glows[-1]._at = (x, y)
-        self.mobs = [*self.glows, *self.slots]
+        self.mobs = [*self.sockets, *self.glows, *self.slots]
 
     def pose(self, n, alpha=1.0, color=None, empty_alpha=0.3, gather=0.0):
-        """``gather`` 1 pulls every card back into the deck (the outro)."""
+        """``gather`` 1 spirals every card into the centre at slot size, fading (the outro).  An
+        empty socket stays on the ring until its card has landed; a card fades in as it leaves the
+        deck, so nothing pops."""
         col = hex_rgb(color) if isinstance(color, str) else (np.asarray(color) if color is not None else hex_rgb("#B9A6FF"))
-        for i, (slot, glow) in enumerate(zip(self.slots, self.glows)):
-            dealt = n - i  # > 1: in its slot; 0..1: flying out of the deck; <= 0: an empty slot
-            p = ease_out(min(dealt, 1.0)) if dealt > 0 else 1.0
-            g = ease_in_out(gather)
+        centre = np.array([0.0, Y0, 0.0])
+        for i, (slot, sock, glow) in enumerate(zip(self.slots, self.sockets, self.glows)):
+            dealt = n - i  # >= 1: in its slot; 0..1: flying out of the deck; <= 0: an empty socket
+            gi = ease_in_out(clamp01(gather * 1.35 - 0.35 * i / 51)) if gather > 0 else 0.0
+            on = smooth(0.0, 0.35, dealt) if dealt > 1e-6 else 0.0
+            set_rgb(sock, col)
+            sock.stroke_rgbas[:, 3] = alpha * empty_alpha * (1 - on) * (1 - gi)
+            if dealt <= 1e-6:
+                slot.stroke_rgbas[:, 3] = 0.0
+                slot.fill_rgbas[:, 3] = 0.0
+                glow.alpha = 0.0
+                continue
+            p = ease_out(min(dealt, 1.0))
             pts = mix(self.deck_rest[i], self.slot_rest[i], p)
-            if g > 0:
-                pts = mix(pts, self.deck_rest[i], g)
+            a = alpha * (1 - gi) * (smooth(0.0, 0.12, dealt) if dealt < 1.0 else 1.0)
+            sc = self.slot_rest[i].mean(axis=0)
+            if gi > 0:
+                pts = (pts - sc) * (1 - 0.85 * gi) + sc + (centre - sc) * gi
             slot.points = pts
-            on = smooth(0.0, 0.35, dealt) if dealt > 0 else 0.0
-            a = alpha * (1 - g)
             set_rgb(slot, col)
-            slot.stroke_rgbas[:, 3] = a * mix(empty_alpha, 0.95, on)
-            slot.fill_rgbas[:, 3] = a * 0.28 * on
+            slot.stroke_rgbas[:, 3] = a * 0.95
+            slot.fill_rgbas[:, 3] = a * 0.28 * max(on, 0.5)
             slot.stroke_width = mix(1.1, 1.8, on)
-            if on > 0.003:
-                x, y = glow._at
-                glow.points = quad(x, y, 0.55)
+            if on > 0.003 and a > 0.003:
+                gc = sc + (centre - sc) * gi
+                glow.points = quad(gc[0], gc[1], 0.55 * (1 - 0.85 * gi))
                 glow.tint = col
                 glow.alpha = 0.35 * on * a * (1 if p >= 1 else p)
             else:

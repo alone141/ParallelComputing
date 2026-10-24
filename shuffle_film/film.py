@@ -126,6 +126,31 @@ def spec_width(spec, adv):
     return sum(s for _, s, _ in spec) * adv
 
 
+class Words(AnimText):
+    """AnimText whose exit waits for the last glyph's staggered fade, so no line is cut off mid-fade
+    (the engine hides the whole text at t_out + dur_out, before late glyphs have finished)."""
+
+    def update(self, t):
+        tail = (len(self.glyphs) - 1) * self.stagger * 0.3
+        if t < self.t_in or t > self.t_out + self.dur_out + tail or self.extra_alpha <= 0.002:
+            self.visible = False
+            return
+        self.visible = True
+        n = len(self.glyphs)
+        for i, g in enumerate(self.glyphs):
+            p_in = ease_out((t - self.t_in - i * self.stagger) / self.dur_in)
+            p_out = ease_in_out((t - self.t_out - (n - 1 - i) * self.stagger * 0.3) / self.dur_out)
+            a = p_in * (1 - p_out) * self.extra_alpha
+            dy = -(1 - p_in) * self.rise + p_out * self.lift
+            pts = g._rest
+            if self.scale_in != 1.0:
+                s = mix(self.scale_in, 1.0, p_in)
+                pts = (pts - self.center) * s + self.center
+            g.points = pts + np.array([0.0, dy, 0.0]) + self.offset
+            g.fill_rgbas[:, 3] = g._fa * a
+            g.stroke_rgbas[:, 3] = g._sa * a
+
+
 class ShuffleFilm(Scene):
     def __init__(self, **kwargs):
         super().__init__(camera_class=FilmCamera, **kwargs)
@@ -238,8 +263,10 @@ class ShuffleFilm(Scene):
         # multiplier pops while the mechanic is taught
         self.pops = []
         for k in range(1, len(STEP_TIMES) + 1):
-            m = text(f"×{CARDS - k + 1}", 40, font=INTER_DISPLAY, weight=BOLD, color=LAVENDER).move_to([1.75, 5.62, 0])
-            self.pops.append((AnimText(m, 0), tl.card_time(k)))
+            m = text(f"×{CARDS - k + 1}", 40, font=INTER_DISPLAY, weight=BOLD, color=LAVENDER).move_to([1.55, 5.62, 0])
+            t_next = tl.card_time(k + 1) if k < len(STEP_TIMES) else 1e9
+            self.pops.append((AnimText(m, 0), tl.card_time(k), t_next))
+        self.pop_alpha = [0.0] * len(self.pops)
         # progress meter: linear in cards dealt
         my = self.meter_y
         self.meter_base = Line([MX, MY0, 0], [MX, MY1, 0], stroke_width=2, color="#27304A")
@@ -253,8 +280,8 @@ class ShuffleFilm(Scene):
             self.meter_ticks.append(tk)
         self.meter_zero = text("0", 17, font=MONO, color=MUTED).move_to([MX, MY0 - 0.26, 0])
         you = BY_KEY["everyone"]
-        self.you_tag = AnimText(text("YOU", 16, font=INTER_DISPLAY, weight=BOLD, color=CYAN)
-                                .move_to([MX + 0.36, my(you.card), 0]), tl.arrive["everyone"] + 0.4)
+        self.you_tag = Words(text("YOU", 16, font=INTER_DISPLAY, weight=BOLD, color=CYAN)
+                             .move_to([MX + 0.36, my(you.card), 0]), tl.arrive["everyone"] + 0.4)
         ans = BY_KEY["bigbang"]
         t_ans = tl.note_time["bigbang"] + NOTE_IN  # with the punchline
         t_end = tl.arrive["deck"] + 0.6
@@ -267,8 +294,8 @@ class ShuffleFilm(Scene):
                      Line([bx - 0.07, MY1, 0], [bx, MY1, 0], stroke_width=1.8, color=MUTED))
         lA = text(str(ans.card), 20, font=MONO, weight=BOLD, color=LIME).move_to([bx + 0.3, (MY0 + ya) / 2, 0])
         lB = text(str(CARDS - ans.card), 20, font=MONO, weight=BOLD, color=BODY).move_to([bx + 0.3, (ya + MY1) / 2, 0])
-        self.brackets = [AnimText(VGroup(brA, lA), t_ans, t_end, stagger=0.0, rise=0.0, lift=0.0),
-                         AnimText(VGroup(brB, lB), t_ans + 0.35, t_end, stagger=0.0, rise=0.0, lift=0.0)]
+        self.brackets = [Words(VGroup(brA, lA), t_ans, t_end, stagger=0.0, rise=0.0, lift=0.0),
+                         Words(VGroup(brB, lB), t_ans + 0.35, t_end, stagger=0.0, rise=0.0, lift=0.0)]
         self.hud_static = Rig(VGroup(self.hud_label, self.track, self.meter_base, self.meter_zero, *self.meter_ticks))
         self.font_count = MonoFont(size=21, weight=BOLD, letters=True)
         self.count_shadow = MonoLine(self.font_count, 44, color="#000000", stroke_width=8, stroke_color="#000000")
@@ -298,14 +325,19 @@ class ShuffleFilm(Scene):
             a.move_to([0, ya, 0])
             ti = fit_width(text(title, 60, font=INTER_DISPLAY, weight=BOLD, color=WHITE_TXT), SAFE_W).move_to([0, yt, 0])
             # the chip row rises a little less than the title, so a descender never dips into the title's cap line
-            self.labels += [AnimText(a, t_in, t_out, rise=0.16), AnimText(ti, t_in + 0.06, t_out, stagger=0.018)]
+            self.labels += [Words(a, t_in, t_out, rise=0.16), Words(ti, t_in + 0.06, t_out, stagger=0.018)]
             c_out = t_note if note else t_out
-            for s, ti_, to_ in [(compare, t_in + 0.16, c_out)] + ([(note, t_note + NOTE_IN, t_out)] if note else []):
+            c_in = t_in + (0.16 if chip is not None else 0.06)
+            for s, ti_, to_ in [(compare, c_in, c_out)] + ([(note, t_note + NOTE_IN, t_out)] if note else []):
                 two = "\n" in s
-                c = fit_width(markup(s, 29 if two else 31, accent, color=BODY, weight=MEDIUM), SAFE_W)
+                size = 29 if two else 31
+                c = markup(s, size, accent, color=BODY, weight=MEDIUM)
+                effective = size * min(1.0, SAFE_W / c.width)
+                assert effective >= 26 - 1e-6, f"line fits below size 26 ({effective:.1f}): {s!r}; shorten it"
+                fit_width(c, SAFE_W)
                 # a two-line note grows downward; nudged up so its last baseline stays at or above y = -4.8
                 c.move_to([0, yc - (c.height - 0.32) / 2 + (0.12 if two else 0.0), 0])
-                self.labels.append(AnimText(c, ti_, to_, stagger=0.008, rise=0.08 if two else 0.22))
+                self.labels.append(Words(c, ti_, to_, stagger=0.008, rise=0.08 if two else 0.22))
 
         blocks = []  # (size_text, title, compare, accent, t_in, t_out, note, t_note, chip), in order
         blocks.append((*START_LABEL, LAVENDER, START_LABEL_T[0], START_LABEL_T[1], None, None, None))
@@ -316,9 +348,9 @@ class ShuffleFilm(Scene):
             blocks.append((s.size_text, s.title, s.compare, s.accent, t_in, t_out, s.note, tl.note_time.get(s.key),
                            f"CARD {s.card}"))
             if s.key == "bigbang":
-                blocks.append((*SPRINT_LABEL, LAVENDER, tl.sprint_start + 0.3, tl.arrive["deck"] - 0.3, None, None, None))
+                blocks.append((*SPRINT_LABEL, LAVENDER, tl.sprint_start + 0.1, tl.arrive["deck"] - 0.3, None, None, None))
         for i, b in enumerate(BEATS):
-            t_in = tl.beat_arrive[b.key] - 0.3
+            t_in = tl.beat_arrive[b.key] - 0.15  # a beat is a phase label: it may enter closer to its arrival
             t_out = tl.beat_leave[b.key] - 0.02 if i < len(BEATS) - 1 else self.o + 0.05
             blocks.append((b.size_text, b.title, b.compare, b.accent, t_in, t_out, None, None, None))
         # every block has left (its 0.28 s fade included) before the next one enters
@@ -335,13 +367,13 @@ class ShuffleFilm(Scene):
                            t2c={"dealt": LAVENDER, "Big Bang?": CYAN})
         sub = text("Guess before it ends.", 27, color=MUTED).move_to([0, 3.3, 0])
         self.hook_q = q
-        self.hook = [AnimText(q, 0.0, HOOK_OUT, stagger=HOOK_STAGGER, dur_in=HOOK_DUR_IN), AnimText(sub, SUB_IN, HOOK_OUT)]
+        self.hook = [Words(q, 0.0, HOOK_OUT, stagger=HOOK_STAGGER, dur_in=HOOK_DUR_IN), Words(sub, SUB_IN, HOOK_OUT)]
         o = self.o
         l1 = text(HUD_UNIT, 26, weight=MEDIUM, color=BODY, tracking=0.13).move_to([0, -0.78, 0])
         l2 = VGroup(*[text(r, 34, color=WHITE_TXT, weight=MEDIUM) for r in OUTRO_LINES]).arrange(DOWN, buff=0.14)
         l2.move_to([0, -1.95, 0])
-        end = tl.total - 1.45
-        self.outro = [AnimText(l1, o + 0.75, end), AnimText(l2, o + 1.0, end, stagger=0.01)]
+        end = tl.total - 1.3
+        self.outro = [Words(l1, o + 0.6, end), Words(l2, o + 0.75, end, stagger=0.01)]
 
     # ------------------------------------------------------------------ frame
     def gather_of(self, key, t):
@@ -471,7 +503,7 @@ class ShuffleFilm(Scene):
                 continue
             # all those shuffles: one point of light at the start of the track; the orders sweep past it
             self.row_star.points = quad(ROW_X0 + 0.08, ROW_Y, 0.5 * (1 + 0.08 * math.sin(2 * math.pi * 1.3 * t)))
-            self.row_star.tint = hex_rgb(b.accent)
+            self.row_star.tint = mix(hex_rgb(b.accent), np.ones(3), 0.5)
             self.row_star.alpha = 0.95 * ra
             p = ease_in_out((t - t0 - 0.2) / 1.3)
             if p > 0:
@@ -502,21 +534,25 @@ class ShuffleFilm(Scene):
             subs += [self.meter_fill, self.meter_dot]
             ct1 = tl.card_time(1)
             dim = mix(1.0, 0.4, smooth(tl.beat_arrive[BEATS[0].key] - 0.4, tl.beat_arrive[BEATS[0].key], t))
-            ro_a = hud_a * smooth(ct1 - 0.05, ct1 + 0.25, t) * dim * (1 - smooth(o + 0.05, o + 0.32, t))
+            ro_a = hud_a * smooth(ct1 - 0.05, ct1 + 0.25, t) * dim * (1 - smooth(o + 0.05, o + 0.24, t))
             if ro_a > 0.003:
                 self.readout.alpha = ro_a
-                self.readout.show(count_spec(orders_f(n), self.font_small.digit_h), (0, 4.5))
+                # while the mechanic is taught the readout steps with the counter (52 → 2,652 → 132,600)
+                val = float(orders(int(math.floor(n + 0.02)))) if t < tl.steps_end + 0.05 else orders_f(n)
+                self.readout.show(count_spec(val, self.font_small.digit_h), (0, 4.5))
                 subs.append(self.readout)
             for a in [self.you_tag, *self.brackets]:
                 a.extra_alpha = hud_a
                 a.update(t)
                 if a.visible:
                     subs.append(a.mob)
-            for anim, tk in self.pops:
+            for j, (anim, tk, tk_next) in enumerate(self.pops):
+                self.pop_alpha[j] = 0.0
                 if t < tk:
                     continue
-                pop = math.exp(-(t - tk) / 0.28)
+                pop = math.exp(-(t - tk) / 0.28) * (1 - smooth(tk_next - 0.1, tk_next, t))
                 if pop > 0.01:
+                    self.pop_alpha[j] = pop * hud_a
                     for g in anim.glyphs:
                         g.points = (g._rest - anim.center) * (1 + 0.25 * pop) + anim.center
                         g.fill_rgbas[:, 3] = g._fa * pop * hud_a
@@ -525,9 +561,7 @@ class ShuffleFilm(Scene):
         # the counter (it flies to the centre for the outro) ------------------
         cnt_a = smooth(HUD_IN[0], HUD_IN[1], t) * (1 - smooth(tl.total - 1.45, tl.total - 1.1, t))
         if cnt_a > 0.003:
-            shown = min(int(round(n)), CARDS) if t < o else CARDS
-            if t < tl.steps_end + 0.05:
-                shown = int(math.floor(n + 0.02))
+            shown = min(int(math.floor(n + 0.02)), CARDS) if t < o else CARDS
             punch = 0.0
             for s in STOPS:
                 if tl.arrive[s.key] - 0.05 <= t <= tl.leave[s.key]:
@@ -597,7 +631,12 @@ class ShuffleFilm(Scene):
             return (p[:, 0].min(), p[:, 1].min(), p[:, 0].max(), p[:, 1].max())
 
         items = []  # (name, box, kind)
-        for a in self.labels + self.hook + self.outro + [self.you_tag] + self.brackets + [p for p, _ in self.pops]:
+        for j, (p, _, _) in enumerate(self.pops):
+            if self.pop_alpha[j] > 0.02 and id(p.mob) in shown:
+                b = box(p.mob, min_alpha=0.0)
+                if b:
+                    items.append((p.mob.original_text if hasattr(p.mob, "original_text") else "pop", b, "text"))
+        for a in self.labels + self.hook + self.outro + [self.you_tag] + self.brackets:
             if a.visible and id(a.mob) in shown and a.extra_alpha > 0.02:
                 b = box(a.mob)
                 if b:

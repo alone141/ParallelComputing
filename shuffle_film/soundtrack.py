@@ -26,7 +26,7 @@ import numpy as np
 from scipy.signal import fftconvolve
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from story import BEATS, BY_KEY, CARDS, HOOK, LOG2_ALL, NOTE_IN, ROW_DURATION, STEP_TIMES, STOPS, TIMELINE, log2_orders  # noqa: E402
+from story import BEATS, BY_KEY, CARDS, HOOK, LOG2_ALL, NOTE_IN, ROW_REF_PART, STEP_TIMES, STOPS, TIMELINE, log2_orders  # noqa: E402
 
 SR = 48_000
 TARGET_LUFS = -15.0
@@ -163,15 +163,14 @@ def build():
         w = lowpass_blocks(noise, 150 + 4200 * speed**1.6)
         mix.add(0, w * speed**1.5 * 0.055, pan=pan, send=0.15)
 
-    # a tick on every card --------------------------------------------------------------
-    crossings = np.nonzero(np.diff(np.floor(n_grid)) > 0)[0]
-    for i, ci in enumerate(crossings):
-        tt = grid[ci + 1]
+    # a tick on every card, at the moment the picture lands it ----------------------------
+    for k in range(1, CARDS + 1):
+        tt = tl.card_time(k)
         if tt >= outro:
             break
-        rate = v_grid[ci + 1]
+        rate = abs(float(tl.speed_at(tt)))
         g = 0.16 * min(1.0, (6.0 / (rate + 1e-3)) ** 0.55)
-        mix.add(tt, tick(rng), gain=g, pan=0.25 if i % 2 else -0.25, send=0.12)
+        mix.add(tt, tick(rng), gain=g, pan=0.25 if k % 2 else -0.25, send=0.12)
 
     # hook: soft bloom at frame one, riser into the first card ------------------------
     mix.add(0.0, boom(dur=2.0, f0=70, f1=40, decay=0.5), gain=0.35, send=0.2)
@@ -186,7 +185,7 @@ def build():
     # pass rows: a ratchet while the counter climbs, a chime when it lands -------------
     for s in STOPS:
         if s.key in tl.row_start:
-            ratchet(mix, tl.row_start[s.key], ROW_DURATION)
+            ratchet(mix, tl.row_start[s.key], ROW_REF_PART)  # the counter climbs with the reference fill
     # beat rows: a quiet sweep as the orders pass the shuffles' point of light
     for b in BEATS:
         rs = tl.beat_row_start[b.key] + 0.2
@@ -227,7 +226,8 @@ def build():
     ir = reverb_ir()
     wet = np.stack([fftconvolve(mix.send[:, c], ir[:, c])[: mix.n] for c in range(2)], 1)
     out = mix.dry + wet * 0.55
-    out = out[: int(total * SR)]
+    # a frame longer than the picture at 30 or 60 fps, so the mux's -shortest trims the sound, never a frame
+    out = out[: int((total + 1 / 30) * SR)]
     fade = np.clip((total - np.arange(len(out)) / SR) / 0.35, 0, 1)[:, None]
     out *= fade
     rms = np.sqrt((out**2).mean())

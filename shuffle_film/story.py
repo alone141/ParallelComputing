@@ -135,10 +135,10 @@ class Beat:
 STOPS: list[Stop] = [
     Stop("everyone", 6, "EVERYONE ALIVE", "8.3 billion people", "More orders than [people alive]", CYAN, 3.2,
          drawing="crowd", row=Row(PEOPLE, "people", CYAN, "words"), you=(0.42, 0.38), ref_exact=PEOPLE_EXACT),
-    Stop("bigbang", 11, "SINCE THE BIG BANG", "4.35 × 10¹⁷ seconds", "More orders than [seconds] since the Big Bang",
+    Stop("bigbang", 11, "SINCE THE BIG BANG", "4.35 × 10¹⁷ seconds", "More orders than [every second] so far",
          LIME, 5.4, drawing="spiral", note="Not even [a quarter] of the deck.", note_delay=2.5,
          row=Row(SECONDS, "seconds", LIME, "sci"), ref_exact=SECONDS_EXACT),
-    Stop("deck", 52, "THE WHOLE DECK", "8.07 × 10⁶⁷ orders", "52 × 51 × 50 × … × 2 × 1", VIOLET, 3.2,
+    Stop("deck", 52, "THE WHOLE DECK", "8.07 × 10⁶⁷ orders", "52 × 51 × 50 × … × 2 × 1", VIOLET, 4.2,
          note="Imagine a good shuffle\nevery second since the Big Bang.", note_delay=1.3),
 ]
 BY_KEY = {s.key: s for s in STOPS}
@@ -146,10 +146,10 @@ BY_KEY = {s.key: s for s in STOPS}
 BEATS: list[Beat] = [
     Beat("second", "A SHUFFLE A SECOND", "4.35 × 10¹⁷ shuffles", "At most [1 in 1.85 × 10⁵⁰] of the orders", LIME,
          "spiral", SECONDS, SECONDS_EXACT, "1.85 × 10⁵⁰", 3.0),
-    Beat("everyone", "EVERYONE, EVERY SECOND", "3.61 × 10²⁷ shuffles", "At most [1 in 2.23 × 10⁴⁰] of the orders",
+    Beat("everyone", "EVERYONE SHUFFLING", "3.61 × 10²⁷ shuffles", "At most [1 in 2.23 × 10⁴⁰] of the orders",
          CYAN, "crowd", EVERYONE_SECONDS, PEOPLE_EXACT * SECONDS_EXACT, "2.23 × 10⁴⁰", 3.0),
     Beat("planck", "EVERY PLANCK TIME", "8.07 × 10⁶⁰ shuffles", "Still about [1 in 10 million]", LAVENDER, "planck",
-         PLANCK_TIMES, PLANCK_TIMES_EXACT, "10 million", 3.2),
+         PLANCK_TIMES, PLANCK_TIMES_EXACT, "10 million", 3.0),
 ]
 BEAT_BY_KEY = {b.key: b for b in BEATS}
 
@@ -168,15 +168,16 @@ HUD_UNIT = "CARDS DEALT"
 HOOK = 3.1  # the first card lands here; a 4-line hook gets 0.35 s more than The Doubling's 2.75 s
 HOOK_OUT = 2.45  # the question and sub-line start leaving
 SUB_IN = 0.85  # "Guess before it ends." enters
-HUD_IN = (2.85, 3.3)  # the HUD fades in, after the hook has gone
-START_LABEL_T = (0.45, 3.5)  # the start label rises, then has left (0.28 s fade) before the mechanic's label
-MECHANIC_IN = 3.8
+HUD_IN = (2.9, 3.35)  # the HUD fades in, after the hook's last glyph has gone (2.45 + 0.28 + 0.15)
+START_LABEL_T = (0.45, 3.18)  # the start label rises, then has left before the mechanic's label
+MECHANIC_IN = 3.5
 STEP_TIMES = (0.70, 0.60, 0.46)  # cards 1-3, one at a time
 SETTLE = 0.06
-SPRINT = 2.5  # cards 12 → 52
+TEACH_HOLD = 0.3  # the hold on card 3 before the first stop
+SPRINT = 2.7  # cards 12 → 52
 ROW_DURATION = 1.5  # a pass row fills in 1.5 s: the reference over 0.7 s, then the orders over 0.8 s
 NOTE_IN = 0.3  # a note enters this long after the comparison line starts leaving, so they never overlap
-LABEL_GAP = 0.32  # a label block has left (0.28 s fade) before the next one enters
+LABEL_GAP = 0.4  # a label block has left (0.28 s fade plus its last glyph's stagger) before the next one enters
 ROW_REF_PART = 0.7
 BEAT_ROW_DELAY = 0.5
 OUTRO = 4.2
@@ -224,6 +225,8 @@ class Timeline:
             kf.append((t, float(k)))
             t += SETTLE
             kf.append((t, float(k)))
+        t += TEACH_HOLD  # a breath on card 3, so the mechanic's line can be read
+        kf.append((t, float(len(STEP_TIMES))))
         self.steps_end = t
         self.arrive: dict[str, float] = {}
         self.leave: dict[str, float] = {}
@@ -261,7 +264,11 @@ class Timeline:
         self._grid, self._n_grid = grid, self.n_at(grid)
 
     def n_at(self, t):
-        return np.minimum(self._f(t), float(CARDS))
+        """Cards dealt at ``t``: exact on every hold (the interpolant is snapped to the integer it
+        sits on, so no consumer ever sees 5.999999999999999 on a plateau)."""
+        n = np.minimum(self._f(t), float(CARDS))
+        r = np.round(n)
+        return np.where(np.abs(n - r) < 1e-9, r, n)
 
     def speed_at(self, t, eps=1e-3):
         return (self._f(t + eps) - self._f(t - eps)) / (2 * eps)

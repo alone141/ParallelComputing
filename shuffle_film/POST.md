@@ -4,7 +4,7 @@ Written in the order of [`../lumiera_brand/FIRST_POST.md`](../lumiera_brand/FIRS
 [`../playbook/brand.md`](../playbook/brand.md) §6. Character counts include hashtags and line breaks.
 
 **Files**
-- Video: `out/the_shuffle_final.mp4`, 34 s, 1080×1920, 60 fps, with the original score. Use
+- Video: `out/the_shuffle_final.mp4`, 35 s, 1080×1920, 60 fps, with the original score. Use
   `out/the_shuffle_final_silent.mp4` to add a trending sound in the app.
 - Cover: `out/the_shuffle_cover_hook.jpg` (the hook frame at 1.9 s, taken unchanged from the final MP4; the question
   sits inside Instagram's 3:4 grid crop). A copy is kept at `../lumiera_brand/assets/posts/the_shuffle_cover_hook.jpg`.
@@ -54,10 +54,10 @@ Send it to a friend so they can guess first ✦
 - Upload the original MP4, never a TikTok download with its watermark.
 - Turn on *Also share to feed*.
 - Pin the same comment as on TikTok.
-- Alt text, if your app offers it for Reels (997 / 1,000):
+- Alt text, if your app offers it for Reels (993 / 1,000):
 
 ```
-Vertical animated film on a deep black, space-like background. A glowing lavender deck of cards sits at the centre. On-screen text asks: How many cards dealt have more orders than seconds since the Big Bang? Guess before it ends. Cards fly out of the deck one at a time into a ring of 52 slots while a counter of cards dealt climbs and a readout shows the possible orders: 52, then 2,652, then 132,600. At card 6 a disc of cyan points of light stands for everyone alive, 8.3 billion people, with a YOU pin. At card 11 a lime spiral stands for time since the Big Bang, 4.35 × 10¹⁷ seconds: the answer is 11 cards dealt, not even a quarter of the deck. The ring closes at card 52, the whole deck, 8.07 × 10⁶⁷ orders. Three beats imagine a good shuffle every second since the Big Bang, then everyone alive doing it, then one every Planck time: each reaches at most a sliver of the orders, the last still about 1 in 10 million. Closing text: 52 cards dealt. Every good shuffle is almost certainly new.
+Vertical animated film on a deep black, space-like background. A glowing lavender full deck sits at the centre. On-screen text asks: How many cards dealt have more orders than seconds since the Big Bang? Guess before it ends. Cards fly out of the deck one at a time into a ring of 52 slots while a counter of cards dealt climbs and a readout shows the possible orders: 52, then 2,652, then 132,600. At card 6 a disc of cyan points of light stands for everyone alive, 8.3 billion people, with a YOU pin. At card 11 a lime spiral stands for time since the Big Bang, 4.35 × 10¹⁷ seconds: the answer is 11 cards dealt, not even a quarter of the deck. The ring closes at card 52, the whole deck, 8.07 × 10⁶⁷ orders. Three beats imagine a good shuffle every second since the Big Bang, then everyone alive doing it, then one every Planck time: each reaches at most a sliver of the orders, the last still about 1 in 10 million. Closing text: 52 cards dealt. Every good shuffle is almost certainly new.
 ```
 
 ## YouTube Shorts
@@ -65,10 +65,10 @@ Vertical animated film on a deep black, space-like background. A glowing lavende
 Title (70 / 100; the house limit is 70):
 
 ```
-How many cards dealt beat every second since the Big Bang? Guess first
+How many cards dealt from a full deck beat seconds since the Big Bang?
 ```
 
-Description (1587 / 5,000):
+Description (1597 / 5,000):
 
 ```
 Deal cards from a full, shuffled deck, one at a time. The first card can be any of 52, the next any of the 51 left, then 50, so each card multiplies the possible orders. How many cards dealt have more orders than seconds since the Big Bang? Guess before it ends, then put your number in the comments.
@@ -80,7 +80,7 @@ The stops:
 
 Then imagine a good shuffle every second since the Big Bang, everyone alive doing it, and one every Planck time. Each reaches at most a sliver of the orders.
 
-Numbers used: 8.3 billion people alive (UN World Population Prospects 2024, mid-2026) · 4.35 × 10¹⁷ seconds since the Big Bang (13.787 billion years, Planck 2018) · 52 factorial = 80,658,175,170,943,878,571,660,636,856,403,766,975,289,505,440,883,277,824,000,000,000,000 ≈ 8.07 × 10⁶⁷ orders · the Planck time, 5.39 × 10⁻⁴⁴ s, where known physics runs out · a shuffle a second since the Big Bang reaches at most 1 in 1.85 × 10⁵⁰ of the orders; everyone alive doing that, at most 1 in 2.23 × 10⁴⁰; one every Planck time, about 1 in 10 million (1 in 9,994,565).
+Numbers used: 8.30 billion people alive (UN World Population Prospects 2024, mid-2026) · 4.35 × 10¹⁷ seconds since the Big Bang (13.787 billion years, Planck 2018) · 52 factorial = 80,658,175,170,943,878,571,660,636,856,403,766,975,289,505,440,883,277,824,000,000,000,000 ≈ 8.07 × 10⁶⁷ orders · the Planck time, 5.39 × 10⁻⁴⁴ s, where known physics runs out · a shuffle a second since the Big Bang reaches at most 1 in 1.85 × 10⁵⁰ of the orders; everyone alive doing that, at most 1 in 2.23 × 10⁴⁰; one every Planck time, about 1 in 10 million (about 1 in 9.99 million).
 
 A good shuffle means a well-mixed deck: about seven riffle shuffles (Bayer and Diaconis, 1992). A deck fresh from the box is always in the same order. With everyone alive shuffling every second since the Big Bang, the chance that any two well-mixed shuffles ever matched is about 1 in 12 trillion. And 52 factorial is about a trillion times fewer than the atoms in the observable universe, not more.
 
@@ -113,5 +113,5 @@ the shuffle, shuffling cards, 52 factorial, permutations, deck of cards, probabi
      roughly 10⁸⁰ atoms; 52 factorial is about 8 × 10⁶⁷."
    - *"Seven shuffles make it random."* "About seven riffle shuffles make a deck well mixed, which is what 'a good
      shuffle' means here (Bayer and Diaconis, 1992). A deck fresh from the box is always in the same order."
-4. After 48 hours, compare the platforms' watch-through. The payoff lands at 9.5 s and the whole deck at 17 s; if
+4. After 48 hours, compare the platforms' watch-through. The payoff lands at 9.8 s and the whole deck at 17.9 s; if
    people drop off during the three beats, a two-beat cut is the first thing to test.

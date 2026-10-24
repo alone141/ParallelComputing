@@ -23,7 +23,7 @@ state), **MAY** (optional).
 | Property | Value |
 |---|---|
 | Aspect / resolution | **9:16, 1080×1920, 60 fps** (MUST) |
-| Length | SHOULD be 45–75 s, with ~60–70 s as the default. MAY be shorter (down to ~30 s) when the sourced stops run out, or as a deliberately short cut that lands its payoff early and whose every beat adds a new comparison (*The Shuffle*, ≈ 34 s). Never pad with unsourced stops or with holds longer than §2 allows |
+| Length | SHOULD be 45–75 s, with ~60–70 s as the default. MAY be shorter (down to ~30 s) when the sourced stops run out, or as a deliberately short cut that lands its payoff early and whose every beat adds a new comparison (*The Shuffle*, ≈ 35 s). Never pad with unsourced stops or with holds longer than §2 allows |
 | Delivery | H.264 High, yuv420p, CRF ~18, AAC 256 kbps 48 kHz, `+faststart`. Ship a **with-sound** and a **silent** version. Intermediate renders MAY use higher quality (the reference renders at CRF 15) |
 | Grain | Light luma grain is added **at encode time** (ffmpeg `noise=c0s=3:c0f=t`), never baked into frames. Why: baked grain made files 10× larger and turns to mush after TikTok/Instagram re-encode |
 | Loop | The last frame SHOULD match the first frame, so the video replays seamlessly |
@@ -52,8 +52,9 @@ Every film is **one honest question, answered on screen**.
    - The glyphs rise in from frame 0, 0.32 s each with a 0.011 s stagger, so the whole question is in by ≈ 0.8 s.
    - The sub-line enters at ≈ 0.85 s.
    - Both leave from 2.1 s and MUST be fully gone before the HUD fades in (2.5–2.95 s).
-   - A 4-line hook (§5) MAY take 0.35 s more: the first step at 3.1 s, the question leaving from 2.45 s and
-     the HUD fading in at 2.85–3.3 s, so the four lines are fully on screen for ≈ 1.6 s (*The Shuffle*).
+   - A 4-line hook (§5) MAY take 0.35 s more: the first step at 3.1 s, the question leaving from 2.45 s, the
+     HUD fading in at 2.9–3.35 s, the start label leaving at ≈ 3.2 s and the mechanic's label entering at
+     ≈ 3.5 s, so the four lines are fully on screen for ≈ 1.6 s (*The Shuffle*).
    - The starting object (e.g. the Planck dot with its dashed reticle) is visible underneath from frame 0.
    - The starting object is **not a stop**. Its label block rises in from ≈ 0.45 s at the usual
      positions (§5): size text in its accent with **no STEP chip**, the title and one line. It has no
@@ -90,7 +91,7 @@ The answer to the hook MUST NOT appear in the cover or any post text (full list:
 | Labels | Enter 0.3 s **before** the object settles; exit when the next transition starts |
 | Note (a second line that replaces the comparison) | Enters 1.2–2.5 s into the hold, after the comparison has been read |
 | Comparison row | Starts 0.5 s after arrival and fills in **1.5 s** (ease-in-out). A row that belongs to a note starts as the note enters |
-| Motion | Never fully stops. During a hold the camera keeps drifting slowly in the direction of travel: from `n_i − 0.15` to `n_i + 0.25` (when `n` falls: from `n_i + 0.15` to `n_i − 0.25`) |
+| Motion | Never fully stops. During a hold the camera keeps drifting slowly in the direction of travel: from `n_i − 0.15` to `n_i + 0.25` (when `n` falls: from `n_i + 0.15` to `n_i − 0.25`). A film that counts holds `n` exactly on the stop (§4); its motion comes from the particles and the drawings |
 
 ---
 
@@ -119,7 +120,8 @@ additive glows, and procedural textures for the Sun, galaxies and so on. Backgro
   - **Measuring rows** take the colour of **the thing being counted** (§4), lightened where it would
     not read against the current subject.
   - **Lavender `#B9A6FF`** is the start: the starting object, the mechanic phase, the ×2 / ÷2 pops,
-    and the mechanic word in the hook ("double"). When the starting object is you, cyan wins: the
+    and the mechanic word in the hook ("double"), and in a film that counts the count itself (the pass
+    row's overtake, the orders dust). When the starting object is you, cyan wins: the
     human stays cyan, and lavender marks only the mechanic (the phase, the pops and the mechanic word).
   - **Magenta `#FF6FD8`** is the observable universe's accent and the outro counter's glow in every
     film. It is never used for a mid-film reveal. A final stop other than the universe keeps its own accent.
@@ -203,7 +205,7 @@ Reuse these. They are what makes a film recognisably ours. The geometry and code
 | **Measuring row** (acted-out comparison) | Copies of the **smaller of two neighbouring stops** line up across the larger one at its stop, or stack for heights, while a live counter climbs ("0 → 425 ants"). When the film grows, that's the previous stop; when it shrinks, it's the next one. Draw individual dots (radius 0.46 × spacing) when each copy is at least ~4 px (row length in px ÷ count); otherwise draw a glowing line (core 3.2 px, glow 10 px at 22%) with ~90 white beads (radius 0.022 units) and a small star at the growing end. The finished count MUST equal the number in the line on screen while it fills (the comparison, or the note at a final stop). The row fades out with its counter |
 | **Live counter** | JetBrains Mono Bold 21, in the row colour mixed 40% toward white, with a black halo (8 px stroke, 78%, round joins so there are no spikes). The format is commas for counts, plus a noun ("4,500 solar systems"), and words for totals of ten million or more ("100 quintillion Planck lengths"). For horizontal rows it rides the middle of the filled part, 0.3 units above or below the row (further if captions are in the way), clamped to x ∈ [−3.4, +3.3]. For vertical rows it sits beside the growing end. It MUST NOT collide with the YOU pin, the meter or other text |
 | **YOU pin** | A cyan capsule (0.9 × 0.4 units) reading "YOU" (Inter Display Bold 21, `#03121A`), with a stem and a small target ring, marking the viewer's position. Show it only while that position is inside the frame. Its opacity is set on `n`, so it works in both directions: full while the human is at most ~1.2× its reference size (`n ≥ n_human − 0.25`), fading to zero by ~1.5× (`n_human − 0.6`). So it appears as the human arrives when the film grows, and it leaves as the human grows from 1.2× to 1.5× when the film shrinks. The meter's YOU tag remains throughout |
-| **Progress meter** | A **size axis** at the left edge: x = −3.95, from y = −2.45 (the smallest size shown) to y = +3.45 (the largest). The base line is `#27304A`, 2 px; ticks at each stop are in that stop's accent, at 30% opacity until passed. The fill runs from the start stop toward the current `n` (downward in a film that shrinks), with the accent gradient from §3. A "0" in Mist sits at the start, and a "YOU" tag (Inter Display Bold 16, cyan) sits at the viewer's step. For the payoff, two brackets go to the right of the YOU tag (x = −3.21), mono bold 20: a cyan bracket from you to the answer, labelled with your distance to it ("69"), and a Mist Light bracket for the distance the reframing line compares it with ("116", the start to you, in The Doubling). Each spans its own stretch of the axis, above or below YOU as the film's direction puts it. They appear with the punchline and stay until 0.6 s into the next stop |
+| **Progress meter** | A **size axis** at the left edge: x = −3.95, from y = −2.45 (the smallest size shown) to y = +3.45 (the largest). The base line is `#27304A`, 2 px; ticks at each stop are in that stop's accent, at 30% opacity until passed. The fill runs from the start stop toward the current `n` (downward in a film that shrinks), with the accent gradient from §3. A "0" in Mist sits at the start, and a "YOU" tag (Inter Display Bold 16, cyan) sits at the viewer's step. For the payoff, two brackets go to the right of the YOU tag (x = −3.21), mono bold 20: a cyan bracket from you to the answer, labelled with your distance to it ("69"), and a bracket in Mist with its label in Mist Light for the distance the reframing line compares it with ("116", the start to you, in The Doubling). Each spans its own stretch of the axis, above or below YOU as the film's direction puts it. They appear with the punchline and stay until 0.6 s into the next stop |
 | **Answer ring** | When the payoff stop arrives, a thin ring in its accent grows around the HUD counter (1.4 → 5.0 units over 1.2 s, ease-out) and fades |
 | **×2 / ÷2 pops** | While the mechanic is taught, "×2" (Inter Display Bold 40, lavender) pops beside the counter at (+1.55, +5.62): +25% scale, then fading over ~0.3 s. It happens together with the digit change and the pluck |
 

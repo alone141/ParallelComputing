@@ -48,9 +48,9 @@ def main(argv):
     ok = True
     w, h, rate, frames = probe(path)
     want = round(TIMELINE.total * fps)
-    good = abs(frames - want) <= 1
+    good = frames == want
     ok &= good
-    print(f"video: {w}x{h} @ {rate} fps, {frames} frames (want {want} ± 1) {'OK' if good else 'FAIL'}")
+    print(f"video: {w}x{h} @ {rate} fps, {frames} frames (want {want}) {'OK' if good else 'FAIL'}")
     if not silent:
         lufs, peak = measure(path)
         good = -16.0 <= lufs <= -14.0 and peak <= -1.0
