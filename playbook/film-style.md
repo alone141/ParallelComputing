@@ -56,7 +56,8 @@ Every film is **one honest question, answered on screen**.
    - The starting object is **not a stop**. Its label block rises in from ≈ 0.45 s at the usual
      positions (§5): size text in its accent with **no STEP chip**, the title and one line. It has no
      measuring row. It starts leaving at ≈ 3.3 s, just before the mechanic's phase label (3.45 s), so
-     it is part of the hook frame and the cover. The HUD shows 0 when it fades in. When the start is
+     it is part of the hook frame and the cover. The HUD shows 0 when it fades in (a count film shows
+     its start's own count; §4, *Films that count*). When the start is
      you, the YOU pin fades in with the HUD (2.5–2.95 s), never under the hook.
    - **The hook frame** is the moment the question and sub-line are both fully on screen and not yet
      leaving (1.9 s in The Doubling). Frame 0 is **not** the hook frame.
@@ -146,6 +147,8 @@ additive glows, and procedural textures for the Sun, galaxies and so on. Backgro
 | Stars | `#FF8C6B` |
 | Galaxy | `#C7A6FF` |
 | Universe | `#FF6FD8` magenta |
+| Time / the Big Bang | `#D4FF5C` (first used in The Shuffle; confirm in its stills) |
+| Cards (the full deck) | `#E08BFF` (first used in The Shuffle; confirm in its stills) |
 
 A **new subject** gets its accent once: at least ~30° of hue away from neighbouring stops, never cyan
 or magenta. Add it to this table in the same pull request, and reuse it in every later film.
@@ -159,6 +162,8 @@ Drawing style per subject (SHOULD):
 - Space objects are procedural textures (galaxy, cosmic web, Sun with limb darkening and spots).
 
 ### Movement
+A film that counts instead of measuring doesn't zoom by scale; see §4, *Films that count*.
+
 - **Zoom by scale.** An object at stop `i` is drawn at `2^(n_i − n)` of its reference size (a
   diameter of 5.2 units, centred at y = +0.22).
   - It's fully visible from about 1/10 to about 1.5× its reference size (`n_i + 3.4` to `n_i − 0.55`)
@@ -201,13 +206,36 @@ Reuse these. They are what makes a film recognisably ours. The geometry and code
 | **Answer ring** | When the payoff stop arrives, a thin ring in its accent grows around the HUD counter (1.4 → 5.0 units over 1.2 s, ease-out) and fades |
 | **×2 / ÷2 pops** | While the mechanic is taught, "×2" (Inter Display Bold 40, lavender) pops beside the counter at (+1.55, +5.62): +25% scale, then fading over ~0.3 s. It happens together with the digit change and the pluck |
 
+### Films that count
+
+Some films climb a count instead of a size (*The Shuffle*: the orders of a deck as cards are added,
+`shuffle_film/`). They keep the structure of §2 and the devices above, with these changes:
+
+| Device | In a count film |
+|---|---|
+| **Steps and `n`** | `n` is the count itself (cards in the deck), and the start shows its own value (one card, so the HUD fades in at 1). The STEP chip and the HUD show `n`, not a difference from the start. Between stops `n` moves smoothly; during a hold it stays exactly on the stop's count, and the motion comes from the particle and warp drift instead |
+| **HUD counter** | Shows `n`, labelled with the film's unit ("CARDS") |
+| **Size readout** | Becomes a **count readout** in the same font and place ("2.4 × 10¹⁸ orders"): exact with commas below 10⁷, then the mantissa to one decimal with a raised exponent. Between whole steps it follows the smooth curve through the counts (for factorials, Γ(n + 1)), so it never jumps. No ruler |
+| **STEP chip** | Reads the unit in the singular ("CARD 20") |
+| **Movement** | No zoom by scale (§3): counts are not sizes, and the references don't come in size order. Objects gather from points of light as they arrive and scatter into the warp as they leave, over the same fade window on `n`. Warp streaks and rings follow the rate at which the count grows |
+| **Measuring row** | A **pass row**: a horizontal track whose end stands for the stop's count. The reference fills first, in its accent, with a live counter in its own noun ("0 → 8.3 billion people"); then the count, in the start accent, overtakes it to the end of the track. A range fills to its upper end, with the lower end marked. When the reference would fill less than ~2% of the track, use the copies row above instead (copies of the reference lining up, "0 → 10 million") |
+| **Comparison line** | States the pass in words ("More orders than [people alive]"). Show a ratio only when both sides are well defined; never compute one from a range or a one-figure estimate |
+| **×2 / ÷2 pops** | Show each step's multiplier while the mechanic is taught ("×2", "×3", "×4" …) |
+| **Progress meter** | Its axis is log₂ of the count, from the start to the final stop, and the start is labelled with its own count ("1") instead of "0". Use the YOU tag only when you have a position on that axis. Payoff brackets are labelled in the film's unit ("20" and "32" cards) |
+| **YOU pin** | Shown with the stops that are about you, fading with their object |
+
+**Passing a reference.** A stop sits at the first step whose count beats its reference, and it MUST
+beat it by at least ~20% (for a range, its upper end), so the claim survives the reference's
+uncertainty. The hook's answer MUST also hold from below: one step earlier, the count is at least
+~20% under the reference.
+
 ---
 
 ## 5. Typography & text
 
 | Role | Font | Size | Notes |
 |---|---|---|---|
-| Hook question | Inter Display Bold | 50 | **Sentence case.** 3 short lines, block centred at y = +4.75 with a 0.16 line gap. The mechanic word in lavender, the target word in cyan, the rest Starlight |
+| Hook question | Inter Display Bold | 50 | **Sentence case.** 3 short lines, block centred at y = +4.75 with a 0.16 line gap. A question that needs 4 lines MAY use them at size 46, block centred at y = +5.0, with the glyph stagger shortened (≈ 0.009 s) so it is still in by ≈ 0.8 s; check with a still that it stays below y = +6.7 and clears the sub-line. The mechanic word in lavender, the target word in cyan, the rest Starlight |
 | Hook sub-line | Inter Regular | 27 | "Guess before it ends." in Mist, at y = +3.3 |
 | Stop / phase title | Inter Display Bold, CAPS | 60, fit to ≤ 6.8 units | "THE MILKY WAY" |
 | Comparison / note line | Inter Medium | 31 (29 when two lines) | Sentence case, Mist Light. The `[bracketed]` number is in the accent. Fit down to ≤ 6.8 units, never below 26; if it still doesn't fit, shorten the line. Only notes may use two lines |
@@ -268,6 +296,8 @@ Text MUST NOT overlap other text, the YOU pin or the meter at any time. Check wi
   move the claim into the next stop's note.
 - **Notation.** Write powers of ten as "1.6 × 10⁻³⁵ m": a multiplication sign and a raised exponent.
   Never use `^`, e-notation or "x".
+- **Factorials.** On screen, write a factorial as its product ("1 × 2 × 3 × … × 52"); in post text,
+  in words ("52 factorial"). Never "52!": it reads as an exclamation mark (`brand.md` §4).
 
 ---
 
@@ -293,7 +323,8 @@ The score is generated from the same timeline as the picture, so it's always in 
 In a film that shrinks, the plucks and stop bells still rise with **progress**, while the pad follows
 **size**. When the film starts at you, the frame-0 hook layer is the "you" moment: the soft bloom
 (70 → 40 Hz) stays, the A4 bell becomes the "You" chord (A3 E4 A4 C♯5) at the bell's level, and
-there is no 95 → 34 Hz boom and no later "you" reveal.
+there is no 95 → 34 Hz boom and no later "you" reveal. In a count film (§4), the pad's brightness
+follows the count (log₂) instead of size, and the "You" chord goes to the stop most about you.
 
 ---
 
