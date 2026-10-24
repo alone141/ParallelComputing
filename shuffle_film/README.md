@@ -43,7 +43,7 @@ Times are from the pacing rules in `film-style.md` §2 and are approximate until
 |---|---|---|
 | 0–2.75 s | **Hook** | One glowing card (lavender) at the centre. The question rises in over 4 lines (size 42, 1.04 em baseline to baseline, block centred at y = +4.78, glyph stagger ≈ 0.009 s so all 53 glyphs are in by 0.79 s): "How many cards / have more [orders] / than seconds since / the [Big Bang?]" ("orders" lavender, "Big Bang?" cyan). Sub-line "Guess before it ends." The start label rises from ≈ 0.45 s: size text "1 order", title ONE CARD, line "It can only lie [one] way." HUD fades in at 2.5–2.95 s showing **1** |
 | 2.75–5.6 s | **Teach the mechanic** | Cards 2 to 6, one at a time (0.70, 0.60, 0.46, 0.40, 0.36 s, each with a 0.06 s settle). The new card hovers while its *k* possible places glow (before, between and after the cards), then slides into one. "×2", "×3" … "×6" pops beside the HUD, together with the digit change and a pluck. The readout goes 2 → 6 → 24 → 120 → 720 orders. For cards 2 and 3, the 2 and then 6 possible orders flash as tiny ghost rows, so the count is seen, not just read. Phase label: size text "1 × 2 × 3 × 4 × …", title ADD A CARD, line "Each new card has [one more] place." (fit 28.9) |
-| 5.6–7.2 s | Sprint | Cards 7–13. The row of cards rises into a **ring of 52 slots** around the centre, filling one slot per card. The readout races 5,040 → 6.2 × 10⁹ |
+| 5.6–7.2 s | Sprint | Cards 7–13. The row of cards rises into a **ring of 52 slots** around the centre, filling one slot per card. The readout races 5,040 → 6.23 × 10⁹ |
 | 7.2 s | Stop · card 14 | EVERYONE ALIVE, with the YOU pin on Earth's night side |
 | 11.0 s | **Payoff** · card 20 | SINCE THE BIG BANG. Answer ring around the HUD, then the note "Not even [half] a deck." with the meter brackets |
 | 17.1 s | Stop · card 27 | YOU (the atoms in you), YOU pin on the pictogram |
@@ -69,7 +69,7 @@ the size it fits at is given (never below 26).
 | 42 | CARD 42 | ≈ 1.3 × 10⁵⁰ atoms | EARTH | More orders than its [atoms] | Earth `#4DA3FF` | pass row: 0 → 1.3 × 10⁵⁰ atoms |
 | 46 | CARD 46 | ≈ 10⁵⁷ atoms | THE SUN | More orders than its [atoms] | Sun `#FFB13B` | pass row: 0 → 10⁵⁷ atoms |
 | 48 | CARD 48 | 8.07 × 10⁶⁰ since the Big Bang | THE PLANCK TIME (fit 55.5) | More than the [Planck times] so far (fit 30.6). Note at ≈ 1.8 s: "Where known physics [runs out]." | Planck `#B9A6FF` | pass row: 0 → 8.07 × 10⁶⁰ Planck times |
-| 52 | CARD 52 | 8.07 × 10⁶⁷ orders | THE WHOLE DECK (fit 56.0) | 1 × 2 × 3 × … × 52. Note at ≈ 1.3 s: "[10 million] orders for every / Planck time since the Big Bang." | cards `#E08BFF` (new) | copies row with the note: 0 → 10 million |
+| 52 | CARD 52 | 8.07 × 10⁶⁷ orders | THE WHOLE DECK (fit 56.0) | 1 × 2 × 3 × … × 52. Note at ≈ 1.3 s: "[10 million] orders for every / Planck time since the Big Bang." | cards `#E08BFF` (new) | copies row with the note: 0 → 10 million per Planck time |
 
 - **Hue spacing.** The two new accents are at least 30° of hue from their neighbouring stops:
   - time (76°) sits between two cyan stops (186°), 110° from each;
@@ -219,12 +219,19 @@ These are for the post package, which is written later in the order of `lumiera_
   - The first render had the live counter (clamped at x ≥ −3.4) running into the 32 bracket's line.
     Starting it no further left than the track fixed that.
   - The overlap check in `stills.py` now covers the bracket lines too.
+- **The final-stop layout (checked in four stills, October 2026).** The four moments are arrival
+  (+0.35 s), mid-row (+2.05 s), row end (+2.8 s) and late hold (+4.0 s), and none has overlapping
+  text.
+  - The two-line note's last baseline is at −4.796, just inside the −4.8 limit, so its wording can't
+    grow.
+  - The count readout now shows three significant figures. One decimal would have put
+    "8.1 × 10⁶⁷" over the size text's "8.07 × 10⁶⁷".
 
 ## Open decisions
 
 1. **New accents.**
    - Time (`#D4FF5C`) is in the payoff still, in the chip, the spiral and the highlighted word.
-   - Cards (`#E08BFF`) is unseen until a final-stop still.
+   - Cards (`#E08BFF`) is in the final-stop still, on the closed ring, the chip and the note's number.
 2. **The ring of 52 slots.** It is shown at card 20 in the payoff still. It is the main new
    drawing work, along with gathering from points of light.
    - Simpler fallback: keep a growing row of cards under the subject.
@@ -233,16 +240,18 @@ These are for the post package, which is written later in the order of `lumiera_
 ## Test stills
 
 `stills.py` poses single frames with The Doubling's engine (imported from `../doubling_film`) to
-check layout before the film is built: the hook frame and the payoff stop (card 20).
+check layout before the film is built: the hook frame, the payoff stop (card 20) and the final
+stop (card 52).
 
 ```bash
 manim -r 1080,1920 -s --disable_caching stills.py HookFrame            # the hook frame (≈ 1.9 s, the cover)
 manim -r 1080,1920 -s --disable_caching stills.py PayoffFrame          # card 20, 3.6 s into the hold
+manim -r 1080,1920 -s --disable_caching stills.py FinalFrame           # card 52, 4.0 s into the hold
 GUIDES=1 manim -r 1080,1920 -s --disable_caching stills.py PayoffFrame # with the safe zones drawn over it
 ```
 
-- **Payoff moments:** `PayoffArrival`, `PayoffMidRow` and `PayoffRowEnd` pose the payoff's other
-  moments from `film-style.md` §8.
+- **Other moments:** `PayoffArrival`, `PayoffMidRow`, `PayoffRowEnd` and the matching `Final*` scenes
+  pose the other moments from `film-style.md` §8.
 - **Printed checks:** the hook scene prints its measured extents; the payoff scenes print every text
   box and any overlap with other text, the ring's slots, the meter or the bracket lines.
 - **Stand-ins:** the Big Bang spiral and the orders cloud stand in for the final drawings.
