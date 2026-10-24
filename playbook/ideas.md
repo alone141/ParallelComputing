@@ -9,6 +9,7 @@ When an idea is produced, move it to the *Made* list with the folder that holds 
 ## Made
 
 - **The Doubling** (Scale): Planck length → observable universe in 205 doublings. `doubling_film/`
+- **The Shuffle** (Patterns): cards dealt one at a time from a full deck; the possible orders go 52 × 51 × 50 × … How many cards dealt have more orders than seconds since the Big Bang? A ≈ 34 s cut with three 'imagine' beats after the whole deck. 'Dealt' stays in every line: a deck of only that many cards has far fewer orders. `shuffle_film/`
 
 ## Backlog
 

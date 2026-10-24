@@ -42,5 +42,6 @@ If anything here or elsewhere conflicts with the playbook, the playbook wins.
 |---|---|
 | [`playbook/`](../playbook/) | Style and brand guide, idea backlog |
 | [`doubling_film/`](../doubling_film/) | *The Doubling*: the reference film (Manim). See its README for rendering |
+| [`shuffle_film/`](../shuffle_film/) | *The Shuffle*: the second film (Patterns pillar), dealing from a full deck. It reuses The Doubling's engine; see its README |
 | [`lumiera_brand/`](../lumiera_brand/) | Brand assets (generated), profile texts, launch-post package |
 | [`archive/`](../archive/) | Old material kept for reference, not part of the baseline |
