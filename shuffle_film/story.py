@@ -28,8 +28,8 @@ numbers     rows[k-1]: k, digits (exact product 52 x 51 x ... x (53 - k)), group
             48 px), multiplier (53 - k), cell_text ("x n", k >= 2), reads (the number on the card's
             back = 53 - k), deck_after (52 - k), flight_start, land, cell (None for k = 1),
             rests_as_card, rest_frames, rate_per_s (60 / frames since the previous landing),
-            camera {s, tx, ty} (the page transform target at the landing; the still page for
-            rows 1-11), partials (= ndigits). rate_per_s is 60 / the shorter of the gaps to the
+            camera {s, tx, ty, screen_baseline, screen_width} (the page transform at the landing
+            and where the row lands on screen; the still page for rows 1-12), partials (= ndigits). rate_per_s is 60 / the shorter of the gaps to the
             previous and the next landing (5, 10, 20 in the run; 2.5 for rows 49-52).
             references: seconds, people, planck_shuffles, bound1, bound2 and factorial: digits,
             sig (bright leading digits; null = uniformly bright), groups, display, label, source.
@@ -41,9 +41,19 @@ texts       every worded or numeric string on screen, keyed by a stable id:
             and for numbers: ref (into numbers.references), sig, prefix ("≈", drawn one Mono
             advance left of the first digit), line_groups (groups per line), width_hint (px, from
             the treatment's Pillow measurements; layout.js re-measures).
-camera      the run's page transform: screen = T(page) with x' = 800 + (x - 800) s, y' = y s + ty;
-            targets per row (s = min(1, 660 / width48), ty = 1240 - rowBase(k) s) plus the still
-            anchors before and after; splines are PCHIP through the targets.
+camera      the run's page transform: screen = T(page) with x' = 800 + (x - 800) s, y' = y s + ty.
+            The page contracts about one fixed screen point, the pivot (800, pivot_y ~ 234.8): ty =
+            pivot_y (1 - s), so every page point moves monotonically towards the pivot and the
+            lime label's cap top (page y ~ 236) does not move. s is a PCHIP (monotone cubic) in the
+            frame through one target per landing: still (1) at row 11's landing and at row 12's
+            (the page is still until 16.80 s and row 12 lands on it, 2.4 px over the 660 fit);
+            rows 13-48 s = 660 / w_model(k), a smooth upper bound on the row's width (33.6 px per
+            digit of the real-valued digit count log10(product) + 1, minus 4.8, minus the smallest
+            slack over rows 13-48), which is >= the real width so every row fits inside 660 px
+            (shortfall <= 16 px) and whose increments shrink smoothly with log10(53 - k) (no
+            digit-count judder); rows 49-52 s = 660 / width48 exactly (0.290084: the wedge frame);
+            held to the fold. pivot_y is solved so row 52 lands at screen y 1240; rows 13-51 land
+            between y 1121 and 1228. s never increases and ty never decreases; --check asserts it.
 sound       cues: the percussion cue list derived from the events (knock, stamp, flick, flick_long,
             click, typing, pulse, silence, fold_tick, knock at the block, deck_tick, deck_out);
             partials: the tone's partial-count targets over time {frame, partials, ramp_frames,
@@ -59,6 +69,9 @@ stamp       id (a texts key): the item appears whole in one frame with the bloom
             null | "knock" | "big" (the percussion body; "big" is the film's biggest, at
             "Eleven cards dealt."). A stamp of a multi-line text id stamps the whole item.
 unstamp     ids: ink gone in one frame, glow decaying over glow_decay_frames (9 = 0.15 s).
+            with_flight (k): the unstamp is tied to card k's flight start (off the 6-frame grid):
+            "41 cards still in the deck." leaves at frame 993, when card 12 leaves the deck and
+            the deck reads 40.
 type        id (a texts key), ref (numbers.references key), groups, frames_per_group (3),
             group_frames (the frame each group appears), end (first frame after the last group),
             lines [{baseline, groups: [first, last]}] (group indices per line). A typing click per
@@ -88,7 +101,8 @@ band        ref, k (the crossing row), action: "fill" (from 0 to alpha over [fra
 pass        k, ref, colour, rule_x, row_left, overshoot_px, digits_left_of_rule (the digits that
             cross, coloured and bloomed for the hold), hold_until, rule_full [start, end],
             band {fill, fade, alpha}, dim_rows {rows, alpha, start, end}, pulse {start, end,
-            from_y, to_y} (light running down the rule), swell_partial (the tone's newest partial
+            from_y, to_y} (light running down the rule; at card 11 it runs 792-810, when the tone
+            returns, so picture and score agree), swell_partial (the tone's newest partial
             swells +6 dB for 72 frames), silence_until (card 11 only: the tone is cut and no stamp
             sounds from the landing to this frame, except the big knock at "Eleven cards dealt.").
 bloom       id ("deck_number"), end, glow (x 2): the deck's 41 blooms at the reframe.
@@ -283,14 +297,55 @@ def check_numbers() -> dict:
 RULE_X = {ref: round(SPINE - mono_width(REFERENCES[ref]["ndigits"], 48), 2) for ref in ("seconds", "people")}
 RULE_Y_TOP = {"seconds": 318 + 12, "people": 444 + 12}
 BAND_ALPHA = 0.18
+NEBULA_PEAK = 0.14           # the nebula's peak alpha (additive; the playbook allows 10-20 %). At 14 % the cyan and lime
+                             # sections differ from lavender by >= 6 levels on a text-free patch; violet and lavender share
+                             # B = 255 and differ by only 39 levels in R at full strength, so they stay within ~4.5 levels
 CAMERA_FIT_PX = 660
-CAMERA_NEWEST_Y = 1240
+CAMERA_NEWEST_Y = 1240       # row 52's baseline on screen in the wedge frame; rows 13-51 land at or above it
+CAMERA_STILL_ROWS = 12       # the page is still through row 12's landing (16.80 s)
+CAMERA_MODEL_ROWS = range(13, 49)   # rows whose fit follows the smooth width model; 49-52 fit exactly
+CAMERA_DIGIT_PX = (MONO_ADVANCE + MONO_GAP / 3) * 48   # 33.6: a digit and its share of a group gap
+
+
+def digit_count_real(k: int) -> float:
+    """The digit count of orders(k) as a real number: log10 of the product + 1 (>= the integer count)."""
+    return math.log10(orders(k)) + 1
+
+
+def row_width_bound(k: int) -> float:
+    """33.6 L - 4.8 >= mono_width(ndigits, 48) for every digit count: 14.4 ceil(n / 3) <= 4.8 n + 9.6."""
+    return CAMERA_DIGIT_PX * digit_count_real(k) - 4.8
+
+
+# the smallest slack of the bound over rows 13-48 (6.66 px at row 31): the model is shifted down by it so
+# the tightest row fits exactly and every other row is at most 16 px narrower than the 660 px fit
+CAMERA_MODEL_SHIFT = min(row_width_bound(k) - mono_width(len(str(orders(k))), 48) for k in CAMERA_MODEL_ROWS)
+
+
+def row_width_model(k: int) -> float:
+    return row_width_bound(k) - CAMERA_MODEL_SHIFT
+
+
+def camera_scale(k: int) -> float:
+    """The page scale at row k's landing: still to row 12, the smooth model for 13-48, the exact fit after."""
+    if k <= CAMERA_STILL_ROWS:
+        return 1.0
+    if k in CAMERA_MODEL_ROWS:
+        return CAMERA_FIT_PX / row_width_model(k)
+    return min(1.0, CAMERA_FIT_PX / mono_width(len(str(orders(k))), 48))
+
+
+CAMERA_S_END = camera_scale(52)
+# the pivot: the page point that stays fixed on screen (ty = pivot (1 - s)), solved so row 52 lands at 1240
+CAMERA_PIVOT_Y = (CAMERA_NEWEST_Y - row_base(52) * CAMERA_S_END) / (1 - CAMERA_S_END)
 
 
 def camera_target(k: int) -> dict:
     w = mono_width(len(str(orders(k))), 48)
-    s = min(1.0, CAMERA_FIT_PX / w)
-    return {"s": round(s, 6), "tx": round(SPINE * (1 - s), 3), "ty": round(CAMERA_NEWEST_Y - row_base(k) * s, 3),
+    s = camera_scale(k)
+    ty = CAMERA_PIVOT_Y * (1 - s)
+    return {"s": round(s, 6), "tx": round(SPINE * (1 - s), 3), "ty": round(ty, 3),
+            "screen_baseline": round(row_base(k) * s + ty, 2), "screen_width": round(w * s, 2),
             "width48": round(w, 2)}
 
 
@@ -427,10 +482,13 @@ def stamp(frame, tid, knock=None):
     return ev(frame, "stamp", id=tid, knock=knock)
 
 
-def unstamp(frame, *tids):
+def unstamp(frame, *tids, with_flight=None):
     for t in tids:
         assert t in TEXTS, t
-    return ev(frame, "unstamp", ids=list(tids), glow_decay_frames=9)
+    e = ev(frame, "unstamp", ids=list(tids), glow_decay_frames=9)
+    if with_flight is not None:
+        e["with_flight"] = with_flight   # tied to card k's flight start (off the 6-frame grid)
+    return e
 
 
 def type_(frame, tid, ref, line_groups, baselines):
@@ -464,9 +522,7 @@ def deal(k: int, land: int, duration: int, becomes: str, rest_frames: int = 0, m
         cell_frame = land
     elif becomes == "card":
         cell_frame = land + rest_frames
-    cam = camera_target(k)
-    if k <= 11:
-        cam = {"s": 1.0, "tx": 0.0, "ty": 0.0, "width48": cam["width48"]}  # the page is still until the run
+    cam = camera_target(k)   # the still page (s = 1) through row 12; the run's model from row 13
     rate = None  # the deal rate at this card; filled in by set_rates() once every landing is known
     row = {
         "k": k, "digits": digits, "ndigits": len(digits), "new_digits": len(digits) - prev_digits,
@@ -476,7 +532,8 @@ def deal(k: int, land: int, duration: int, becomes: str, rest_frames: int = 0, m
         "reads": reads, "deck_after": 52 - k,
         "flight_start": start, "land": land, "flight_frames": duration, "cell": cell_frame,
         "becomes": becomes, "rests_as_card": becomes == "card", "rest_frames": rest_frames if becomes == "card" else 0,
-        "rate_per_s": rate, "camera": {"s": cam["s"], "tx": cam["tx"], "ty": cam["ty"]},
+        "rate_per_s": rate, "camera": {"s": cam["s"], "tx": cam["tx"], "ty": cam["ty"],
+                                       "screen_baseline": cam["screen_baseline"], "screen_width": cam["screen_width"]},
         "partials": len(digits),
     }
     ROWS.append(row)
@@ -554,12 +611,12 @@ def build_events():
     # ---- 11.60 the near miss: card 10 -----------------------------------------------------------
     deal(10, T("11.60"), 18, "card", rest_frames=6, muted=True)   # 11.30 -> 11.60; x 43 at 11.70
     ev(T("11.60"), "rule", ref="seconds", action="pulse_dim", end=T("11.80"), alpha_peak=0.7)
-    stamp(T("11.80"), "near_miss")
+    stamp(T("11.60"), "near_miss")   # on the landing, so the line holds 1.2 s
 
     # ---- 12.80 the payoff: card 11 passes every second since the Big Bang ----------------------
     row11 = deal(11, T("12.80"), 18, "card", rest_frames=6)       # 12.50 -> 12.80; x 42 at 12.90
     make_pass(row11, "seconds", "lime", hold_until=T("16.80"), rule_full_until=T("17.00"),
-              swell_partial=19, silence_until=T("13.20"))
+              swell_partial=19, silence_until=T("13.20"), pulse_start=T("13.20"))   # the pulse when the tone returns
     nebula(T("12.80"), "lime")
     unstamp(T("12.80"), "near_miss")
     ev(T("12.80"), "tone", action="cut", fade_ms=10)
@@ -573,8 +630,11 @@ def build_events():
     stamp(T("15.20"), "reframe_line")
     ev(T("15.20"), "bloom", id="deck_number", end=T("15.60"), glow=2.0, reads=41)
 
+    # ---- 16.55 card 12 leaves the deck (it reads 40): the reframe line goes with it -----------------
+    unstamp(T("16.80") - 15, "reframe_line", with_flight=12)
+
     # ---- 16.80 the run ----------------------------------------------------------------------------
-    unstamp(T("16.80"), "eleven_lead", "reframe_line")
+    unstamp(T("16.80"), "eleven_lead")
     ev(T("16.80"), "band", ref="seconds", k=11, action="fade", end=T("17.20"), alpha=BAND_ALPHA)
     stamp(T("16.80"), "run_line")
     nebula(T("16.80"), "lavender")
@@ -683,8 +743,9 @@ def set_rates():
 
 
 def make_pass(row: dict, ref: str, colour: str, hold_until: int, rule_full_until: int,
-              swell_partial: int, silence_until: int | None = None):
+              swell_partial: int, silence_until: int | None = None, pulse_start: int | None = None):
     k, land = row["k"], row["land"]
+    pulse_start = land if pulse_start is None else pulse_start
     rule_x = RULE_X[ref]
     row_left = row["left48"]
     assert row_left < rule_x, (k, ref)
@@ -702,7 +763,7 @@ def make_pass(row: dict, ref: str, colour: str, hold_until: int, rule_full_until
            band={"fill": [land, fill_end], "fade": [band_fade["start"], band_fade["end"]], "alpha": BAND_ALPHA,
                  "x": [rule_x, SPINE], "y": [base - 40, base + 14]},
            dim_rows={"rows": list(range(1, k)), "alpha": 0.4, "start": land, "end": land + 30},
-           pulse={"start": land, "end": land + 18, "from_y": RULE_Y_TOP[ref], "to_y": base + 12},
+           pulse={"start": pulse_start, "end": pulse_start + 18, "from_y": RULE_Y_TOP[ref], "to_y": base + 12},
            lead_digit_bloom={"start": land, "end": land + 15, "glow": 1.2},
            swell_partial=swell_partial, swell_db=6, swell_frames=72)
     if silence_until is not None:
@@ -730,19 +791,29 @@ def digit_left_edge(ndigits: int, i: int, size: float = 48) -> float:
 # ------------------------------------------------------------------------------------------------
 
 def build_camera() -> dict:
-    still = {"s": 1.0, "tx": 0.0, "ty": 0.0}
-    targets = [dict(frame=ROWS[10]["land"], k=11, **still, note="row 11: the page is still"),
-               dict(frame=ROWS[11]["flight_start"], k=11, **still, note="card 12 leaves the deck: the camera starts")]
-    for row in ROWS[11:]:
-        targets.append(dict(frame=row["land"], k=row["k"], **row["camera"]))
-    targets.append(dict(frame=T("23.20"), k=52, **ROWS[51]["camera"], note="held until the fold"))
+    cam = lambda r: {key: r["camera"][key] for key in ("s", "tx", "ty")}
+    targets = [dict(frame=ROWS[10]["land"], k=11, **cam(ROWS[10]), note="row 11: the page is still"),
+               dict(frame=ROWS[11]["land"], k=12, **cam(ROWS[11]),
+                    note="row 12 lands on the still page (662.4 px, 2.4 px over the fit); the camera starts here")]
+    for row in ROWS[12:]:
+        targets.append(dict(frame=row["land"], k=row["k"], **cam(row)))
+    targets.append(dict(frame=T("23.20"), k=52, **cam(ROWS[51]), note="held until the fold"))
     assert all(a["frame"] < b["frame"] for a, b in zip(targets, targets[1:]))
-    assert ROWS[11]["camera"]["s"] < 1.0, "the page pulls back from row 12"
+    assert all(t["s"] == 1.0 and t["ty"] == 0.0 for t in targets[:2]), "still through row 12's landing"
+    assert ROWS[12]["camera"]["s"] < 1.0, "the page pulls back from row 13"
+    assert all(a["s"] >= b["s"] and a["ty"] <= b["ty"] for a, b in zip(targets, targets[1:])), "monotone targets"
     return {
         "spine_x": SPINE, "newest_baseline_screen_y": CAMERA_NEWEST_Y, "fit_width_px": CAMERA_FIT_PX,
-        "rule": "s = min(1, 660 / width48); tx = 800 (1 - s); ty = 1240 - rowBase(k) s; screen = (800 + (x - 800) s, y s + ty)",
-        "still_until": ROWS[11]["flight_start"], "still_after": T("23.20"),
-        "spline": "PCHIP (monotone cubic) in s and ty through the targets; flat before the first and after the last",
+        "pivot_y": round(CAMERA_PIVOT_Y, 4),
+        "rule": "tx = 800 (1 - s); ty = pivot_y (1 - s): the page contracts about the screen point (800, pivot_y); "
+                "screen = (800 + (x - 800) s, pivot_y + (y - pivot_y) s)",
+        "scale_rule": "s = 1 through row 12; 660 / w_model(k) for rows 13-48 (w_model = 33.6 (log10 product + 1) "
+                      "- 4.8 - shift, a smooth upper bound on the row width, so every row fits); 660 / width48 for "
+                      "rows 49-52",
+        "model_shift_px": round(CAMERA_MODEL_SHIFT, 3), "s_end": round(CAMERA_S_END, 6),
+        "still_until": ROWS[11]["land"], "still_after": T("23.20"), "settled_at": ROWS[48]["land"],
+        "spline": "PCHIP (monotone cubic) in s through the targets, flat before the first and after the last; "
+                  "ty follows s through the pivot; s never increases, ty never decreases",
         "targets": targets,
     }
 
@@ -770,7 +841,8 @@ def build_sound() -> dict:
             partials.append({"frame": f, "partials": e["partials"], "ramp_frames": 15,
                              "new": e["new_digits"], "dull": e.get("dull", False), "unchanged": e.get("silent", False)})
         elif k == "pass":
-            cues.append({"frame": f, "cue": "pulse", "ref": e["ref"], "frames": e["pulse"]["end"] - f})
+            pu = e["pulse"]
+            cues.append({"frame": pu["start"], "cue": "pulse", "ref": e["ref"], "frames": pu["end"] - pu["start"]})
             if "silence_until" in e:
                 cues.append({"frame": f, "cue": "silence", "until": e["silence_until"],
                              "except": "the big knock at 'Eleven cards dealt.'"})
@@ -828,6 +900,8 @@ def check_events():
             continue  # the knock one frame after the loop point; the last frame itself
         if e["kind"] in RUN_GRID_KINDS and e["k"] >= 12:
             assert f % 3 == 0, e
+        elif e["kind"] == "unstamp" and e.get("with_flight"):
+            assert f == ROWS[e["with_flight"] - 1]["flight_start"], ("unstamp not on its card's flight start", e)
         else:
             assert f % 6 == 0, ("off the 6-frame grid", e)
         for key in ("end", "land", "cell", "hold_until", "silence_until", "knock_at"):
@@ -893,11 +967,36 @@ def check_events():
     assert all(r["rest_frames"] == 6 for r in ROWS[2:11])
     assert max(sum(1 for o in ROWS if o["flight_start"] < r["land"] <= o["land"]) for r in ROWS) == 5, "five cards in the air"
     assert [ROWS[k - 1]["rate_per_s"] for k in (12, 17, 25, 48, 49, 52)] == [5.0, 10.0, 20.0, 20.0, 2.5, 2.5]
-    assert all(r["camera"] == {"s": 1.0, "tx": 0.0, "ty": 0.0} for r in ROWS[:11])
+    # the camera: still through row 12, then a monotone contraction about the pivot in which every row fits
+    still = {"s": 1.0, "tx": 0.0, "ty": 0.0}
+    assert all({key: r["camera"][key] for key in still} == still for r in ROWS[:12])
+    assert ROWS[11]["camera"]["screen_baseline"] == row_base(12) == 1300
+    for a, b in zip(ROWS[11:], ROWS[12:]):
+        assert a["camera"]["s"] > b["camera"]["s"] or (a["k"] >= 49 and a["camera"]["s"] == b["camera"]["s"]), (a["k"], "s decreases")
+        assert a["camera"]["ty"] <= b["camera"]["ty"], (a["k"], "ty never decreases")
+    for r in ROWS[12:]:
+        c = r["camera"]
+        assert c["screen_width"] <= CAMERA_FIT_PX + 1e-6, (r["k"], "the row fits the 660 px span")
+        assert c["screen_width"] >= CAMERA_FIT_PX - 16.5, (r["k"], "the row is at most 16 px short of the fit")
+        assert 1100 <= c["screen_baseline"] <= CAMERA_NEWEST_Y + 0.01, (r["k"], "the newest row lands between y 1100 and 1240")
+        assert abs(c["ty"] - round(CAMERA_PIVOT_Y * (1 - c["s"]), 3)) < 2e-3, (r["k"], "ty = pivot (1 - s)")
+    assert all(row_width_model(k) >= mono_width(len(str(orders(k))), 48) - 1e-9 for k in CAMERA_MODEL_ROWS)
+    assert abs(CAMERA_MODEL_SHIFT - 6.66) < 0.01 and 234 < CAMERA_PIVOT_Y < 236
+    assert abs(ROWS[51]["camera"]["screen_baseline"] - CAMERA_NEWEST_Y) < 0.01
+    assert ROWS[47]["camera"]["s"] > ROWS[48]["camera"]["s"], "the model hands over to the exact fit at row 49"
+    # the reframe line leaves when card 12 leaves the deck; the near miss holds 1.2 s
+    out = {tuple(e["ids"]): e["frame"] for e in EVENTS if e["kind"] == "unstamp"}
+    assert out[("reframe_line",)] == ROWS[11]["flight_start"] == 993
+    assert next(e["frame"] for e in EVENTS if e["kind"] == "stamp" and e["id"] == "near_miss") == ROWS[9]["land"] == 696
+    # the payoff's pulse runs when the tone returns; card 6's on the landing
+    for e in EVENTS:
+        if e["kind"] == "pass":
+            assert e["pulse"]["start"] == (e["silence_until"] if "silence_until" in e else e["frame"]), e["k"]
+            assert e["band"]["fill"][0] == e["frame"] and e["lead_digit_bloom"]["start"] == e["frame"]
     # geometry the passes rely on
     assert abs(RULE_X["seconds"] - 209.6) < 1e-6 and abs(RULE_X["people"] - 468.8) < 1e-6
     assert [ROWS[k - 1]["left48"] for k in (5, 6, 10, 11)] == [512.0, 440.0, 238.4, 166.4]
-    assert abs(ROWS[51]["camera"]["s"] - 0.29) < 0.005
+    assert abs(ROWS[51]["camera"]["s"] - 0.29) < 0.005 and abs(CAMERA_S_END - 0.290084) < 1e-6
     # holds
     hold = lambda a, b: T(b) - T(a)
     assert hold("7.70", "10.10") == 144    # 2.4 s at card 6
@@ -1028,11 +1127,12 @@ def build() -> dict:
                             "bottom_before_rows": row_base(1) + 12, "colour": "lime" if ref == "seconds" else "cyan"}
                       for ref in ("seconds", "people")},
             "band": {"alpha": BAND_ALPHA, "x": "rule x to the spine", "y": "crossing row baseline - 40 to + 14"},
-            "nebula": {"centre": [700, 800], "radius": 900, "peak": 0.10, "cross_fade_frames": 72},
+            "nebula": {"centre": [700, 800], "radius": 900, "peak": NEBULA_PEAK, "cross_fade_frames": 72},
             "safe": {"baseline_max_y": 1536, "ink_max_y": 1548, "x_min": 132, "x_max": 948,
                      "button_column": {"x_min": 948, "y": [780, 1536]}, "max_text_width": 808,
                      "cover_key_text_y": [240, 1680]},
             "camera_fit_px": CAMERA_FIT_PX, "camera_newest_baseline_y": CAMERA_NEWEST_Y,
+            "camera_pivot_y": round(CAMERA_PIVOT_Y, 4),
         },
         "numbers": {"rows": ROWS, "references": REFERENCES},
         "texts": TEXTS,

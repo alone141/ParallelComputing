@@ -153,6 +153,8 @@ async function main() {
     const byCheck = {};
     for (const v of report.violations) byCheck[v.check] = (byCheck[v.check] || 0) + 1;
     console.log(`checked ${report.frames_checked} frames, ${report.items_total} items (${report.text_items_total} text), loop identical: ${report.loop_identical}, fitted: ${JSON.stringify(report.fitted)}, ${report.ms} ms`);
+    const cam = report.camera;
+    console.log(`camera: still to ${cam.still_until}, moving ${cam.first_moving_frame}-${cam.last_moving_frame}, settled from ${cam.settled_at}; pivot y ${cam.pivot_y}; max |ds| ${cam.max_ds}/frame, max |d2s| ${cam.max_d2s}; max |dty| ${cam.max_dty} px, max |d2ty| ${cam.max_d2ty}; s_end ${cam.s_end}, ty_end ${cam.ty_end}; rows 13-52 land ${Math.min(...cam.landings.map(l => l.baseline))}-${Math.max(...cam.landings.map(l => l.baseline))} on screen, ${Math.min(...cam.landings.map(l => l.width))}-${Math.max(...cam.landings.map(l => l.width))} px wide`);
     console.log(`violations: ${report.violations.length} ${JSON.stringify(byCheck)} -> ${file}`);
     for (const v of report.violations.slice(0, 40)) console.log(`  frame ${v.frame} ${v.check} ${v.id}: ${v.detail}`);
     await browser.close();
@@ -194,7 +196,7 @@ async function main() {
       const base = `${String(i).padStart(2, '0')}_${name}`;
       fs.writeFileSync(path.join(dir, `${base}.png`), pngOf(r.full));
       fs.writeFileSync(path.join(dir, `${base}_360.png`), pngOf(r.small));
-      await page.evaluate(([i, cap]) => window.sheetAdd(i, cap), [i, `${String(i).padStart(2, '0')} ${name}  ·  frame ${f}  ·  ${secs(f)} s`]);
+      await page.evaluate(([i, cap]) => window.sheetAdd(i, cap), [i, `${String(i).padStart(2, '0')} ${name} · ${secs(f)} s`]);
       console.log(`${base}: frame ${f} (${secs(f)} s)`);
     }
     const sheet = await page.evaluate(() => window.sheetDataURL());

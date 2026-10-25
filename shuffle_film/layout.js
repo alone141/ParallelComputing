@@ -6,7 +6,10 @@
    checks cannot drift from the picture.
 
    Coordinates: the page layer lives in page units (1080 x 1920 at scale 1); the page transform maps it
-   to the screen: x' = x s + tx, y' = y s + ty with tx = 800 (1 - s), so the spine x = 800 never moves.
+   to the screen: x' = x s + tx, y' = y s + ty with tx = 800 (1 - s), so the spine x = 800 never moves,
+   and ty = pivot_y (1 - s) (story.json camera.pivot_y ~ 234.8), so the page contracts about one fixed
+   screen point beside the deck and every page point moves monotonically while s shrinks. s is a PCHIP
+   through story.json's camera targets (one per landing); still to row 12's landing, settled from row 49.
    The screen layer (deck, hook, label area, block, beats) is never scaled. Cards are returned in screen
    coordinates with their own scale.
 
@@ -24,7 +27,7 @@ const LN = {};
 let S = null;            // story.json
 let measureRaw = null;   // (text, cssFont) -> {width, left, right, ascent, descent}
 const mcache = new Map();
-let camS = null, camTy = null, camStillAfter = Infinity;
+let camS = null, camTy = null, camStillAfter = Infinity, camPivot = null;
 
 // ------------------------------------------------------------------------------------------ maths
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
@@ -95,6 +98,7 @@ LN.init = function (story, measureFn) {
   const T = S.camera.targets, xs = T.map(t => t.frame);
   camS = pchip(xs, T.map(t => t.s));
   camTy = pchip(xs, T.map(t => t.ty));
+  camPivot = typeof S.camera.pivot_y === 'number' ? S.camera.pivot_y : null;   // ty = pivot (1 - s) when the story gives a pivot
   // after the fold has faded the old page out, nothing is left on the page layer and the page is still again
   const fold = S.events.find(e => e.kind === 'fold');
   camStillAfter = fold ? fold.fade_out.end : Infinity;
@@ -107,7 +111,7 @@ LN.mixHex = mixHex;
 
 function cameraAt(f) {
   if (f >= camStillAfter) return { s: 1, tx: 0, ty: 0 };
-  const s = camS(f), ty = camTy(f);
+  const s = camS(f), ty = camPivot != null ? camPivot * (1 - s) : camTy(f);
   return { s, tx: S.geometry.spine_x * (1 - s), ty };
 }
 LN.cameraAt = cameraAt;
@@ -700,7 +704,55 @@ LN.check = function (opts) {
   const a = LN.layout(0), b = LN.layout(S.meta.frames - 1);
   const strip = L => JSON.stringify({ page: L.page, nebula: L.nebula, items: L.items });
   if (strip(a) !== strip(b)) v(S.meta.frames - 1, 'loop', 'layout', 'layout(0) differs from layout(last)');
-  return { frames_checked: frames.length, items_total: itemCount, text_items_total: textCount, violations: viol, widths, fitted: [...fitted], loop_identical: strip(a) === strip(b) };
+  const camera = LN.checkCamera(v);
+  return { frames_checked: frames.length, items_total: itemCount, text_items_total: textCount, violations: viol, widths, fitted: [...fitted], loop_identical: strip(a) === strip(b), camera };
+};
+
+/* The run's camera, frame by frame: still (s = 1, ty = 0) through camera.still_until; from there to the fold
+   s never increases and ty never decreases (one direction only, no reversal), with no step (|ds| per frame
+   bounded) and no kink (the per-frame change of ds bounded: C1); settled (constant) from settled_at to the
+   fold; at every landing from row 13 the row fits the 660 px span and lands between y 1100 and 1240 on
+   screen; ty = pivot (1 - s) at every frame. Reports the measured extremes. */
+LN.checkCamera = function (v) {
+  const C = S.camera, G = S.geometry;
+  const still = C.still_until, end = C.still_after, settled = C.settled_at != null ? C.settled_at : end;
+  const eps = 1e-9, maxStepS = 0.02, maxAccelS = 0.005, maxStepTy = 5, maxAccelTy = 1.5;
+  let prev = null, prevDs = null, prevDty = null;
+  const ext = { max_ds: 0, max_d2s: 0, max_dty: 0, max_d2ty: 0, s_end: null, ty_end: null, first_moving_frame: null, last_moving_frame: null };
+  for (let f = 0; f <= end; f++) {
+    const c = cameraAt(f);
+    if (f <= still && (c.s !== 1 || c.ty !== 0)) v(f, 'camera', 'still', `s ${c.s} ty ${c.ty} before the run`);
+    if (f >= settled && (Math.abs(c.s - C.s_end) > 1e-6)) v(f, 'camera', 'settled', `s ${c.s} after settling`);
+    if (C.pivot_y != null && Math.abs(c.ty - C.pivot_y * (1 - c.s)) > 1e-6) v(f, 'camera', 'pivot', `ty ${c.ty} is not pivot (1 - s)`);
+    if (prev) {
+      const ds = c.s - prev.s, dty = c.ty - prev.ty;
+      if (ds > eps) v(f, 'camera', 'monotone_s', `s rises ${round3(prev.s)} -> ${round3(c.s)}`);
+      if (dty < -eps) v(f, 'camera', 'monotone_ty', `ty falls ${round3(prev.ty)} -> ${round3(c.ty)}`);
+      if (Math.abs(ds) > maxStepS) v(f, 'camera', 'step_s', `ds ${ds}`);
+      if (Math.abs(dty) > maxStepTy) v(f, 'camera', 'step_ty', `dty ${dty}`);
+      if (prevDs !== null) {
+        if (Math.abs(ds - prevDs) > maxAccelS) v(f, 'camera', 'kink_s', `d2s ${ds - prevDs}`);
+        if (Math.abs(dty - prevDty) > maxAccelTy) v(f, 'camera', 'kink_ty', `d2ty ${dty - prevDty}`);
+        ext.max_d2s = Math.max(ext.max_d2s, Math.abs(ds - prevDs)); ext.max_d2ty = Math.max(ext.max_d2ty, Math.abs(dty - prevDty));
+      }
+      ext.max_ds = Math.max(ext.max_ds, Math.abs(ds)); ext.max_dty = Math.max(ext.max_dty, Math.abs(dty));
+      if (Math.abs(ds) > eps) { if (ext.first_moving_frame === null) ext.first_moving_frame = f; ext.last_moving_frame = f; }
+      prevDs = ds; prevDty = dty;
+    }
+    prev = c;
+  }
+  ext.s_end = prev.s; ext.ty_end = round3(prev.ty);
+  const landings = [];
+  for (const r of S.numbers.rows) {
+    if (r.k < 13) continue;
+    const c = cameraAt(r.land);
+    const width = r.width48 * c.s, base = rowBase(r.k) * c.s + c.ty;
+    if (width > C.fit_width_px + 0.01) v(r.land, 'camera', 'fit', `row ${r.k} is ${round3(width)} px wide on screen`);   // 0.01 px: the targets round s to 6 decimals
+    if (base < 1100 || base > C.newest_baseline_screen_y + 0.01) v(r.land, 'camera', 'newest_row', `row ${r.k} lands at y ${round3(base)}`);
+    landings.push({ k: r.k, frame: r.land, s: round3(c.s), width: round3(width), baseline: round3(base) });
+  }
+  for (const key of ['max_ds', 'max_d2s', 'max_dty', 'max_d2ty']) ext[key] = Math.round(ext[key] * 1e6) / 1e6;
+  return { still_until: still, settled_at: settled, still_after: end, pivot_y: C.pivot_y, ...ext, landings };
 };
 
 return LN;

@@ -359,12 +359,15 @@ window.sheetInit = function (n, cols) {
   sheetCtx.imageSmoothingEnabled = true; sheetCtx.imageSmoothingQuality = 'high';
   return { width: sheet.width, height: sheet.height };
 };
-window.sheetAdd = function (i, caption) {
+window.sheetAdd = function (i, caption) {   // caption: "NN name · T s", clipped to the tile's width
   const col = i % sheetCols, row = Math.floor(i / sheetCols);
   const x = margin + col * (tileW + margin), y = margin + row * (tileH + capH + margin);
   sheetCtx.drawImage(main, x, y, tileW, tileH);
+  sheetCtx.save();
+  sheetCtx.beginPath(); sheetCtx.rect(x, y + tileH, tileW, capH); sheetCtx.clip();
   sheetCtx.fillStyle = '#C9D1E6'; sheetCtx.font = '500 16px "Inter"'; sheetCtx.textBaseline = 'alphabetic';
   sheetCtx.fillText(caption, x, y + tileH + 22);
+  sheetCtx.restore();
   return true;
 };
 window.sheetDataURL = () => sheet.toDataURL('image/png');

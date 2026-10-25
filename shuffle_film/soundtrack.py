@@ -29,13 +29,15 @@ is folded onto 0.00-2.00 s (wrap-around mix); nothing sounds after the deck's dr
 one frame longer than the film (the first 800 samples repeated) so a mux with -shortest never
 drops a video frame.
 
-Cues derived here rather than read from story.json (story.py is not modified):
+Cues derived here rather than read from story.json:
   - the lead's stamps x 4, x 3, x 2 (from the `lead` events; at x 1 the row's click and the
     deck's dry tick alone, as §9 says);
   - the fold's 23 ticks 35 ms apart from the fold's first frame, each 0.5 dB quieter (§9),
     instead of the picture's group-start frames (0.02 s apart) listed as `fold_tick` cues;
-  - the payoff's pulse down the rule sounds when the tone returns (13.20 s), not inside the
-    silence (§9: from the landing to 13.20 s only the room's decay);
+  - the payoff's pulse down the rule sounds when the tone returns (13.20 s, frame 792), not
+    inside the silence (§9: from the landing to 13.20 s only the room's decay). story.py now
+    places the picture's pulse and its cue there too (792-810), so picture and score agree;
+    the move below is kept as a guard and is only reported when it changes the frame;
   - the 3 dB ending dim is released over the final re-target (35.80-36.40 s) so the tone is at
     its frame-0 level by the loop point;
   - the run's click rule (-1 dB per row to a floor of -30 dBFS) is void as written because the
@@ -352,7 +354,8 @@ def build_percussion(story: dict, n_render: int):
             if "silence_until" in p:
                 ret = [r for r in returns if r >= p["silence_until"]]
                 moved = ret[0] if ret else p["silence_until"]
-                derived.append(f"pulse for the {cue['ref']} pass moved from frame {f} to frame {moved} (the tone's return)")
+                if moved != f:
+                    derived.append(f"pulse for the {cue['ref']} pass moved from frame {f} to frame {moved} (the tone's return)")
                 f, start = moved, moved * SPF
             extra["ref"] = cue["ref"]
         elif kind == "silence":
