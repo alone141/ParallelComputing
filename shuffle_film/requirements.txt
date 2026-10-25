@@ -1,0 +1,4 @@
+# The Long Number: Python dependencies. story.py and checks.py need only the standard library plus numpy
+# (checks.py imports the sound's measure() and phone_check()); soundtrack.py needs numpy. ffmpeg 6.1 with
+# libx264 and the ebur128 filter must be on PATH. Built and checked with numpy 2.5.
+numpy>=1.26,<3

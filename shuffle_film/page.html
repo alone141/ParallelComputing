@@ -1,0 +1,372 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>The Long Number</title>
+<style>
+@font-face { font-family: "Inter Display"; font-weight: 700; src: url("file:///usr/share/fonts/opentype/inter/InterDisplay-Bold.otf"); }
+@font-face { font-family: "Inter"; font-weight: 500; src: url("file:///usr/share/fonts/opentype/inter/Inter-Medium.otf"); }
+@font-face { font-family: "Inter"; font-weight: 400; src: url("file:///usr/share/fonts/opentype/inter/Inter-Regular.otf"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 500; src: url("file:///usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Medium.ttf"); }
+@font-face { font-family: "JetBrains Mono"; font-weight: 700; src: url("file:///usr/share/fonts/truetype/jetbrains-mono/JetBrainsMono-Bold.ttf"); }
+html, body { margin: 0; background: #000; }
+canvas { display: block; }
+</style>
+<script src="layout.js"></script>
+</head>
+<body><canvas id="c" width="1080" height="1920"></canvas>
+<script>
+'use strict';
+/* The Long Number: render(frame). Draws what LongNumber.layout(frame) returns.
+   Order: background and nebula; the page layer's bands and rules (under the page transform); every card
+   (deck, flights, resting cards) beneath the page's ink; the page layer's glow then ink; the screen layer's
+   glow then ink; the vignette. Glyph halos are baked once per (text, face, size, colour, variant) into
+   offscreen sprites and blitted as light ('lighter'); ink is drawn crisp with fillText on top.
+   No requestAnimationFrame, Date or Math.random: the frame number is the only input. */
+const LN = window.LongNumber;
+let S = null, BASE = 1;
+const W = 1080, H = 1920;
+const main = document.getElementById('c');
+const ctx = main.getContext('2d', { alpha: false });
+const meas = document.createElement('canvas').getContext('2d');
+let REST = 0.5, PEAK = 1.2;
+
+function measureRaw(text, font) {
+  meas.font = font;
+  const m = meas.measureText(text);
+  return { width: m.width, left: m.actualBoundingBoxLeft, right: m.actualBoundingBoxRight,
+           ascent: m.actualBoundingBoxAscent, descent: m.actualBoundingBoxDescent };
+}
+function mk(w, h) { const c = document.createElement('canvas'); c.width = Math.max(1, Math.ceil(w)); c.height = Math.max(1, Math.ceil(h)); return c; }
+function hexRgb(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+function rgba(h, a) { const [r, g, b] = hexRgb(h); return `rgba(${r},${g},${b},${a})`; }
+const clamp01 = v => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+// ---------------------------------------------------------------------------------------- fonts
+window.ready = async function () {
+  const faces = ['700 67px "Inter Display"', '500 40px "Inter"', '400 34px "Inter"', '500 48px "JetBrains Mono"', '700 96px "JetBrains Mono"'];
+  for (const f of faces) {
+    const r = await document.fonts.load(f);
+    if (!r.length) throw new Error('font not loaded: ' + f);
+  }
+  await document.fonts.ready;
+  return {
+    mono0_100: measureRaw('0', '500 100px "JetBrains Mono"').width,
+    monoB0_100: measureRaw('0', '700 100px "JetBrains Mono"').width,
+    bigbang68: measureRaw('the Big Bang?', '700 68px "Inter Display"').width,
+    bigbang67: measureRaw('the Big Bang?', '700 67px "Inter Display"').width,
+    hook2_67: measureRaw('make more possible deals', '700 67px "Inter Display"').width,
+    interMedium40_x: measureRaw('x', '500 40px "Inter"').width,
+    interRegular34_x: measureRaw('x', '400 34px "Inter"').width,
+  };
+};
+
+window.setup = function (story, scale) {
+  S = story; BASE = scale || 1;
+  main.width = Math.round(W * BASE); main.height = Math.round(H * BASE);
+  REST = S.meta.stamp_bloom.rest_glow; PEAK = S.meta.stamp_bloom.peak_glow;
+  LN.init(S, measureRaw);
+  sprites.clear(); cardSprites.clear(); ruleSprites.clear(); pulseSprites.clear();
+  return { width: main.width, height: main.height };
+};
+
+// -------------------------------------------------------------------------------------- sprites
+const PAD = 64;
+const sprites = new Map(), cardSprites = new Map(), ruleSprites = new Map(), pulseSprites = new Map();
+const BLOOM_STROKE = 2.5;
+
+/* The halo: two blurred copies of the source, added as light. The rest halo is tight (7 px) with a wide
+   faint skirt (26 px); the bloom is wider and softer (12 / 30 px) so a stamp reads as a flash of light
+   around the glyph, not as a thicker glyph. */
+function bakeGlow(cw, ch, drawSrc, bloom, res) {
+  res = res || 1;
+  const src = mk(cw, ch);
+  drawSrc(src.getContext('2d'));
+  const out = mk(cw, ch), o = out.getContext('2d');
+  o.globalCompositeOperation = 'lighter';
+  o.filter = `blur(${(bloom ? 12 : 7) * res}px)`; o.globalAlpha = bloom ? 0.5 : 0.55; o.drawImage(src, 0, 0);
+  o.filter = `blur(${(bloom ? 30 : 26) * res}px)`; o.globalAlpha = bloom ? 0.6 : 0.5; o.drawImage(src, 0, 0);
+  o.filter = 'none'; o.globalAlpha = 1;
+  return out;
+}
+
+/* The halo of one run of text (a digit group, a cell, a worded span): the run filled and stroked, then
+   blurred twice. Text halos are baked at half resolution (a blur loses nothing drawn at 2x) and the
+   sprite carries its own scale; the ink is drawn separately with fillText, so it stays crisp. */
+const SPR = 0.5;
+function glyphSprite(text, faceKey, size, colourHex, variant) {
+  const key = faceKey + '|' + size + '|' + colourHex + '|' + variant + '|' + text;
+  let sp = sprites.get(key);
+  if (sp) return sp;
+  const bs = size * SPR, pad = PAD * SPR;
+  const font = LN.fontOf(faceKey, bs);
+  const m = measureRaw(text, font);
+  const ox = pad + Math.max(0, Math.ceil(m.left));
+  const cw = ox + Math.ceil(Math.max(m.right, m.width)) + pad;
+  const oy = pad + Math.ceil(m.ascent);
+  const ch = oy + Math.ceil(m.descent) + pad;
+  const bloom = variant === 'bloom';
+  const canvas = bakeGlow(cw, ch, c => {
+    c.font = font; c.fillStyle = colourHex; c.strokeStyle = colourHex; c.lineJoin = 'round'; c.textBaseline = 'alphabetic';
+    c.lineWidth = Math.max(1.5 * SPR, bs * (bloom ? 0.07 * BLOOM_STROKE : 0.07));
+    c.globalAlpha = bloom ? 1 : REST;
+    c.fillText(text, ox, oy); c.strokeText(text, ox, oy);
+  }, bloom, SPR);
+  sp = { canvas, ox, oy, scale: 1 / SPR };
+  sprites.set(key, sp);
+  return sp;
+}
+
+function rrect(c, x, y, w, h, r) {
+  c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+
+/* The card's soft edge glow (10 px at 30 %), baked per box type and variant. */
+function cardSprite(bake, variant) {
+  const key = bake + '|' + variant;
+  let sp = cardSprites.get(key);
+  if (sp) return sp;
+  const d = S.geometry.deck[bake], lav = S.meta.colours.lavender;
+  const bloom = variant === 'bloom';
+  const cw = d.w + 2 * PAD, ch = d.h + 2 * PAD;
+  const canvas = bakeGlow(cw, ch, c => {
+    c.strokeStyle = lav; c.lineWidth = bloom ? 8 : 3; c.globalAlpha = bloom ? 1 : 0.3;
+    rrect(c, PAD, PAD, d.w, d.h, d.w * 0.08); c.stroke();
+  }, bloom);
+  sp = { canvas, ox: PAD, oy: PAD, w: d.w, h: d.h };
+  cardSprites.set(key, sp);
+  return sp;
+}
+
+/* A rule's halo as a strip: top cap, stretchable middle, bottom cap. */
+function ruleSprite(colourHex) {
+  let sp = ruleSprites.get(colourHex);
+  if (sp) return sp;
+  const canvas = bakeGlow(128, 320, c => { c.fillStyle = colourHex; c.globalAlpha = REST; c.fillRect(62, 64, 4, 192); });
+  sp = { canvas };
+  ruleSprites.set(colourHex, sp);
+  return sp;
+}
+/* The pulse of light that runs down a rule at a pass. */
+function pulseSprite(colourHex) {
+  let sp = pulseSprites.get(colourHex);
+  if (sp) return sp;
+  const canvas = bakeGlow(128, 192, c => { c.fillStyle = colourHex; c.globalAlpha = 1; c.fillRect(60, 68, 8, 56); c.fillRect(63, 60, 2, 72); }, true);
+  sp = { canvas, ox: 64, oy: 96 };
+  pulseSprites.set(colourHex, sp);
+  return sp;
+}
+
+// --------------------------------------------------------------------------------------- drawing
+function blit(sp, x, baseline, k, alpha) {
+  if (alpha <= 0) return;
+  ctx.globalAlpha = alpha;
+  if (sp.scale) k *= sp.scale;
+  if (k === 1) ctx.drawImage(sp.canvas, x - sp.ox, baseline - sp.oy);
+  else ctx.drawImage(sp.canvas, x - sp.ox * k, baseline - sp.oy * k, sp.canvas.width * k, sp.canvas.height * k);
+}
+/* glow g -> [rest weight, bloom weight]: the bloom replaces the rest halo as g rises from 0.5 to 1.2 */
+const weights = (g, base) => { const b = clamp01((g - REST) / (PEAK - REST)); return [Math.min(g, REST) / REST * (1 - b) * base, b * base]; };
+
+function drawTextGlow(it) {
+  const k = it.size / it.bakeSize;
+  for (const r of it.runs) {
+    const g = r.glow == null ? it.glow : r.glow;
+    const [restW, bloomW] = weights(g, it.alpha * (r.alpha == null ? 1 : r.alpha));
+    if (restW <= 0 && bloomW <= 0) continue;
+    const colours = it.glowMix ? [[it.glowMix.from, 1 - it.glowMix.t], [it.glowMix.to, it.glowMix.t]] : [[r.colour, 1]];
+    for (const [col, cw] of colours) {
+      if (cw <= 0) continue;
+      // one sprite per run: for mono runs the font's advance is the layout's advance, so a run of digits
+      // baked as one string lands exactly where its glyphs are drawn
+      if (restW > 0) blit(glyphSprite(r.text, it.face, it.bakeSize, col, 'rest'), r.x, it.baseline, k, restW * cw);
+      if (bloomW > 0) blit(glyphSprite(r.text, it.face, it.bakeSize, col, 'bloom'), r.x, it.baseline, k, bloomW * cw);
+    }
+  }
+}
+let lastFont = null;
+function drawTextInk(it) {
+  if (!it.ink) return;
+  const font = LN.fontOf(it.face, it.size);
+  if (font !== lastFont) { ctx.font = font; lastFont = font; }
+  for (const r of it.runs) {
+    ctx.fillStyle = r.colour;
+    ctx.globalAlpha = it.alpha * (r.alpha == null ? 1 : r.alpha);
+    ctx.fillText(r.text, r.x, it.baseline);
+  }
+}
+
+function drawCard(c) {
+  const d = S.geometry.deck[c.bake];
+  const k = c.w / d.w;
+  const lav = S.meta.colours.lavender;
+  // the edge glow
+  ctx.globalCompositeOperation = 'lighter';
+  const [restW, bloomW] = weights(c.edgeGlow, c.alpha);
+  if (restW > 0) { const sp = cardSprite(c.bake, 'rest'); blit({ canvas: sp.canvas, ox: sp.ox, oy: sp.oy }, c.x, c.y, k, restW); }
+  if (bloomW > 0) { const sp = cardSprite(c.bake, 'bloom'); blit({ canvas: sp.canvas, ox: sp.ox, oy: sp.oy }, c.x, c.y, k, bloomW); }
+  // the face and its edge
+  if (c.face) {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = c.alpha;
+    const r = c.w * 0.08;
+    rrect(ctx, c.x, c.y, c.w, c.h, r);
+    ctx.fillStyle = LN.mixHex(S.meta.colours.bg, lav, 0.08); ctx.fill();
+    const lw = Math.max(1, 2 * k);
+    ctx.lineWidth = lw; ctx.strokeStyle = rgba(lav, 0.6);
+    rrect(ctx, c.x + lw / 2, c.y + lw / 2, c.w - lw, c.h - lw, Math.max(1, r - lw / 2)); ctx.stroke();
+  }
+  // the number on its back
+  if (c.number != null) {
+    const adv = S.geometry.mono.advance_em * c.numSize;
+    const x0 = c.numX - c.number.length * adv / 2;
+    const nk = c.numSize / c.numBake;
+    ctx.globalCompositeOperation = 'lighter';
+    const [nr, nb] = weights(c.numGlow, c.alpha);
+    if (nr > 0) blit(glyphSprite(c.number, 'monoB', c.numBake, lav, 'rest'), x0, c.numBaseline, nk, nr);
+    if (nb > 0) blit(glyphSprite(c.number, 'monoB', c.numBake, lav, 'bloom'), x0, c.numBaseline, nk, nb);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = c.alpha; ctx.fillStyle = lav;
+    const font = LN.fontOf('monoB', c.numSize);
+    ctx.font = font; lastFont = font;
+    ctx.fillText(c.number, x0, c.numBaseline);
+  }
+  ctx.globalCompositeOperation = 'source-over';
+}
+
+function drawRule(r) {
+  ctx.globalCompositeOperation = 'lighter';
+  const sp = ruleSprite(r.colour).canvas;
+  const len = r.y1 - r.y0;
+  ctx.globalAlpha = r.alpha;
+  if (len >= 128) {
+    ctx.drawImage(sp, 0, 0, 128, 128, r.x - 64, r.y0 - 64, 128, 128);
+    ctx.drawImage(sp, 0, 128, 128, 64, r.x - 64, r.y0 + 64, 128, len - 128);
+    ctx.drawImage(sp, 0, 192, 128, 128, r.x - 64, r.y1 - 64, 128, 128);
+  } else {
+    const mid = (r.y0 + r.y1) / 2;
+    ctx.save(); ctx.beginPath(); ctx.rect(r.x - 64, r.y0 - 64, 128, mid - r.y0 + 64); ctx.clip();
+    ctx.drawImage(sp, 0, 0, 128, 128, r.x - 64, r.y0 - 64, 128, 128); ctx.restore();
+    ctx.save(); ctx.beginPath(); ctx.rect(r.x - 64, mid, 128, r.y1 + 64 - mid); ctx.clip();
+    ctx.drawImage(sp, 0, 192, 128, 128, r.x - 64, r.y1 - 64, 128, 128); ctx.restore();
+  }
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = r.alpha; ctx.fillStyle = r.colour;
+  ctx.fillRect(r.x - 1.5, r.y0, 3, len);
+  if (r.pulse) {
+    const p = r.pulse, ps = pulseSprite(r.colour);
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = p.alpha; ctx.drawImage(ps.canvas, r.x - ps.ox, p.y - ps.oy);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = p.alpha; ctx.fillStyle = r.colour;
+    ctx.fillRect(r.x - 1.5, Math.max(r.y0, p.y - p.len / 2), 3, Math.min(r.y1, p.y + p.len / 2) - Math.max(r.y0, p.y - p.len / 2));
+  }
+}
+
+function render(f) {
+  const L = LN.layout(f);
+  const b = BASE;
+  lastFont = null;
+  ctx.setTransform(b, 0, 0, b, 0, 0);
+  ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1; ctx.filter = 'none';
+  ctx.imageSmoothingEnabled = true;
+  ctx.fillStyle = S.meta.colours.bg; ctx.fillRect(0, 0, W, H);
+  // the nebula
+  const nb = S.geometry.nebula;
+  ctx.globalCompositeOperation = 'lighter';
+  const grd = ctx.createRadialGradient(nb.centre[0], nb.centre[1], 0, nb.centre[0], nb.centre[1], nb.radius);
+  grd.addColorStop(0, rgba(L.nebula, nb.peak)); grd.addColorStop(0.45, rgba(L.nebula, nb.peak * 0.45)); grd.addColorStop(1, rgba(L.nebula, 0));
+  ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'source-over';
+  // the page transform
+  const P = L.page;
+  const pageT = () => ctx.setTransform(b * P.s, 0, 0, b * P.s, b * P.tx, b * P.ty);
+  const screenT = () => ctx.setTransform(b, 0, 0, b, 0, 0);
+  const items = L.items;
+  // bands and rules
+  pageT();
+  for (const it of items) if (it.kind === 'band') { ctx.globalAlpha = it.alpha; ctx.fillStyle = it.colour; ctx.fillRect(it.box.x0, it.box.y0, it.box.x1 - it.box.x0, it.box.y1 - it.box.y0); }
+  for (const it of items) if (it.kind === 'rule') drawRule(it);
+  // cards, beneath the page's ink
+  screenT();
+  for (const it of items) if (it.kind === 'card') drawCard(it);
+  // the page layer: glow, then ink
+  pageT();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const it of items) if (it.kind === 'text' && it.layer === 'page') drawTextGlow(it);
+  ctx.globalCompositeOperation = 'source-over';
+  for (const it of items) if (it.kind === 'text' && it.layer === 'page') drawTextInk(it);
+  // the screen layer
+  screenT();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const it of items) if (it.kind === 'text' && it.layer === 'screen') drawTextGlow(it);
+  ctx.globalCompositeOperation = 'source-over';
+  for (const it of items) if (it.kind === 'text' && it.layer === 'screen') drawTextInk(it);
+  // the vignette
+  ctx.globalAlpha = 1;
+  const v = ctx.createRadialGradient(540, 900, 520, 540, 900, 1300);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.28)');
+  ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  return L;
+}
+
+// ------------------------------------------------------------------------------------- the API
+window.renderFrame = function (f) { const t0 = performance.now(); render(f); return performance.now() - t0; };
+window.frameDataURL = function (f) {
+  const drawMs = window.renderFrame(f);
+  const t0 = performance.now();
+  const url = main.toDataURL('image/png');
+  return { url, drawMs, encMs: performance.now() - t0 };
+};
+/* Canvas 2D is deferred: drawing records commands and the raster happens on the first read-back. For an
+   honest split, the timing helper forces the raster with a 1 x 1 getImageData and counts it as drawing;
+   the PNG encode is then timed on an already rasterised frame. */
+window.timeFrame = function (f, n) {
+  const draw = [], enc = [];
+  for (let i = 0; i < n; i++) {
+    const t0 = performance.now();
+    render(f); ctx.getImageData(0, 0, 1, 1);
+    const t1 = performance.now();
+    main.toDataURL('image/png');
+    const t2 = performance.now();
+    draw.push(t1 - t0); enc.push(t2 - t1);
+  }
+  const med = a => { const s = [...a].sort((x, y) => x - y); return s[s.length >> 1]; };
+  return { frame: f, n, draw_ms_median: Math.round(med(draw) * 100) / 100, enc_ms_median: Math.round(med(enc) * 100) / 100,
+           draw_ms_min: Math.round(Math.min(...draw) * 100) / 100, enc_ms_min: Math.round(Math.min(...enc) * 100) / 100, sprites: sprites.size };
+};
+window.layoutAt = f => LN.layout(f);
+window.checkFrames = () => LN.checkFrames();
+window.runCheck = opts => LN.check(opts);
+window.stillList = () => LN.STILLS;
+window.spriteCount = () => sprites.size;
+
+// stills and the contact sheet
+let sheet = null, sheetCtx = null, sheetCols = 6, tileW = 270, tileH = 480, capH = 34, margin = 12;
+window.captureStill = function (f) {
+  render(f);
+  const full = main.toDataURL('image/png');
+  const sm = mk(360, 640), sc = sm.getContext('2d');
+  sc.imageSmoothingEnabled = true; sc.imageSmoothingQuality = 'high';
+  sc.drawImage(main, 0, 0, 360, 640);
+  return { full, small: sm.toDataURL('image/png') };
+};
+window.sheetInit = function (n, cols) {
+  sheetCols = cols || 6;
+  const rows = Math.ceil(n / sheetCols);
+  sheet = mk(sheetCols * tileW + (sheetCols + 1) * margin, rows * (tileH + capH + margin) + margin);
+  sheetCtx = sheet.getContext('2d');
+  sheetCtx.fillStyle = '#000'; sheetCtx.fillRect(0, 0, sheet.width, sheet.height);
+  sheetCtx.imageSmoothingEnabled = true; sheetCtx.imageSmoothingQuality = 'high';
+  return { width: sheet.width, height: sheet.height };
+};
+window.sheetAdd = function (i, caption) {
+  const col = i % sheetCols, row = Math.floor(i / sheetCols);
+  const x = margin + col * (tileW + margin), y = margin + row * (tileH + capH + margin);
+  sheetCtx.drawImage(main, x, y, tileW, tileH);
+  sheetCtx.fillStyle = '#C9D1E6'; sheetCtx.font = '500 16px "Inter"'; sheetCtx.textBaseline = 'alphabetic';
+  sheetCtx.fillText(caption, x, y + tileH + 22);
+  return true;
+};
+window.sheetDataURL = () => sheet.toDataURL('image/png');
+</script>
+</body></html>
