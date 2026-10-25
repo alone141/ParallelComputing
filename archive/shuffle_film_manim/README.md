@@ -1,8 +1,38 @@
-# The Shuffle
+# The Shuffle (Manim build, superseded)
 
-> Style rules for all Lumiera films are in [`../playbook/film-style.md`](../playbook/film-style.md). This film
-> follows them, with the count-film rules in §4 (*Films that count*). Every number below was re-verified in
-> October 2026; re-check the sources before any re-post that quotes a figure.
+> **Superseded, October 2026.** This is the second film's first build: *The Shuffle* on The Doubling's engine, with
+> its HUD, chip, pass row, YOU pin, meter and score. The owner rejected it and approved a redesign, *The Long Number*
+> (working title *The Shuffle*), now in [`../../shuffle_film/`](../../shuffle_film/), because the second film should
+> stand on its own, independent of The Doubling's set-up. This folder is a record: do not edit its code or re-render
+> it. The playbook rules this build added (*Films that count*, then `film-style.md` §4) were retired with it; their
+> substance is recorded in the next section as history, not as a rule. The redesigned film says "possible deals",
+> never "orders"; the text below keeps the wording this build used. `GUIDE.md` and `checks.py` quote the playbook's
+> section numbers as they stood then (§4 devices, §5 label block, §6 numbers, §7 sound, §8 definition of done); the
+> current numbering is in `film-style.md`.
+>
+> Style rules for all Lumiera films are in [`../../playbook/film-style.md`](../../playbook/film-style.md). Every number
+> below was re-verified in October 2026; re-check the sources before any re-post that quotes a figure.
+
+## Films that count (retired playbook rules, recorded here)
+
+The playbook of the time allowed a film to climb a count instead of a size, and this build followed those rules. As
+written then (`film-style.md` §4, *Films that count*): a film MAY climb a count instead of a size. It follows the
+general aesthetics and structure of the guide, not The Doubling's scaling: it does not zoom by scale, because counts
+are not sizes, so references gather from points of light instead, and `n` is the count itself, shown by the HUD with
+its unit ("CARDS DEALT") and by a chip that names the unit ("CARD 11"). The size readout becomes a count readout in the
+same place (three significant figures above 10⁷, so it agrees with the size text), and the ruler's place goes to a pass
+row: the reference fills first in its colour with a live counter in the size text's notation, then the count overtakes
+it in lavender, and the counter ends on the size text's figure. The meter is linear in the count. Up to three beats MAY
+follow the final stop to set the final count against something new; the HUD holds the count and the line carries each
+beat's figure. A stop beats its reference by at least ~20%, the hook's answer also holds from below, and a bound
+written "at most 1 in N" rounds N down ("about" otherwise). The film's README holds its measurements. The sound rule
+that went with it: in a count film the pad follows the count (its log₂) instead of size, the "You" chord goes to the
+stop about people, each beat after the final stop gets a quieter bell, and the master is measured on the WAV and gained
+to about −15 LUFS before the limiter.
+
+These rules were retired when the build was archived. What survives of them in the playbook is general: the honesty
+rules on bounds and thresholds (`film-style.md` §5) and the accents for time (lime) and the whole deck (violet)
+(`film-style.md` §3). The devices named above are The Doubling's toolkit (`film-style.md` §8), which a film MAY reuse.
 
 A ≈ 35-second vertical (9:16) film for the **Pure Patterns** pillar. Cards are dealt one at a time from a
 full, shuffled deck. The first card can be any of 52, the next any of the 51 left, then 50, so each card
@@ -55,7 +85,7 @@ Times come from `story.py` (`python story.py` prints them).
 
 ## The stops and beats
 
-Each has the label block of `film-style.md` §5. Stops carry a chip; the start, the phase labels and the beats
+Each has the label block of `film-style.md` §8.4. Stops carry a chip; the start, the phase labels and the beats
 don't, so their size text takes the accent. Every line is measured against the 6.8-unit limit by
 `stills.py --check`, which also checks the safe zones and every text, pin and meter collision at 24 moments.
 
@@ -105,7 +135,7 @@ don't, so their size text takes the accent. Every line is measured against the 6
 
 ## Sound
 
-The score is The Doubling's palette (`film-style.md` §7), generated from the same timeline:
+The score is The Doubling's palette (`film-style.md` §8.5), generated from the same timeline:
 
 - a soft bloom and an A4 bell at frame 0, a riser into the first card;
 - a tick on every card (a buzz in the sprint), plucks E4 G4 A4 on cards 1–3;
@@ -242,7 +272,7 @@ three Doubling frames were re-rendered pixel-identical to prove it.
 
 ## Posting
 
-Posting rules are in [`../playbook/brand.md`](../playbook/brand.md) §6. The package for this film is
+Posting rules are in [`../../playbook/brand.md`](../../playbook/brand.md) §6. The package for this film is
 [`POST.md`](POST.md); its cover is the hook frame at 1.9 s, `out/the_shuffle_cover_hook.jpg`.
 
 ## Sources

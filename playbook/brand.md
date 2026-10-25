@@ -42,7 +42,7 @@ end: *you are here*. Its colouring runs from lavender to cyan across the mark, a
     outside the films (collaborations, press).
   - **Never** as a sign-off inside a film (`film-style.md` §1), and never on a cover (a cover is a film frame).
   - A film MAY show the mark's geometry as story content (e.g. the open rings and the cyan dot drawn as
-    an object in the story), built from `MARK`. The faint full-circle warp rings of `film-style.md` §3
+    an object in the story), built from `MARK`. The faint full-circle warp rings of `film-style.md` §8
     are a film device, not the mark, and are not built from `MARK`.
   - Use the stacked lockup in square-ish spaces and the horizontal one in wide spaces.
 - **Wordmark:** "LUMIERA" in Inter Display Medium, capitals, with 0.32 em of space between letters
@@ -71,8 +71,8 @@ end: *you are here*. Its colouring runs from lavender to cyan across the mark, a
 | Space Glow | `#1C1450` | Soft centre glow of **brand stills only** (profile picture, banner, highlight covers, on-dark plates), fading to Deep Space at the edges. Films don't use it |
 | Starlight | `#F5F7FF` | Main text, the core of the mark |
 | Lavender | `#B9A6FF` | Primary accent; the start of every journey (the mechanic, and the starting object unless that is you) |
-| Cyan | `#6CF2FF` | Means **you**: the YOU pin and tags, the you-are-here dot, copies of people, your distance to an answer, and the hook's target word. Never a general highlight or another subject's accent |
-| Magenta | `#FF6FD8` | The observable universe, and the outro counter's glow in every film. Never a mid-film reveal (`film-style.md` §3) |
+| Cyan | `#6CF2FF` | Means **you**: the YOU pin and tags, the you-are-here dot, copies of people, everyone alive, your distance to an answer, and the hook's target word when the target is you. When the target is not you, the phrase takes its own subject's accent instead (`film-style.md` §3). Never a general highlight or another subject's accent |
+| Magenta | `#FF6FD8` | The observable universe, and the glow of an outro counter wherever a film flies one (`film-style.md` §8). Never a mid-film reveal (`film-style.md` §3); a film with neither has no magenta |
 | Amber | `#FFB547` | Warm accent (life, warmth). In films, the Sun's accent is `#FFB13B` (`film-style.md` §3) |
 | Mist Light | `#C9D1E6` | Readable secondary lines |
 | Mist | `#8A93A8` | Small labels and hints |
@@ -87,18 +87,21 @@ fixed colour meanings for films are in `film-style.md` §3.
 | Role | Font | Case |
 |---|---|---|
 | Wordmark | Inter Display Medium, 0.32 em letter spacing | CAPS, only for "LUMIERA" |
-| On-screen titles | Inter Display Bold | **CAPS** ("THE MILKY WAY") |
+| On-screen titles and stop leads | Inter Display Bold | **CAPS** by default ("THE MILKY WAY"). A film with no caps labels at all MAY set them in sentence case ("Eleven cards dealt.") where its README says so (`film-style.md` §4) |
 | Hook question | Inter Display Bold | Sentence case |
 | On-screen lines, captions, bios, descriptions | Inter Medium / Regular | **Sentence case** |
-| Numbers, counters, units, step chips | JetBrains Mono | "STEP 116", "1.7 × 10⁰ m" |
+| Numbers, counters, units, step chips, ledger rows | JetBrains Mono | "STEP 116", "1.7 × 10⁰ m", "2 652". A numeral inside a sentence stays in the sentence's face |
 
 - **Powers of ten:** write them as "1.6 × 10⁻³⁵ m" (a multiplication sign and a raised exponent) in
-  every caption, description, asset and frame. Never use `^`, e-notation or "x". In JetBrains Mono,
-  draw the exponent as raised, smaller digits, as the HUD readout does, because the font has no
-  superscript minus. Static film text that needs an exponent (a stop's size text) is set in Inter
-  Medium with Unicode superscripts instead (`film-style.md` §5).
+  every caption, description and asset, and on screen by default. Never use `^`, e-notation or "x". In
+  JetBrains Mono, draw the exponent as raised, smaller digits, as the HUD readout does, because the font
+  has no superscript minus. Static film text that needs an exponent (a stop's size text) is set in Inter
+  Medium with Unicode superscripts instead (`film-style.md` §8.4). A film MAY instead write its numbers
+  positionally on screen, in full, with digits in groups of three and "≈" on every rounded figure, where
+  its README justifies it (`film-style.md` §5; The Long Number); its post text keeps the house notation.
 - **Factorials:** write "52 factorial" in captions, descriptions and comments, and the product in the
   film's order on screen ("52 × 51 × 50 × … × 2 × 1"). Never "52!": it reads as an exclamation mark, which §5 bans.
+  The arrangements of a dealt deck are "possible deals", on screen and in post text, never "orders".
 - **Fonts:** Inter 4.0 or later (the Inter Display family exists only from 4.0) and JetBrains Mono 2.x.
   Both are free and open-source. Don't substitute other fonts. Renderers replace a missing family
   without warning, so check the fonts are installed before rendering.
@@ -112,9 +115,9 @@ Calm, precise, awe-filled. The scale does the shouting; we don't.
 1. **Open an honest loop and close it in the same video.** Ask a question the viewer can answer in
    their head. Never hold the answer back for "part 2" or a follow.
 2. **Give the guess room.** Ask, then let the counter run.
-3. **Numbers are sacred.** Every figure comes from the film's sizes table. A figure the film shows is
+3. **Numbers are sacred.** Every figure comes from the film's numbers table. A figure the film shows is
    written the same way in the caption, title and comments; lists of sizes quote the table
-   (`film-style.md` §6). Round as in `film-style.md` §6: to the nearest value, with
+   (`film-style.md` §5). Round as in `film-style.md` §5: to the nearest value, with
    "about" or "≈" when a figure is more than ~2% off. Never round because a number sounds bigger.
 4. **Keep the qualifiers:** *observable* universe, *where known physics runs out*, *on average*,
    *in theory*. Flag any simplification in one plain line. An outro MAY use a poetic phrase ("to the
@@ -129,7 +132,7 @@ Calm, precise, awe-filled. The scale does the shouting; we don't.
 8. **Punctuation:** use `·` and line breaks. **No emoji anywhere** (captions, bios, comments, alt
    text, titles, on screen). The only marks are one **✦** per text (the house mark) and **↓**, used
    only to point at a link. Titles and on-screen text carry neither; on-screen punctuation follows
-   `film-style.md` §5.
+   `film-style.md` §4.
 9. **Promise only what the channel keeps.** A cadence line ("A new film every week") appears only
    while that schedule is real; otherwise leave it out everywhere.
 10. **Correct in public.** If a number is wrong, pin a short correction with the right figure and a
@@ -173,7 +176,8 @@ Calm, precise, awe-filled. The scale does the shouting; we don't.
 
 1. **Scale · How big is that?** The signature series, which *The Doubling* starts. Sizes, distances,
    durations and quantities made visible one step at a time, with step chips, a climbing counter and
-   copies of a smaller neighbour lining up. Post it most often early on.
+   copies of a smaller neighbour lining up (The Doubling's toolkit, `film-style.md` §8, is this pillar's
+   default). Post it most often early on.
 2. **Cosmos & Light · How far, how fast?** Space and the physics of light: how light travels,
    scatters and interferes, and where things really sit in the sky.
 3. **Life, Measured · How many of you?** Biology at its true scale: cells, DNA, blood and growth,
