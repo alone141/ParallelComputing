@@ -37,7 +37,7 @@ state), **MAY** (optional).
 | Property | Value |
 |---|---|
 | Aspect / resolution | **9:16, 1080×1920, 60 fps** (MUST) |
-| Length | SHOULD be 45–75 s, with ~60–70 s as the default. MAY be shorter (down to ~30 s) when the sourced stops run out, or as a deliberately short cut that lands its payoff early and whose every beat adds a new comparison (*The Long Number*, ≈ 37 s). Never pad with unsourced stops or with holds longer than the reading needs |
+| Length | SHOULD be 45–75 s, with ~60–70 s as the default. MAY be shorter (down to ~30 s) when the sourced stops run out, or as a deliberately short cut that lands its payoff early and whose every beat adds a new comparison (*Three Doors*, 35 s; *The Long Number*, ≈ 37 s). Never pad with unsourced stops or with holds longer than the reading needs |
 | Delivery | H.264 High, yuv420p, CRF ~18, AAC 256 kbps 48 kHz, `+faststart`. Ship a **with-sound** and a **silent** version. Intermediate renders MAY use higher quality (the reference renders at CRF 15; lossless slices are fine) |
 | Grain | Light luma grain is added **at encode time** (ffmpeg `noise=c0s=3:c0f=t`), never baked into frames. Why: baked grain made files 10× larger and turns to mush after TikTok/Instagram re-encode |
 | Loop | The last frame MUST match the first frame, so the video replays seamlessly: **the loop is the sign-off.** After the encode and the grain the two frames are not bit-identical, so the match is measured on the final MP4 against a threshold the film's README states. The score loops with the picture (§6) |
@@ -83,6 +83,10 @@ this order.
    returns to its frame-0 state so the video loops (§1). No end card.
 
 The answer to the hook MUST NOT appear in the cover or any post text (full list: `brand.md` §6).
+
+A film MAY omit the payoff's reframing line, or the closing line, where its README says so and the picture
+already carries the point (*Three Doors*: the tallies are the argument, and the return to frame 0 is the
+ending).
 
 How long a hold lasts, how a transition moves and exactly when the hook enters and leaves are the film's
 own; the toolkit's figures (§8.1) are the Scale pillar's default. Whatever the timings, every line is on
@@ -151,6 +155,7 @@ additive glows, and procedural textures where a subject needs them. Backgrounds 
 | Universe | `#FF6FD8` magenta |
 | Time / the Big Bang | `#D4FF5C` lime (first used in The Long Number) |
 | Cards / the whole deck | `#E08BFF` violet (The Long Number; 31° of hue from lavender, 32° from magenta) |
+| A prize / the winning door | `#FFB547` amber (Three Doors; the brand's warm accent, shared with ant / warm life by decision) |
 
 A **new subject** gets its accent once: at least ~30° of hue away from neighbouring stops, never cyan
 or magenta. Add it to this table in the same pull request, and reuse it in every later film.
@@ -177,7 +182,7 @@ substitute a missing family without warning.
 | Role | Face | Case and colour |
 |---|---|---|
 | Hook question | Inter Display Bold | **Sentence case.** The mechanic word lavender, the target phrase per §3, the rest Starlight |
-| Titles, stop leads, phase titles | Inter Display Bold | **CAPS** by default ("THE MILKY WAY"). A film that has no caps labels at all MAY set its titles and leads in sentence case ("Eleven cards dealt.") where its README says so (The Long Number) |
+| Titles, stop leads, phase titles | Inter Display Bold | **CAPS** by default ("THE MILKY WAY"). A film that has no caps labels at all MAY set its titles and leads in sentence case ("Eleven cards dealt.") where its README says so (The Long Number); Three Doors sets its one-word payoff "Switch." in sentence case beside its caps tally labels, by decision, and its README lists it |
 | Hook sub-line, comparison, note and teaching lines, captions inside drawings | Inter Regular / Medium | **Sentence case**, Mist Light (the sub-line Mist). The key phrase or `[bracketed]` number in the accent |
 | Numbers: counters, readouts, chips, cells, standalone figures | JetBrains Mono | A numeral inside a sentence stays in the sentence's face |
 | Small tracked labels (a HUD label) | Inter Medium, CAPS | Tracked **+0.09 units per glyph** (≈ +33% of the em) |

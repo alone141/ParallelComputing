@@ -9,6 +9,7 @@ When an idea is produced, move it to the *Made* list with the folder that holds 
 ## Made
 
 - **The Doubling** (Scale): Planck length → observable universe in 205 doublings. `doubling_film/`
+- **Three Doors** (Patterns): a prize behind one of three doors, your pick, the host's empty door, switch or stay? Rounds play with two tallies, STAY and SWITCH, pausing at 3, 30 and 300 (the sequence is arranged to land on exact thirds, and the README says so); the payoff is one word. 35 s, Canvas 2D in headless Chromium via Playwright, its own quiet score. `three_doors_film/`
 
 ## Shelved
 

@@ -16,8 +16,9 @@ Checks (every one re-measured on the file, nothing taken from the render's logs)
      out/soundtrack.wav is checked the same way when it exists;
   5. the answer stays off the post texts: POST.md (when it exists) is searched for the answer ("Switch." as a
      sentence, "switching wins", "2 in 3", "two in three", "two thirds", "twice as often", "always switch",
-     "should switch") in every section except the alt text; "Switch or stay?" is the question and is allowed;
-     a missing POST.md is reported and skipped;
+     "should switch") in every section except the alt text (a section headed "Alt text", or the fenced block
+     that follows a line naming the alt text); "Switch or stay?" is the question and is allowed; a missing
+     POST.md is reported and skipped;
   6. in final mode: the silent copy has the same frame count and no audio stream, and the cover is a
      1080 x 1920 JPEG.
 
@@ -123,13 +124,27 @@ def post_text_hits(post_path: str) -> tuple[list[dict], int, int]:
     """Search POST.md for the answer. Sections whose heading names the alt text are skipped, as are lines that
     start with an 'Alt text' label. Returns (hits, lines searched, lines skipped)."""
     hits, searched, skipped = [], 0, 0
-    in_alt = False
+    in_alt = False          # inside a section whose heading names the alt text
+    pending_alt = False     # a line named the alt text; the next fenced block is the alt text
+    in_fence = False
+    fence_is_alt = False
     with open(post_path, encoding="utf-8") as fh:
         for ln, line in enumerate(fh, 1):
             heading = re.match(r"^\s{0,3}#{1,6}\s+(.*)", line)
             if heading:
                 in_alt = bool(ALT_TEXT_HEADING.search(heading.group(1)))
-            if in_alt or re.match(r"^\s*(\*\*|_)?alt[\s-]*text", line, re.IGNORECASE):
+                pending_alt = False
+            if line.lstrip().startswith("```"):
+                if not in_fence:
+                    in_fence, fence_is_alt = True, pending_alt
+                    pending_alt = False
+                else:
+                    in_fence, fence_is_alt = False, False
+                skipped += 1
+                continue
+            if not in_fence and ALT_TEXT_HEADING.search(line):
+                pending_alt = True
+            if in_alt or (in_fence and fence_is_alt) or re.match(r"^\s*(\*\*|_|-\s*)?alt[\s-]*text", line, re.IGNORECASE):
                 skipped += 1
                 continue
             searched += 1
