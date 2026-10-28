@@ -386,16 +386,16 @@ class MonoLine(VGroup):
         return width
 
 
-def sci_spec(value, exp_scale=0.6, exp_dy=None, digit_h=0.3, unit="m"):
-    """``value`` metres as ``1.6 × 10⁻³⁵ m`` glyph spec."""
+def sci_spec(value, exp_scale=0.6, exp_dy=None, digit_h=0.3, unit="m", decimals=1):
+    """``value`` metres as ``1.6 × 10⁻³⁵ m`` glyph spec (``decimals`` digits after the point)."""
     e = int(math.floor(math.log10(value)))
     mant = value / 10**e
-    if round(mant, 1) >= 10:
+    if round(mant, decimals) >= 10:
         mant /= 10
         e += 1
     if exp_dy is None:
         exp_dy = digit_h * 0.55
-    spec = [(c, 1.0, 0.0) for c in f"{mant:.1f}"]
+    spec = [(c, 1.0, 0.0) for c in f"{mant:.{decimals}f}"]
     spec += [(" ", 0.45, 0), ("×", 1.0, 0.0), (" ", 0.45, 0), ("1", 1.0, 0.0), ("0", 1.0, 0.0)]
     es = str(e).replace("-", "−")
     spec += [(c, exp_scale, exp_dy) for c in es]

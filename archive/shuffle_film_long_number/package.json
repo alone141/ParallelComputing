@@ -1,0 +1,24 @@
+{
+  "name": "the-long-number",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Long Number: the picture renderer of the Lumiera film (HTML Canvas 2D in headless Chromium, driven by Playwright). Frames leave the page as PNG and are piped into ffmpeg.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "story": "python3 story.py",
+    "check": "node render.mjs --check",
+    "verify": "node render.mjs --verify",
+    "stills": "node render.mjs --stills",
+    "still": "node render.mjs --still",
+    "time": "node render.mjs --time",
+    "preview": "bash render.sh preview",
+    "final": "bash render.sh final",
+    "checks": "python3 checks.py"
+  },
+  "dependencies": {
+    "playwright": "1.63.0"
+  }
+}

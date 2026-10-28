@@ -1,0 +1,6 @@
+# The Shuffle: pinned to the versions the film was rendered with (Python 3.13, October 2026).
+# Needs the Pango and Cairo headers (libpango1.0-dev, libcairo2-dev, pkg-config) and ffmpeg with libx264.
+manim==0.22.0
+manimpango==0.7.1
+pycairo==1.29.2
+scipy>=1.15

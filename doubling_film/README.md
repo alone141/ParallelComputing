@@ -1,6 +1,6 @@
 # The Doubling
 
-> Style rules for all Lumiera films are in [`../playbook/film-style.md`](../playbook/film-style.md). This film is their reference implementation.
+> Style rules for all Lumiera films are in [`../playbook/film-style.md`](../playbook/film-style.md). This film is the reference implementation of its general aesthetics (Part A) and of the toolkit in §8, the Scale pillar's default, which other films MAY reuse.
 
 A ~68-second vertical (9:16) film for TikTok and Instagram Reels, made with
 [Manim](https://www.manim.community/). It starts at the Planck length and keeps

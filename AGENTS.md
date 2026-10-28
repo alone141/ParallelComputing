@@ -16,16 +16,19 @@ If anything here or elsewhere conflicts with the playbook, the playbook wins.
 ## The essentials (summary of the playbook)
 
 - **Format:** vertical 9:16, 1080×1920, 60 fps. No text baseline below y = −4.8 (the bottom ~20%; descenders may dip
-  to ≈ −4.9) or in the right button column; centred text ≤ 6.8 units wide on a 9×16-unit frame. No logo or end card
+  to ≈ −4.9) or in the right button column; text within the 6.8-unit band (±3.4, centred or flush) on a 9×16-unit frame. No logo or end card
   inside films; the loop is the sign-off.
 - **Look:** glowing light on near-black deep space (`#07061A`). One accent colour per scene. Cyan
-  `#6CF2FF` means "you" (never another subject's accent). Fonts: Inter Display (titles, CAPS),
-  Inter (lines, sentence case), JetBrains Mono (numbers).
+  `#6CF2FF` means "you" (never another subject's accent). Fonts: Inter Display (hook and titles),
+  Inter (lines, sentence case), JetBrains Mono (numbers); titles are CAPS by default.
 - **Structure:** one honest question, answered on screen. Hook (with "Guess before it ends.") →
-  teach the mechanic → stops with ~3.2 s holds → payoff → outro that loops back to the first frame.
-- **Devices:** HUD counter, STEP chip, a measuring row with a live counter (copies of the smaller
-  neighbouring stop line up across the larger one), YOU pin, progress meter.
-- **Numbers:** one sizes table per film, rounded to nearest, "about"/"≈" when more than ~2% off, and
+  teach the mechanic → stops whose comparisons the picture makes → payoff → an ending that loops back
+  to the first frame.
+- **Toolkit (MAY):** The Doubling's devices (HUD counter, STEP chip, a measuring row with a live counter,
+  YOU pin, progress meter), its pacing and its sound palette are the Scale pillar's default, not a rule
+  for every film. A film reuses them in whole, in part or not at all, and its README lists what it keeps
+  and what it breaks (`playbook/film-style.md` §8).
+- **Numbers:** one numbers table per film, rounded to nearest, "about"/"≈" when more than ~2% off, and
   qualifiers kept. The hook's answer never appears in the cover, title, caption, description, tags
   or comments; alt text is the only exception.
 - **Voice:** calm, precise, awe-filled, British spelling. No hype words, no exclamation marks, no
@@ -40,5 +43,7 @@ If anything here or elsewhere conflicts with the playbook, the playbook wins.
 |---|---|
 | `playbook/` | Style and brand guide, idea backlog |
 | `doubling_film/` | *The Doubling*: the reference film (Manim). See its README for rendering |
+| `three_doors_film/` | *Three Doors*: the second film (Patterns pillar), a Monty Hall round played with two tallies, rendered with Canvas 2D in headless Chromium via Playwright; see its README |
 | `lumiera_brand/` | Brand assets (generated), profile texts, launch-post package |
 | `archive/` | Old material kept for reference, not part of the baseline |
+| `archive/shuffle_film_manim/`, `archive/shuffle_film_long_number/` | Two shelved attempts at a card-shuffle film (Manim on The Doubling's engine; a Canvas 2D ledger). Records: do not edit or re-render |
