@@ -1,0 +1,4 @@
+# Three Doors: Python dependencies. story.py needs only the standard library; soundtrack.py and checks.py need
+# numpy (checks.py imports the score's measure() and phone_check()). ffmpeg 6.1 with libx264 and the ebur128
+# filter must be on PATH. Built and checked with numpy 2.5.
+numpy>=1.26,<3
