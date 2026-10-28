@@ -45,7 +45,7 @@ SPF = SR // FPS
 LEVELS = {   # peak dBFS of each element before the master
     "hook": -18.0, "subline": -24.0, "rule": -22.0, "board": -26.0,
     "pick": -22.0, "knock": -12.0, "reveal": -26.0, "chime_stay": -16.0, "chime_switch": -16.0, "close": -26.0,
-    "tick": -24.0, "texture": -30.0, "payoff": -7.0, "payoff_knock": -14.0, "settle": -24.0,
+    "tick": -24.0, "texture": -30.0, "payoff": -8.5, "payoff_knock": -15.0, "settle": -24.0,
 }
 ROOM_WET = 0.12
 ROOM_SEED = 1392
@@ -199,7 +199,7 @@ def chord(level_db: float, dur_s: float = 3.2) -> np.ndarray:
     return normalise_peak(fade_tail(out, 40.0), level_db)
 
 
-def settle_tone(level_db: float, dur_s: float = 1.3) -> np.ndarray:
+def settle_tone(level_db: float, dur_s: float = 1.1) -> np.ndarray:
     n = int(dur_s * SR)
     t = np.arange(n) / SR
     x = (np.sin(2 * np.pi * 164.81 * t) + 0.5 * np.sin(2 * np.pi * 329.63 * t) + 0.3 * np.sin(2 * np.pi * 494.44 * t))
@@ -277,7 +277,9 @@ def build(story: dict):
         elif c == "chime_switch":
             place(dry, s, chime(LEVELS["chime_switch"], GS5), pan=0.25)
         elif c == "close":
-            place(dry, s, thud(LEVELS["close"] + short_round_db(k)))
+            # the doors closing after a pause (rounds 3 and 30) are heard in full; mid-run closes get quieter
+            held = any(e["kind"] == "pause" and e["k"] == k for e in story["events"])
+            place(dry, s, thud(LEVELS["close"] + (0.0 if held else short_round_db(k))))
         elif c == "tick":
             place(dry, s, tick(rng, LEVELS["tick"]), pan=0.3 * math.sin(k * 0.9))
         elif c == "payoff":
