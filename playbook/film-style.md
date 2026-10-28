@@ -10,7 +10,9 @@ How a Lumiera film looks, moves, reads and sounds. The guide has two parts:
   whole, in part or not at all, and says which in its README.
 
 The reference implementations are `doubling_film/` (*The Doubling*: the general aesthetics and the whole
-toolkit) and `shuffle_film/` (*The Long Number*: the general aesthetics, built independently of the toolkit).
+toolkit) and `three_doors_film/` (*Three Doors*: the general aesthetics, built independently of the toolkit).
+The shelved *The Long Number* (`archive/shuffle_film_long_number/`) is cited below where a rule was first
+written for it; its text choices stay valid examples.
 When this guide and the code disagree, this guide wins: fix the code, or change the rule here in the same
 pull request. Never let them silently drift.
 

@@ -9,7 +9,10 @@ When an idea is produced, move it to the *Made* list with the folder that holds 
 ## Made
 
 - **The Doubling** (Scale): Planck length → observable universe in 205 doublings. `doubling_film/`
-- **The Long Number** (Patterns; working title *The Shuffle*): cards dealt one at a time from a full deck, and after each one the possible deals so far (52 × 51 × 50 × …) written out in full as the next line of a ledger, so a number's length is its size. Hook: "How many cards make more possible deals than seconds since the Big Bang?" The ledger device: the lines grow down the page against two references pinned above them in their own colours (everyone alive in cyan, every second since the Big Bang in lime), and a pass is the frame a line's leading digit crosses a reference's rule. ≈ 37 s, two 'imagine' beats after the whole deck, Canvas 2D in headless Chromium via Playwright. 'Dealt from a full deck' and 'possible deals' (never 'orders') stay in every text. `shuffle_film/`. Its first build, on The Doubling's engine and devices, is kept as a record in `archive/shuffle_film_manim/`.
+
+## Shelved
+
+- **The Long Number** (Patterns; working title *The Shuffle*): cards dealt one at a time from a full deck, and after each one the possible deals so far (52 × 51 × 50 × …) written out in full as the next line of a ledger, so a number's length is its size. Hook: "How many cards make more possible deals than seconds since the Big Bang?" The ledger device: the lines grow down the page against two references pinned above them in their own colours (everyone alive in cyan, every second since the Big Bang in lime), and a pass is the frame a line's leading digit crosses a reference's rule. ≈ 37 s, two 'imagine' beats after the whole deck, Canvas 2D in headless Chromium via Playwright. 'Dealt from a full deck' and 'possible deals' (never 'orders') stay in every text. Built to a checked preview, then shelved when its script was dropped: `archive/shuffle_film_long_number/`. Its first build, on The Doubling's engine and devices, is `archive/shuffle_film_manim/`.
 
 ## Backlog
 

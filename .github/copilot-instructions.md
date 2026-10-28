@@ -45,7 +45,7 @@ If anything here or elsewhere conflicts with the playbook, the playbook wins.
 |---|---|
 | [`playbook/`](../playbook/) | Style and brand guide, idea backlog |
 | [`doubling_film/`](../doubling_film/) | *The Doubling*: the reference film (Manim). See its README for rendering |
-| [`shuffle_film/`](../shuffle_film/) | *The Long Number* (working title *The Shuffle*): the second film (Patterns pillar), a typeset ledger of the possible deals as cards are dealt from a full deck, rendered with Canvas 2D in headless Chromium via Playwright; see its README |
+| [`three_doors_film/`](../three_doors_film/) | *Three Doors*: the second film (Patterns pillar), a Monty Hall round played with two tallies, rendered with Canvas 2D in headless Chromium via Playwright; see its README |
 | [`lumiera_brand/`](../lumiera_brand/) | Brand assets (generated), profile texts, launch-post package |
 | [`archive/`](../archive/) | Old material kept for reference, not part of the baseline |
-| [`archive/shuffle_film_manim/`](../archive/shuffle_film_manim/) | The superseded first build of the second film (Manim, on The Doubling's engine). A record: do not edit or re-render |
+| [`archive/shuffle_film_manim/`](../archive/shuffle_film_manim/), [`archive/shuffle_film_long_number/`](../archive/shuffle_film_long_number/) | Two shelved attempts at a card-shuffle film (Manim on The Doubling's engine; a Canvas 2D ledger). Records: do not edit or re-render |
