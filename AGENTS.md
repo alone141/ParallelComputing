@@ -41,4 +41,5 @@ If anything here or elsewhere conflicts with the playbook, the playbook wins.
 | `playbook/` | Style and brand guide, idea backlog |
 | `doubling_film/` | *The Doubling*: the reference film (Manim). See its README for rendering |
 | `lumiera_brand/` | Brand assets (generated), profile texts, launch-post package |
+| `art_of_dying/` | A standalone rhythm-breakdown film, **not a Lumiera film**: the playbook does not apply to it. See its README |
 | `archive/` | Old material kept for reference, not part of the baseline |
