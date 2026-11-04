@@ -4,7 +4,7 @@
 > This folder borrows the repo's tools and the platform safe zones, nothing else.
 
 A ~63-second vertical (9:16) breakdown of the intro of Gojira's **"The Art of Dying"** (*The Way of All
-Flesh*, 2008). Six parts enter one at a time on scrolling lanes. Each part is shown once as a formal
+Flesh*, 2008). Six parts enter one at a time on fixed lanes swept by a playhead. Each part is shown once as a formal
 equation while it is in focus. Every part is recreated with synthesised instruments; no recording is used.
 
 | | |
@@ -40,12 +40,19 @@ bars of 4/4: 10 × 16 + 20 = 180 sixteenths = 4 laps.
 
 **Why `n ≡ 2` for the beat.** The pulse enters at n = 90 (lap 2), and 90 ≡ 2 (mod 4). Putting the beat
 there makes every 4/4 layer enter on a hit, at t = 0. Viewers can check it against the counter.
+Counted from the record's first click the beat is on n ≡ 0 and the pulse enters after four rim laps
+(n = 180); the film keeps two rim laps, which shifts the count by 90 ≡ 2 (mod 4) and leaves the
+beat-to-cycle relation unchanged.
 
 ## Source and what the film simplifies
 
 The transcription is **Songsterr's community tab** (song 71013, revision 9988433), read in a browser.
 Its tempo (140 bpm) matches the tab's own bar-by-bar sync to the recording to within 0.01% on average.
 Only the derived rhythm above is kept in this repo; Songsterr's files are not redistributed.
+
+An independent check agrees with it: Raphael Pannier's transcription of Mario Duplantier's groove
+(A: 5+5+5+3+3+3, B: 5+5+5+3+3, and the same kick/snare lap note for note), and Yogev Gabay's
+explainer (5 as four hits and a rest, 3 as two hits and a rest, 24 + 21 = 45).
 
 In the record, the intro (bars 1–77, about 0:00–2:16) builds like this:
 
@@ -54,13 +61,22 @@ In the record, the intro (bars 1–77, about 0:00–2:16) builds like this:
 | 1–11 | Rim clicks (side stick + sticks) on the cycle, over a held choir note |
 | 12–33 | + the pulse on every beat |
 | 34–41 | The pulse alone |
-| 42–77 | Kit (kick + snare on the cycle, ghosted ride off-beats, bell on the beats), bass on the rim pattern, both guitars palm-muted; the pulse returns from bar 66 |
+| 42–77 | Kit (kick + snare on the cycle, ghosted ride off-beats, bell on the beats), bass on the rim pattern, guitars on every sixteenth (dead palm-muted notes in bars 42–52, an open riff in 54–65, palm-muted C2 in 66–76); the pulse returns from bar 66 |
 
 The film's simplifications:
 
-- **Order.** One part at a time, rather than the kit, bass and guitars entering together.
-- **The turnaround.** In bars 42–53 the tab adds a 6/4 bar after four laps (a fill). The film keeps
-  the clean cycle.
+- **Order and the full mix.** One part at a time, rather than the kit, bass and guitars entering
+  together. On the record the rim clicks play only in bars 1–33 and never sound with the kit, bass or
+  guitars, and the pulse rests in bars 42–65, so the film's full-mix lap is a construction, not a
+  moment from the song.
+- **The cut sections.** The bridge (bars 34–41, the pulse alone) and the 4/4 fill into the verse
+  (bar 77) are left out.
+- **The turnaround.** In the kit section the tab adds a 6/4 bar after every four laps (bars 53 and
+  65): a 24-sixteenth turnaround grouped 6+6+6+6 (kick/snare `KKKS·S` four times, bass and guitars in
+  threes). The film keeps the clean cycle.
+- **Details kept simple.** The ride bell plays on every beat (the tab has a crash on beat 1 of bars 42
+  and 54, and a China in place of the bell in bars 66–76). The guitars keep the dead palm-muted chug
+  throughout. The two kick drums (the tab alternates feet) are one voice.
 - **Accents.** A slight accent on the first hit of each group is our choice; the tab marks none.
 
 ## How it is built

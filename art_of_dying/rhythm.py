@@ -31,6 +31,7 @@ GROUP_STARTS = tuple(sum(GROUPS[:i]) for i in range(len(GROUPS)))   # 0 5 10 15 
 RIM_RESTS = frozenset(s + g - 1 for s, g in zip(GROUP_STARTS, GROUPS))
 # Kick + snare:  5 -> K K K S .     3 -> K K S
 SNARES = frozenset(s + (3 if g == 5 else 2) for s, g in zip(GROUP_STARTS, GROUPS))
+# KICK_RESTS: the slots where neither drum plays (the kick is also silent on every snare slot).
 KICK_RESTS = frozenset(s + 4 for s, g in zip(GROUP_STARTS, GROUPS) if g == 5)
 KICKS = frozenset(range(CYCLE)) - SNARES - KICK_RESTS
 
