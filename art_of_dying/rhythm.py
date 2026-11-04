@@ -65,7 +65,7 @@ LAYERS = (
            "45 ≡ 1 (mod 4)")),
     Layer("ks", "KICK + SNARE", "#4DA3FF",
           ("S = {3, 8, 13, 17, 20, 23, 27, 32, 37, 41, 44}",
-           "K = ℤ₄₅ ∖ (S ∪ {4, 9, 14, 28, 33, 38})")),
+           "K = ℤ₄₅ ∖ S ∖ {4, 9, 14, 28, 33, 38}")),
     Layer("ride", "RIDE", "#7CF0C0",
           ("ride(n) = 1  ⇔  n ≡ 0 (mod 4)",
            "bell(n) = 1  ⇔  n ≡ 2 (mod 4)")),
@@ -122,7 +122,7 @@ N_FRAMES = round(TOTAL * FPS)                                   # 3761
 PEEL = 1.2
 PEEL_FADE = 0.45                         # each layer's own fade length
 FOCUS_DIM = 0.45                         # opacity of the other lanes during a focus lap
-FOCUS_DUCK_DB = -4.0                     # level of the other layers during a focus lap
+FOCUS_DUCK_DB = -8.0                     # level of the other layers during a focus lap
 EASE = 0.3                               # seconds for focus dim/duck ramps
 
 
@@ -250,7 +250,8 @@ def _check():
     # the equation text matches the sets
     assert BY_KEY["rim"].equation[2] == "R = {" + ", ".join(map(str, sorted(RIM_RESTS))) + "}"
     assert BY_KEY["ks"].equation[0] == "S = {" + ", ".join(map(str, sorted(SNARES))) + "}"
-    assert BY_KEY["ks"].equation[1] == "K = ℤ₄₅ ∖ (S ∪ {" + ", ".join(map(str, sorted(KICK_RESTS))) + "})"
+    assert BY_KEY["ks"].equation[1] == "K = ℤ₄₅ ∖ S ∖ {" + ", ".join(map(str, sorted(KICK_RESTS))) + "}"
+    assert KICKS == frozenset(range(CYCLE)) - SNARES - KICK_RESTS
     # timeline
     assert N_LAPS == 13 and N_FRAMES == round(TOTAL * FPS)
     assert presence("rim", 0) == 1 and presence("pulse", 0) == 0

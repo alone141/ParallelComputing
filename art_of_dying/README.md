@@ -29,7 +29,7 @@ On screen, `n` counts sixteenths from the start and `t = n mod 45` is the positi
 |---|---|---|
 | Rim clicks | Every sixteenth except the last of each group (5 → `xxxx·`, 3 → `xx·`): 34 hits, 11 rests | `rim(t) = 1 ⇔ t ∉ R`, `R = {4, 9, 14, 17, 20, 23, 28, 33, 38, 41, 44}` |
 | Tribal pulse | A big stacked drum hit on every beat, with a stick grace note just before it | `pulse(n) = 1 ⇔ n ≡ 2 (mod 4)`, `45 ≡ 1 (mod 4)` |
-| Kick + snare | 5 → `KKKS·`, 3 → `KKS`: 28 kicks, 11 snares, 6 rests | `S = {3, 8, 13, 17, 20, 23, 27, 32, 37, 41, 44}`, `K = ℤ₄₅ ∖ (S ∪ {4, 9, 14, 28, 33, 38})` |
+| Kick + snare | 5 → `KKKS·`, 3 → `KKS`: 28 kicks, 11 snares, 6 rests | `S = {3, 8, 13, 17, 20, 23, 27, 32, 37, 41, 44}`, `K = ℤ₄₅ ∖ S ∖ {4, 9, 14, 28, 33, 38}` |
 | Ride | Soft, ghosted ride on the off-beats; bell on the beats | `ride(n) = 1 ⇔ n ≡ 0 (mod 4)`, `bell(n) = 1 ⇔ n ≡ 2 (mod 4)` |
 | Bass | The rim-click pattern on low C | `bass(t) = rim(t)`, C1 (32.7 Hz) |
 | Guitar | Palm-muted dead notes on every sixteenth, low C | `gtr(n) = 1 ∀ n`, C2 (65.4 Hz) |
@@ -87,7 +87,33 @@ The film's simplifications:
 | `soundtrack.py` | The procedural score, rendered from `rhythm.events()` |
 | `film.py` | The frame renderer (Pillow + numpy, screen-blended glow), posed from `rhythm.py` |
 | `render.sh` | Renders in parallel slices, muxes the soundtrack, encodes |
+| `sound_voices.py`, `sound_dsp.py` | The instruments and the choir; numpy-only filters, reverb, loudness and true-peak meters |
+| `film_gfx.py` | Text with glyph fallback for the maths signs, mark sprites, the glow composite |
+| `sound_check.py` | Analysis of a rendered soundtrack: onsets against the grid, loudness, the loop seam, focus levels |
 | `POST.md` | Captions, titles, alt text and a launch checklist |
+
+**Each layer's two laps.** In its first lap (the focus lap) the new lane is at full brightness, its
+equation is on screen for about 3.8 s, and the other lanes dim to 45% while the other layers drop by
+8 dB (`FOCUS_DIM`, `FOCUS_DUCK_DB` in `rhythm.py`). In its second lap it plays as one of the stack.
+Played marks trail back to dim over a lap; for the 4/4 layers (pulse, ride) the previous lap's hits
+show as outline rings, one sixteenth to the right, so the slip is visible.
+
+## Rendering
+
+Needs Python 3 with numpy and Pillow, ffmpeg, and the fonts Inter (with Inter Display), JetBrains Mono
+and DejaVu Sans. Run from this folder:
+
+```bash
+python3 rhythm.py                          # self-check (instant)
+python3 soundtrack.py out/soundtrack.wav   # the score, ~25 s
+python3 film.py still 21.7 out/s.png       # one frame plus a layout JSON; warns on safe-zone breaks
+START=19 DUR=5 ./render.sh preview         # 540×960 at 30 fps, a few seconds
+./render.sh                                # the film: out/the_art_of_dying_intro.mp4, ~5 min on 4 cores
+```
+
+`AUDIO=reuse` keeps an existing `out/soundtrack.wav`. `python3 film.py loopcheck` compares frame 0
+with the last frame. After changing a voice, paste the master gain that `soundtrack.py` prints into
+`MASTER_GAIN_DB` so excerpts match the film's level.
 
 Credit: music and composition by Gojira. This is an independent study, not affiliated with the band or
 their label.

@@ -288,14 +288,16 @@ class LightLayer:
         if max(col) > 0:
             self.d.line(pts, fill=col, width=w)
 
-    def vline_max(self, x: float, y0: int, y1: int, col, width=2.0, fade=40):
+    def vline_max(self, x: float, y0: int, y1: int, col, width=2.0, fade_top=40, fade_bottom=40):
         """A vertical line at fractional x, antialiased across columns, faded at both ends, and
         combined with what is already there by 'lighter' (max), so it never darkens a mark."""
+        if y1 - y0 < 2:
+            return
         c0 = math.floor(x - width / 2)
         cols = np.arange(c0, c0 + int(math.ceil(width)) + 2)
         cov = np.clip(np.minimum(cols + 1, x + width / 2) - np.maximum(cols, x - width / 2), 0, 1)
         ys = np.arange(y0, y1)
-        env = np.clip(np.minimum(ys - y0, y1 - 1 - ys) / fade, 0, 1)
+        env = np.clip(np.minimum((ys - y0) / fade_top, (y1 - 1 - ys) / fade_bottom), 0, 1)
         env = env * env * (3 - 2 * env)
         a = env[:, None, None] * cov[None, :, None] * np.asarray(col, float)[None, None, :]
         patch = Image.fromarray(np.clip(np.round(a), 0, 255).astype(np.uint8), "RGB")
@@ -321,9 +323,15 @@ _LUT_FAR = [min(255, round(v * 0.9)) for v in range(256)] * 3
 
 
 def composite(light: Image.Image) -> Image.Image:
-    """light + 1.1 * blur(10 px) + 0.9 * blur(34 px), screen-blended over the background."""
+    """light + 1.1 * blur(10 px) + 0.9 * blur(34 px), screen-blended over the background.
+    Where the sum would clip, the pixel is scaled down as a whole instead of channel by channel,
+    so a dense, bright row of amber or lavender keeps its hue instead of washing to pale yellow."""
     small = light.reduce(GLOW_DOWN)
     near = small.filter(ImageFilter.GaussianBlur(10 / GLOW_DOWN)).point(_LUT_NEAR)
     far = small.filter(ImageFilter.GaussianBlur(34 / GLOW_DOWN)).point(_LUT_FAR)
-    glow = ImageChops.add(light, ImageChops.add(near, far).resize((W, H), Image.BILINEAR))
+    halo = ImageChops.add(near, far).resize((W, H), Image.BILINEAR)
+    g = np.asarray(light, np.float32) + np.asarray(halo, np.float32)
+    peak = g.max(axis=2, keepdims=True)
+    g *= np.minimum(1.0, 255.0 / np.maximum(peak, 1.0))
+    glow = Image.fromarray(np.round(g).astype(np.uint8), "RGB")
     return ImageChops.screen(background(), glow)

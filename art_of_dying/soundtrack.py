@@ -8,7 +8,8 @@ Layers, in the order they enter (rhythm.LAYERS). Every hit is scaled by Hit.gain
     pulse  a big tribal stacked drum on every beat, with a softer stick grace note a 1/32 before it
     ks     a tight metal kick and a cracking snare
     ride   soft, ghosted ride pings on the off-beats; the ride bell on the beats
-    bass   a picked electric bass on C1: short notes, mild drive, silent on the rests
+    bass   a picked electric bass on C1: short notes, mild drive; each group's last note is held
+           through its rest, as the tab writes it (an eighth note)
     gtr    two palm-muted guitars chugging C2, panned left and right, never quite together
 Under everything a low choir holds C on "aah". It is not one of the six layers and is never ducked.
 
@@ -28,7 +29,8 @@ import time
 
 import numpy as np
 
-from rhythm import CYCLE, LAP, LAYERS, N_LAPS, SIXTEENTH, TOTAL, Hit, events, hits_at, is_group_start, lap_start
+from rhythm import (CYCLE, LAP, LAYERS, N_LAPS, RIM_RESTS, SIXTEENTH, TOTAL, Hit, events, hits_at,
+                    is_group_start, lap_start)
 from sound_dsp import (SR, convolve, fir, fold, highpass, limit, loudness, reverb_ir, true_peak_env,
                        write_wav)
 from sound_voices import (Choir, bass_note, chug, kick, pulse_hit, ride_bell, ride_ping, rim_click, snare,
@@ -37,6 +39,8 @@ from sound_voices import (Choir, bass_note, chug, kick, pulse_hit, ride_bell, ri
 N = round(TOTAL * SR)                 # samples in the film: one loop
 GRACE = SIXTEENTH / 2                 # the pulse's grace note: a 1/32 early (53.6 ms)
 BASS_NOTE = 0.88 * SIXTEENTH          # the bass is stopped just before the next sixteenth
+BASS_HOLD = 1.88 * SIXTEENTH          # ...except a group's last note, held through its rest (an
+                                      # eighth note in the tab), stopped before the next group
 SEED = 2008
 
 # ---- mix --------------------------------------------------------------------------------------------
@@ -78,7 +82,7 @@ WET = 0.5                             # reverb return (the impulse response has 
 # ---- master -----------------------------------------------------------------------------------------
 TARGET_LUFS = -14.0
 CEILING_DBTP = -2.0                   # AAC 256k adds about 0.5 dB of overshoot: it then stays under -1 dBTP
-MASTER_GAIN_DB = 5.22                 # the full render solves for this and prints it; excerpts reuse it
+MASTER_GAIN_DB = 5.91                 # the full render solves for this and prints it; excerpts reuse it
 PRE, POST = int(3.0 * SR), int(0.05 * SR)    # an excerpt's pre-roll (reverb, limiter) and post-roll
 
 
@@ -101,6 +105,7 @@ class Kit:
             "bass": take(lambda r: bass_note(r, BASS_NOTE), 6),
             "gtr_L": take(lambda r: chug(r, "L"), 6),
             "gtr_R": take(lambda r: chug(r, "R"), 6),
+            "bass_long": take(lambda r: bass_note(r, BASS_HOLD), 6),   # last: keeps the other takes
         }
 
 
@@ -151,6 +156,8 @@ def play(bus, kit, levels, hit, offsets=(0,)):
         if hit.accent and hit.key == "rim":
             db += ACCENT_DB
         takes = kit.parts[part]
+        if part == "bass" and (hit.n + 1) % CYCLE in RIM_RESTS:   # the group's last note: held
+            takes = kit.parts["bass_long"]
         mono = takes[rng.integers(len(takes))]
         i = round((hit.time + delay) * SR)
         for off in offsets:
