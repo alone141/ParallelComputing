@@ -49,6 +49,17 @@ MP4, stills, contact sheet, record_map.json) are committed under `films/<slug>/`
   white_position, stack, lead, label_dx, label_dy, origin)`; `origin` is the film step at which
   strike position 0 is on the contact line, for a gear whose count does not divide its entry step
   (`phase=p` is a deprecated alias for `origin = -p mod teeth`)
+- rockers (bars that alternate in length, 5/8 + 7/8): `rockers=[Rocker(key, name, short, colour,
+  members={bar_steps: gear_key}, ranges, side, lead, swap_s=0.1, lift=46, label_dx, label_dy)]` and
+  `bar_lengths=(5, 7, 5, 7, ...)` over the whole film. A rocker is a seesaw carrying one gear per bar
+  length; on every bar line it tips the bar's gear into mesh (an eased `swap_s` that lands its tooth
+  on the line) and lifts the other, which rests dim and still. Members are Gears with `rocker=key`,
+  the rocker's `side` and `ranges`, their own `x`; a member's tooth count is a multiple of its bar
+  length (a 14-tooth gear serves alternating 7/8 bars half a turn each) and it keeps its own phase
+  (it advances only while its bar is on), so it need not enter on a multiple of its teeth
+- clock: `step_times=[...]` (film seconds of every step 0..total_steps, e.g. a beat-tracked record
+  without a click) replaces the segments' bpm as the picture's clock; the record map then carries
+  `step_film_s` and each segment's mean bpm
 - readouts: `counters` (bar lengths per cycle, which gears fill the dots; a tooth type's `shade`
   colours its dot), `slip=SlipSpec(cycle_gear, beat_steps, beat_gears, k_from, k_to)` or a list of
   them (slip per lap and HOME are derived; a ranged spec also flashes HOME where it ends),
@@ -84,8 +95,10 @@ count 4783, as before.
 ## What it cannot do yet
 
 One rack only (no second drive); a gear cannot change pattern without leaving (model it as a
-second gear in a free slot); the step is uniform inside a segment (swing would need per-type
-subhit fractions, which a song-defined tooth type can already carry); `steps_per_beat` is one
+second gear in a free slot, or as a rocker when the pattern follows the bar length); the step is
+uniform inside a segment unless `step_times` is given (swing would need per-type
+subhit fractions, which a song-defined tooth type can already carry); a rocker holds one gear per
+bar length and its members cannot carry a SlipSpec; `steps_per_beat` is one
 value per song; the readout strip, caption block and
 closing card are at fixed positions tuned for 1080×1920; automatic camera framing is serviceable
 but explicit `CameraMove`s look better; no synthesised preview mix (the sound library is there, the

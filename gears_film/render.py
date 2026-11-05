@@ -23,6 +23,8 @@ DEDENDUM = 20.0
 LIFT = 70.0
 GLIDE_D, EXIT_D = 1400.0, 700.0
 GLIDE_S, HANG_S, DROP_S, EXIT_S = 1.0, 0.38, 0.08, 1.0
+ROCKER_DIM = 0.42                # brightness of a rocker member while it rests off the rack
+BEAM_COL, PIVOT_COL = (74, 78, 90), (120, 126, 140)
 FIT_X0, FIT_X1 = 60, 860
 
 BG = (9, 9, 12)
@@ -179,6 +181,58 @@ def gear_state(song, g, k):
     if phase == "exit":
         return x0 - EXIT_D * ease(u), y0 + lift_dir * LIFT, ref, True
     raise ValueError(phase)
+
+
+def rocker_states(song, r, k):
+    """{member key: (x, y, Te, moving, meshed, dim)} for rocker r at film step k, or None when it is
+    away. The assembly glides, hangs, drops, lifts and exits like a gear; inside its range the member
+    whose bar is on sits on the rack and the other rests `r.lift` away, and the two trade places in an
+    eased tip of `r.swap_s` seconds that ends on the bar line."""
+    m = motion(song, r, k)
+    phase, u = m[0], m[1]
+    if phase == "away":
+        return None
+    lift_dir = -r.side
+    dx, dy, moving = 0.0, 0.0, True
+    if phase == "in":
+        moving = False
+    elif phase == "enter":
+        dx, dy = GLIDE_D * (1 - ease(u)), lift_dir * LIFT
+    elif phase == "hang":
+        dy = lift_dir * LIFT
+    elif phase == "drop":
+        dy = lift_dir * LIFT * (1 - ease(u))
+    elif phase == "lift":
+        dy = lift_dir * LIFT * ease(u)
+    elif phase == "exit":
+        dx, dy = -EXIT_D * ease(u), lift_dir * LIFT
+    t = song.step_time(k)
+    rng = r.range_at(k)
+    if rng is None:                                           # arriving or leaving: the range this motion belongs to
+        ref = m[2]
+        rng = next(((a, b) for a, b in r.ranges if (a == ref if phase in ("enter", "hang", "drop") else b == ref)), r.ranges[0])
+    r0, r1 = rng
+    out = {}
+    for n, key in r.members.items():
+        g = song.by_key[key]
+        x0, y0 = rest_pos(g)
+        bars = [bar for bar in song.member_bars.get(key, ()) if r0 <= bar[0] < r1]
+        meshed = song.member_meshed(key, k)
+        # how far off the rack: 1 = resting, 0 = meshed; the tip happens in the swap_s before a bar line
+        off = 0.0 if meshed else 1.0
+        for a, b, _ in bars:
+            ta, tb = song.step_time(a), song.step_time(b)
+            if a > r0 and ta - r.swap_s <= t < ta:            # coming down onto the bar line
+                off = 1.0 - ease((t - (ta - r.swap_s)) / r.swap_s)
+            elif b < r1 and tb - r.swap_s <= t < tb and k < b:   # going up as the other gear comes down
+                off = ease((t - (tb - r.swap_s)) / r.swap_s)
+        if phase in ("enter", "hang", "drop"):                # arriving: the first bar's gear is down
+            off = 0.0 if any(bar[0] == r0 for bar in bars) else 1.0
+        elif phase in ("lift", "exit"):                       # leaving as one piece: the last bar's gear stays down
+            off = 0.0 if any(bar[1] == r1 for bar in bars) else 1.0
+        Te = song.member_Te(key, k)
+        out[key] = (x0 + dx, y0 + dy + lift_dir * r.lift * off, Te, moving, meshed, off > 0.5)
+    return out
 
 
 # ---- sprites ------------------------------------------------------------------------------------
@@ -346,6 +400,7 @@ class Assets:
         self.f_label = font("display_sb", 36)
         self.f_label_s = font("mono", 24)
         self.f_bracket = font("mono", 32)
+        self.f_count = font("mono_b", 34)       # a rocker member's tooth count beside it
         self._resized = {}
         self._fonts = {}
         self.moves = camera_moves(song)
@@ -364,15 +419,20 @@ class Assets:
         arr = np.array(BG, np.float32)[None, None, :] * (0.55 + 0.9 * shade[..., None])
         return Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGB")
 
-    def gear_at_zoom(self, key, zoom):
+    def gear_at_zoom(self, key, zoom, dim=False):
         zq = round(zoom, 3)
-        kk = (key, zq)
+        kk = (key, zq, dim)
         if kk not in self._resized:
             if len(self._resized) > 64:
                 self._resized.clear()
             sp = self.gears[key]
             n = max(8, int(sp.width * zq))
-            self._resized[kk] = sp.resize((n, n), Image.LANCZOS)
+            img = sp.resize((n, n), Image.LANCZOS)
+            if dim:     # a rocker member resting off the rack: the same sprite, darkened, alpha kept
+                arr = np.asarray(img).astype(np.float32)
+                arr[..., :3] *= ROCKER_DIM
+                img = Image.fromarray(np.clip(arr, 0, 255).astype(np.uint8), "RGBA")
+            self._resized[kk] = img
         return self._resized[kk]
 
 
@@ -455,6 +515,8 @@ def render_frame(A: Assets, f: int):
     for g in song.gears:
         if not g.engaged(max(0, n_now)):
             continue
+        if g.rocker and not song.member_meshed(g.key, max(0, n_now)):
+            continue
         cx_s = W / 2 + (g.x - cam_x) * zoom
         if cx_s < -60 or cx_s > W + 60:
             continue
@@ -467,7 +529,36 @@ def render_frame(A: Assets, f: int):
 
     # --- gears
     states = {}
+    rstates = {}
+    for r in song.rockers:                       # the seesaws: beam and pivot behind the gears
+        rs = rocker_states(song, r, T)
+        if rs is None:
+            continue
+        rstates[r.key] = rs
+        pts = [to_screen(x, y) for (x, y, *_rest) in rs.values()]
+        if len(pts) >= 2:
+            (ax, ay), (bx, by) = pts[0], pts[-1]
+            mx, my = (ax + bx) / 2, (ay + by) / 2
+            post = 34 * zoom * (-r.side)         # the post goes away from the rack
+            dr.line([(ax * SS, ay * SS), (bx * SS, by * SS)], fill=BEAM_COL, width=int(9 * zoom * SS))
+            dr.line([(ax * SS, ay * SS), (bx * SS, by * SS)], fill=PIVOT_COL, width=int(2 * zoom * SS))
+            dr.line([(mx * SS, my * SS), (mx * SS, (my + post) * SS)], fill=BEAM_COL, width=int(8 * zoom * SS))
+            dr.rectangle([(mx - 22 * zoom) * SS, (my + post - 3 * zoom) * SS, (mx + 22 * zoom) * SS, (my + post + 3 * zoom) * SS], fill=PIVOT_COL)
+            rr = 7 * zoom
+            dr.ellipse([(mx - rr) * SS, (my - rr) * SS, (mx + rr) * SS, (my + rr) * SS], fill=PIVOT_COL)
+            dr.ellipse([(mx - rr * 0.45) * SS, (my - rr * 0.45) * SS, (mx + rr * 0.45) * SS, (my + rr * 0.45) * SS], fill=(26, 26, 32))
+        for key, (x, y, Te, moving, meshed, dim) in rs.items():
+            g = song.by_key[key]
+            states[key] = (x, y, Te, moving)
+            d = 2 * math.pi / g.teeth
+            rot = (Te * d - math.pi / 2) if g.side > 0 else (math.pi / 2 - Te * d)
+            spr = A.gear_at_zoom(key, zoom, dim=dim)
+            img = spr.rotate(math.degrees(rot), resample=Image.BICUBIC)
+            sx, sy = to_screen(x, y)
+            canvas.paste(img, (int(sx * SS - img.width / 2), int(sy * SS - img.height / 2)), img)
     for g in song.gears:
+        if g.rocker:
+            continue
         st = gear_state(song, g, T)
         if st is None:
             continue
@@ -537,8 +628,35 @@ def render_frame(A: Assets, f: int):
                     add_sprite(canvas, A.rings_home[rr], hx, hy, 0.9 * e, size_scale)
 
     # --- gear labels
+    for r in song.rockers:
+        rs = rstates.get(r.key)
+        if not rs:
+            continue
+        moving = any(v[3] for v in rs.values())
+        a = (0.55 if moving else 1.0) * live
+        up = r.side > 0
+        far = None
+        xs = []
+        items = list(rs.items())
+        mid = sum(to_screen(v[0], v[1])[0] for _, v in items) / len(items)
+        for key, (x, y, Te, mv, meshed, dim) in items:
+            g = song.by_key[key]
+            sx, sy = to_screen(x, y)
+            xs.append(sx)
+            edge = sy + (r_tip(g, song) * zoom + 6) * (-1 if up else 1)
+            far = edge if far is None else (min(far, edge) if up else max(far, edge))
+            col = scale(g.colour, a * (1.0 if meshed else 0.55))
+            # the tooth count sits on the gear's outer side, level with its axle
+            outer = sx < mid
+            cx_ = sx + (r_tip(g, song) * zoom + 14) * (-1 if outer else 1)
+            dr.text((cx_ * SS, sy * SS), str(g.teeth), font=A.f_count, fill=col, anchor="rm" if outer else "lm")
+        if not xs:
+            continue
+        lx_ = sum(xs) / len(xs) + r.label_dx
+        base = far + (12 + r.label_dy) * (-1 if up else 1)
+        dr.text((lx_ * SS, base * SS), r.short, font=A.f_label, fill=scale(r.colour, a), anchor="ms" if up else "mt")
     for g in song.gears:
-        if g.key not in states:
+        if g.key not in states or g.rocker:
             continue
         x, y, Te, moving = states[g.key]
         sx, sy = to_screen(x, y)
