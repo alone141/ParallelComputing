@@ -50,6 +50,7 @@ class Envelopes:
 
     def __init__(self, mono, sr):
         self.sr = sr
+        self.mono = np.asarray(mono, float)
         win = np.hanning(N)
         nfr = (len(mono) - N) // H
         idx = np.arange(N)[None, :] + H * np.arange(nfr)[:, None]
@@ -59,11 +60,30 @@ class Envelopes:
         self.cache = {}
 
     def band(self, lo, hi):
+        """Onset strength in [lo, hi) Hz. Wide bands above 150 Hz come from the short STFT (its bins
+        are sr/512 = 93.75 Hz apart). A band that is low or narrower than two bins (a bass pedal, one
+        pitch) is band-passed exactly in the frequency domain instead, and its analytic envelope is
+        followed: no frame latency, no empty bins."""
         key = (lo, hi)
-        if key not in self.cache:
+        if key in self.cache:
+            return self.cache[key]
+        if lo < 150 or hi - lo < 2 * self.freqs[1]:
+            env = self._analytic_envelope(lo, hi)
+            nfr = len(self.t)
+            e = env[: nfr * H].reshape(nfr, H).mean(1)
+            le = np.log1p(e / (np.median(e) + 1e-12))
+            self.cache[key] = np.maximum(np.diff(le, prepend=le[:1]), 0)
+        else:
             b = np.log1p(300 * self.spec[:, (self.freqs >= lo) & (self.freqs < hi)])
             self.cache[key] = np.maximum(np.diff(b, axis=0, prepend=b[:1]), 0).sum(1)
         return self.cache[key]
+
+    def _analytic_envelope(self, lo, hi):
+        X = np.fft.rfft(self.mono)
+        f = np.fft.rfftfreq(len(self.mono), 1 / self.sr)
+        X[(f < lo) | (f >= hi)] = 0
+        X[1:-1] *= 2                                  # analytic signal: positive frequencies doubled
+        return np.abs(np.fft.ifft(X, n=len(self.mono)))[: len(self.mono)]
 
     def score(self, env, times):
         return float(np.interp(times, self.t, env).mean())
@@ -103,17 +123,30 @@ def fit_segment(comb, bpm0, spb, t_guess, search_s, bpm_pct=2.5):
     return t0, bpm, s, half
 
 
-def level_jump_time(mono, sr, t_center):
-    """The first 5 ms window within ±0.3 s of t_center whose RMS reaches -3 dB of the RMS of the two
-    seconds that follow t_center: where a band entry or a cut lands."""
+def level_jump_time(mono, sr, t_center, span_s=0.6, min_db=3.0):
+    """Where the level steps up near t_center, on MEDIANS of 5 ms RMS windows (0.3 s before, 0.5 s
+    after), so one loud hit cannot move it: the earliest window within ±span_s whose step is within
+    1 dB of the largest. Returns (time, step in dB), or (None, best step) when no step reaches
+    min_db: then there is no jump to anchor on."""
     w = int(0.005 * sr)
-    a0, a1 = max(0, int((t_center - 0.3) * sr)), int((t_center + 2.0) * sr)
-    seg_rms = np.sqrt((mono[a0:a1] ** 2).mean()) + 1e-9
-    win = mono[a0:int((t_center + 0.3) * sr)]
-    nw = len(win) // w
-    rms = np.sqrt((win[:nw * w].reshape(nw, w) ** 2).mean(1))
-    j = int(np.argmax(rms > seg_rms * 10 ** (-3 / 20)))
-    return (a0 + j * w) / sr
+    i0, i1 = max(0, int((t_center - span_s - 0.3) * sr)), int((t_center + span_s + 0.5) * sr)
+    seg = mono[i0:i1]
+    nw = len(seg) // w
+    rms = np.sqrt((seg[:nw * w].reshape(nw, w) ** 2).mean(1)) + 1e-9
+    nb, na = 60, 100                           # 0.3 s before, 0.5 s after, in 5 ms windows
+    db = 20 * np.log10(rms)
+
+    def trimmed(v):                            # mean without the loudest quarter: one hit cannot move it
+        s = np.sort(v)
+        return s[: max(1, int(len(s) * 0.75))].mean()
+    steps = np.full(nw, -99.0)
+    for j in range(nb, nw - na):
+        steps[j] = trimmed(db[j:j + na]) - trimmed(db[j - nb:j])
+    best = float(steps.max())
+    if best < min_db:
+        return None, best
+    j = int(np.argmax(steps))                  # the contrast peaks where both windows are pure
+    return (i0 + j * w) / sr, best
 
 
 def main(argv):
@@ -129,59 +162,111 @@ def main(argv):
     anchors = rm["anchors"]
     print(f"{wav}: {len(x) / sr:.2f} s · nominal {bpm0} bpm · {spb} steps per beat · anchors: "
           + ", ".join(a["name"] for a in anchors))
-    result = {"segments": []}
-    first_guess = float(rm.get("first_step_guess_s", 0.5))
-    for i, seg in enumerate(rm["segments"]):
-        r0, n = int(seg["record_step"]), int(seg["steps"])
-        bpm_seg = float(seg.get("bpm", bpm0))
+    segs = rm["segments"]
+    MIN_HITS = 16                              # an anchor with fewer hits in a stretch does not vote
+
+    def comb_for(r0, n, bpm_centre=None):
         parts, names = [], []
-        for a in anchors:                      # every anchor with hits inside this segment
+        for a in anchors:
             inside = [s - r0 for s in a["record_steps"] if r0 <= s < r0 + n]
-            if len(inside) >= 8:
+            if len(inside) >= MIN_HITS:
                 parts.append((envs.band(*a["band_hz"]), inside))
                 names.append(a["name"])
-        if not parts:
-            print(f"segment {i} (record step {r0}, {n} steps): no anchor hits, skipped")
-            result["segments"].append({"record_step": r0, "start_s": None, "bpm": bpm_seg})
+        return (Comb(envs, parts) if parts else None), " + ".join(names)
+
+    # Contiguous segments (no record steps cut between them) form a RUN: one stretch of the record
+    # that plays straight through. Tempo is fitted over the whole run (a long comb pins it), then
+    # each segment is refined a little; the segment boundaries inside a run then DEFINE each
+    # segment's tempo, so the audio can be used uncut and the picture's clock matches it exactly.
+    runs = []
+    for i, seg in enumerate(segs):
+        if runs and seg["record_step"] == segs[i - 1]["record_step"] + segs[i - 1]["steps"]:
+            runs[-1].append(i)
+        else:
+            runs.append([i])
+    result = {"segments": [None] * len(segs), "runs": []}
+    prev_end_s, prev_end_step, prev_bpm = None, None, bpm0
+    for run in runs:
+        r0 = int(segs[run[0]]["record_step"])
+        n = sum(int(segs[i]["steps"]) for i in run)
+        bpm_nom = float(segs[run[0]].get("bpm", bpm0))
+        comb, name = comb_for(r0, n)
+        if comb is None:
+            print(f"run at record step {r0} ({n} steps): no anchor with {MIN_HITS}+ hits, skipped")
+            for i in run:
+                result["segments"][i] = {"record_step": int(segs[i]["record_step"]), "start_s": None, "bpm": bpm_nom}
             continue
-        comb = Comb(envs, parts)
-        name = " + ".join(names)
-        if i == 0:
-            guess, search = first_guess, max(first_guess, 1.0)
-        else:                                  # continue the record's own clock from the last fit
-            prev = result["segments"][-1]
-            step_prev = 60.0 / (prev["bpm"] * spb)
-            guess = prev["start_s"] + (r0 - prev["record_step"]) * step_prev
+        if prev_end_s is None:
+            guess, search = float(rm.get("first_step_guess_s", 0.5)), float(rm.get("first_search_s", 1.5))
+        else:                                  # continue the record's own clock across the cut
+            step_prev = 60.0 / (prev_bpm * spb)
+            guess = prev_end_s + (r0 - prev_end_step) * step_prev
             # Within half a step of the clock, unless the map says the record has a bigger edit
-            # here: a comb of hits is often ambiguous by exactly one step (off-beat pings, kicks
-            # under snare slots), and the clock is the best tie-breaker.
-            search = float(seg.get("search_s", 0.45 * step_prev))
-        if seg.get("level_jump"):
-            # The segment begins with a band entry or a cut: the level jump is the strongest evidence
-            # of its downbeat. A downbeat precedes the jump by the attack time (0 to ~50 ms), so the
-            # comb only refines inside that window; one-step ambiguities cannot reach it.
-            tj = level_jump_time(envs_mono, sr, guess)
-            guess, search = tj - 0.025, 0.03
-        t0, bpm, s, half = fit_segment(comb, bpm_seg, spb, guess, search)
+            # here: a comb of hits is often ambiguous by exactly one step, and the clock is the
+            # best tie-breaker.
+            search = float(segs[run[0]].get("search_s", 0.45 * step_prev))
+        if segs[run[0]].get("level_jump"):
+            # The stretch begins with a band entry or a cut: the level jump is the strongest
+            # evidence of its downbeat, which precedes the jump by the attack time (0 to ~50 ms).
+            tj, step_db = level_jump_time(envs_mono, sr, guess)
+            if tj is None:
+                print(f"record step {r0}: level_jump set but no step of 3 dB or more near {guess:.3f} s "
+                      f"(best {step_db:.1f} dB); fitting on the clock window instead")
+            else:
+                print(f"record step {r0}: level jump of {step_db:.1f} dB at {tj:.4f} s ({(tj - guess) * 1000:+.0f} ms from the clock)")
+                guess, search = tj - 0.025, 0.03
+        t0, bpm, s, half = fit_segment(comb, bpm_nom, spb, guess, search)
         step_s = 60.0 / (bpm * spb)
         s_m1, s_p1 = comb.score(t0, step_s, -1.0), comb.score(t0, step_s, 1.0)
-        print(f"segment {i} (record step {r0}, {n} steps, anchor {name}): starts {t0:.4f} s · "
-              f"{bpm:.4f} bpm · score {s:.2f} vs half-step off {half:.2f} (ratio {s / max(half, 1e-9):.2f})")
+        print(f"run: record steps {r0}-{r0 + n} ({len(run)} segment{'s' if len(run) > 1 else ''}, anchors {name}): "
+              f"starts {t0:.4f} s · {bpm:.4f} bpm · score {s:.2f} vs half-step off {half:.2f} (ratio {s / max(half, 1e-9):.2f})")
         if max(s_m1, s_p1) > 0.9 * s:
             print(f"   AMBIGUOUS by one step: score one step earlier {s_m1:.2f}, later {s_p1:.2f}. "
-                  f"If the segment begins with an entry or a cut, set \"level_jump\": true on it; "
-                  f"otherwise use a more percussive anchor.")
-        tj = level_jump_time(envs_mono, sr, t0)
-        print(f"   level: first 5 ms window within -3 dB of the segment's level at {tj:.4f} s "
-              f"({(tj - t0) * 1000:+.0f} ms from the fitted start)")
-        result["segments"].append({"record_step": r0, "start_s": round(t0, 5), "bpm": round(bpm, 4),
-                                   "score": round(s, 3), "score_half_off": round(half, 3),
-                                   "score_minus_1_step": round(s_m1, 3), "score_plus_1_step": round(s_p1, 3)})
+                  f"If the stretch begins with an entry or a cut, set \"level_jump\": true on its first "
+                  f"segment; otherwise use a more percussive anchor.")
+        tj, step_db = level_jump_time(envs_mono, sr, t0)
+        print(f"   level: a {step_db:.1f} dB step at {tj:.4f} s ({(tj - t0) * 1000:+.0f} ms from the fitted start)"
+              if tj is not None else
+              f"   level: no step near the start (largest {step_db:.1f} dB): the music continues across this boundary")
+        # per-segment refinement inside the run: a small window around the run's clock
+        starts, bpms = [], []
+        for i in run:
+            rs, ns = int(segs[i]["record_step"]), int(segs[i]["steps"])
+            g = t0 + (rs - r0) * step_s
+            comb_i, name_i = comb_for(rs, ns)
+            if comb_i is not None and len(run) > 1:
+                ti, bi, si, hi = fit_segment(comb_i, bpm, spb, g, 0.06, bpm_pct=0.6)
+                note = f"anchors {name_i}, ratio {si / max(hi, 1e-9):.2f}"
+            else:
+                ti, bi, note = g, bpm, "from the run"
+            starts.append(ti)
+            bpms.append(bi)
+            print(f"   segment {i} (record step {rs}, {ns} steps): starts {ti:.4f} s · {bi:.4f} bpm · {note}")
+        # the boundaries define the tempos inside the run (the last segment keeps its fitted bpm)
+        for j, i in enumerate(run):
+            ns = int(segs[i]["steps"])
+            if j + 1 < len(run):
+                bpm_i = ns * 60.0 / (spb * (starts[j + 1] - starts[j]))
+                if abs(bpm_i / bpms[j] - 1) > 0.012:
+                    print(f"   note: segment {i}'s boundary tempo {bpm_i:.3f} differs from its fitted {bpms[j]:.3f} by more than 1.2%")
+            else:
+                bpm_i = bpms[j]
+            result["segments"][i] = {"record_step": int(segs[i]["record_step"]), "start_s": round(starts[j], 5),
+                                     "bpm": round(bpm_i, 4), "contiguous_with_previous": j > 0}
+            print(f"   -> segment {i}: start {starts[j]:.4f} s, bpm {bpm_i:.4f}{' (boundary-defined)' if j + 1 < len(run) else ''}")
+        last = run[-1]
+        prev_bpm = bpms[-1]
+        prev_end_s = starts[-1] + int(segs[last]["steps"]) * 60.0 / (prev_bpm * spb)
+        prev_end_step = r0 + n
+        result["runs"].append({"record_step": r0, "steps": n, "start_s": round(t0, 5), "bpm": round(bpm, 4),
+                               "score": round(s, 3), "score_half_off": round(half, 3)})
     first = result["segments"][0]
     result["offset_s"] = first["start_s"]
     result["bpm"] = first["bpm"]
     json.dump(result, open(out, "w"), indent=1)
     print("wrote", out)
+    print("paste into the song module: first_click_offset_s =", first["start_s"], "· per segment bpm =",
+          [sg["bpm"] for sg in result["segments"]])
 
 
 if __name__ == "__main__":

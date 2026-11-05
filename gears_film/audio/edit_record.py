@@ -65,6 +65,11 @@ def build(wav, map_path, fit_path, out):
         a = int(round(fseg["start_s"] * sr))
         if i == 0:
             y[:n] = x[a:a + n]
+        elif fseg.get("contiguous_with_previous") and abs(a - (prev_a + prev_n)) <= int(0.002 * sr):
+            # the record plays straight through here and the picture's clock was set from the
+            # measured boundary: copy on, no crossfade, from exactly where the last segment ended
+            a = prev_a + prev_n
+            y[cursor: cursor + n] = x[a: a + n]
         else:                                           # crossfade centred on the boundary
             ramp = np.linspace(0, 1, 2 * nX)[:, None]
             prev_tail = x[prev_a + prev_n - nX: prev_a + prev_n + nX]
