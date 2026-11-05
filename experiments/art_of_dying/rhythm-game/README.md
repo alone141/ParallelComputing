@@ -1,4 +1,118 @@
-# Experiment 5 · rhythm game (round 2)
+# Experiment 5 · rhythm game (round 3: the record's own clock)
+
+A vertical film (1080×1920, 60 fps, 79.71 s, **4783 frames, silent**) that explains the intro of
+**Gojira – "The Art of Dying"** (*The Way of All Flesh*, 2008) as a rhythm game being played, timed to
+the original recording. The audio is the band's recording, supplied and muxed by the repository owner
+outside this repository; it is not in the repo and this session never had it. The film is an independent
+study, not affiliated with Gojira, their label or their publishers.
+
+Six lanes, one per part, light up exactly as the record brings the parts in. The lap line marks every
+45-sixteenth cycle; because 45 = 11 × 4 + 1 it lands one sixteenth later against the beat every lap,
+and the game judges each lap as it crosses (+1 LATE, +2 LATE, +3 LATE, PERFECT). The two big moments
+are the record's own: **bar 12**, where the tribal pulse enters on the beat exactly as the lap comes home
+(PULSE IN · PERFECT), and **bar 42**, where the whole band drops in on the second homecoming
+(REALIGNED · BAND IN) while the clicks and the pulse go dark. The 6/4 turnaround at bar 53 is the final
+flourish, and a FULL COMBO results card sits under the owner's 1.2 s audio fade.
+
+## Files (round 3)
+
+| File | What |
+|---|---|
+| `art_of_dying_rhythm_game_record_silent.mp4` | the silent film: H.264 yuv420p, 1080×1920, 60 fps, 4783 frames, no audio stream |
+| `stills/*.png` | eight frames: hook, lap 4 (+3), bar 12, bar 23, bar 42, lap 16, the 6/4, the results card |
+| `contact_sheet.png` | one frame every 3.2 s |
+| `rhythm.py` | the timeline: pattern sets, entries and exits, the cut, the turnaround, bar numbers; `--bpm` and `--offset`; writes `timeline.js` |
+| `game.html`, `game.js`, `timeline.js` | the game, every frame a pure function of film time; every timing a function of the sixteenth index k |
+| `render.js`, `contact_sheet.py`, `build.sh` | the recorder and the build |
+| `round2/` | the round-2 synthesised, looping film and its complete build (sound engine included) |
+
+## Timeline (140.000 bpm, first click at 0.000 s)
+
+One sixteenth = 15/140 s = 107.143 ms; one lap = 45 sixteenths = 4.8214 s. k is the film's sixteenth
+index; film time of k = `OFFSET + k × 15 / BPM`. Record mapping: film k = record k for k < 540, and
+record k + 128 for k ≥ 540 (the cut). The beat (quarter note) is on k ≡ 0 (mod 4) throughout.
+
+| Film time | k | Tab bar | What happens | Picture |
+|---|---|---|---|---|
+| 0.000 s | 0 | 1 | first rim click; clicks alone over the held choir note | hook over the running game; the PULSE lane shows the grid as ghost notes and the laps are judged +1/+2/+3 LATE against it |
+| 19.286 s | 180 | 12 | tribal pulse joins on every beat, with its stick grace note | PULSE IN · PERFECT (first homecoming), lane flash |
+| 38.571 s | 360 | 23 | the pulse comes home | REALIGNED card (4 laps = 180 steps = 45 beats) |
+| 57.857 s | 540 | 42 | **the cut**: record bars 34–41 (pulse alone, 128 sixteenths, 13.714 s) removed; the band enters together on a beat at t = 0 of the cycle: kick + snare, ride (crash on beat 1, bell on beats, ghost between), bass on C1, two palm-muted guitars; clicks and pulse stop | REALIGNED · BAND IN · BAR 42; KIT, RIDE, BASS, GUITAR flash on, CLICK and PULSE go dark; the drift bracket and judgement move to the RIDE lane (the bell carries the beat) |
+| 77.143 s | 720 | 53 | the 6/4 turnaround, 24 sixteenths: K K K S . S ×4, bass C1 ×3 then C2 ×3, guitars C2 ×3 then E♭2 ×3 | 6/4 TURNAROUND banner · PERFECT; brackets of 6; C1/C2 and E♭ labels on the notes |
+| 78.429 s | 732 | 53 | | FULL COMBO results card (1140 hits, 16 laps + 6/4) under the audio fade |
+| 79.714 s | 744 | | end | |
+
+Bar numbers follow the tab (ten bars of 4/4 and one of 5/4 per 180 sixteenths), so the HUD's BAR counter
+jumps from 33 to 42 at the cut.
+
+## Re-rendering with a measured tempo or offset
+
+```bash
+cd experiments/art_of_dying/rhythm-game
+BPM=139.85 OFFSET=0.080 ./build.sh      # about 9 minutes; prints the frame count
+```
+
+`rhythm.py --bpm B --offset O` writes `timeline.js`; the game reads `step = 15 / B` and `offset = O`
+and places every note, lap line, judgement, banner and caption from k. The frame count becomes
+`round((O + 744 × 15 / B) × 60)`. Captions are scheduled in film seconds at 140 bpm and scaled by the
+step, so they stay on their laps.
+
+## What changed from round 2
+
+- No synthesis, no loop, no one-lane-per-lap unlocks: the parts enter as the record enters them.
+  The round-2 film and its sound engine are preserved in `round2/`.
+- The pulse-only bridge (bars 34–41) is cut; the film is 744 sixteenths, 4783 frames.
+- The beat lane is the pulse until bar 42 and the ride bell after it, so the drift bracket and the
+  lap judgement never lose their reference.
+- A BAR counter replaces PARTS in the HUD; the 6/4 turnaround has its own brackets, pattern banner and
+  note labels; a results card ends the film.
+- `BPM` and `FIRST_CLICK_OFFSET_S` are build parameters.
+
+## What worked
+
+- Laps 1–12 are the record's own drama and the game vocabulary fits them: the ghost grid gets judged
+  LATE three times, the pulse arrives on the first PERFECT, slips again, and the band drops on the second.
+- The lane switch at bar 42 (CLICK and PULSE dark, four lanes flash on) reads as a level change.
+- The turnaround's K K K S . S is visible as three kicks, a white snare, a hole, a snare.
+- Rebuilding for a different tempo is one command; nothing in the picture is hand-timed.
+
+## What failed or was cut
+
+- **Not checked against the recording.** No copy of the record was available here, so the alignment is
+  by arithmetic (140.000 bpm, first click at 0). If the record's tempo is 139.9 the picture drifts
+  about 0.4 s by the end; hence the BPM/OFFSET parameters.
+- **Nineteen seconds of clicks alone.** That is the record. The hook, the group brackets, the ghost grid
+  and three LATE judgements have to carry it; I could not test whether they do.
+- **The cut is invisible in the picture.** The bar counter jumps from 33 to 42 and nothing else marks
+  it; an honest "bars 34–41 cut" label would have cost a caption slot in the busiest moment.
+- **Round-2 postmortem items remain**: the judgements are about the lap, not a fallible player; the
+  caption band covers the top of the lanes; the drum fills and ride details of the actual recording
+  (bars 42–65 and after) are reduced to the tab's steady pattern.
+- **The ending is a guess at the audio fade**: the results card starts 1.3 s before the end so it is
+  fully up when the fade begins.
+
+## With another day
+
+1. Align to the recording (onset-detect the first click and the bar-42 crash) and lock BPM/OFFSET.
+2. A fallible player for laps 1–4: show a tap on every ghost beat and let it visibly miss the groups.
+3. A small "bars 34–41 cut" marker at the lane switch.
+4. Watch it with the record.
+
+## Credits
+
+Music analysed: Gojira, "The Art of Dying", from *The Way of All Flesh* (Listenable / Prosthetic,
+2008). Rhythm facts cross-checked against the Songsterr community tab, Raphael Pannier's transcription
+and Yogev Gabay's explainer. This is an independent, non-commercial study; it is not affiliated with
+or endorsed by Gojira or their label. The recording is the owner's licensed copy, used in the app, and
+is not in this repository. The round-2 instruments and DSP (`round2/sound_voices.py`,
+`round2/sound_dsp.py`) are the repository owner's own work, copied with attribution.
+
+---
+
+# Round 2 (superseded: the synthesised, looping film)
+
+Everything in this section now lives in `round2/` (its own `build.sh` rebuilds it as
+`round2/art_of_dying_rhythm_game_synth.mp4`). The text is unchanged.
 
 A looping vertical film (1080×1920, 60 fps, 38.6 s, one loop) that explains the intro of
 **Gojira – "The Art of Dying"** (*The Way of All Flesh*, 2008) as a rhythm game being played. Six lanes,
@@ -131,7 +245,7 @@ make the loop seamless. Master: −14.0 LUFS integrated, −2.0 dBTP before AAC;
 
 ---
 
-# Round 1 (kept for the record)
+# Round 1 (superseded)
 
 A short vertical film (1080×1920, 60 fps, about 43 s) that explains the rhythm of the intro of
 **Gojira – "The Art of Dying"** (*The Way of All Flesh*, 2008) by showing a rhythm game being played.
