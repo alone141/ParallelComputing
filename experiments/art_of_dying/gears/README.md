@@ -15,14 +15,33 @@ Deliverables in this folder (round 4 is current; earlier rounds are kept under `
 
 | File | What |
 |---|---|
-| `art_of_dying_gears_record_silent.mp4` | **round 5** (round 4 + glides + crash fix): the picture for the recording, 1080×1920, 60 fps, 4783 frames = 79.714 s, no audio track |
-| `stills/*.png`, `stills/contact_sheet.png` | eleven round-5 frames: the hook, the pulse gliding in, bar 12 engaged, the slip bracket, the band mid-glide, the hang, the crash bloom, the rim and pulse leaving, lap 13, bar 53 with the bass gear leaving, the closing card; and a contact sheet |
+| `art_of_dying_gears_record_silent.mp4` | **round 6** (round 4 mechanism + glides, crash fix, bigger type, detailed rack): the picture for the recording, 1080×1920, 60 fps, 4783 frames = 79.714 s, no audio track |
+| `stills/*.png`, `stills/contact_sheet.png` | eleven round-6 frames: the hook, a close frame of the rack (lap 1), the pulse gliding in, bar 12 engaged, the slip bracket, the widest frame at bar 42 (the hang), the crash bloom, the rim and pulse leaving, lap 13, the turnaround train, the closing card; and a contact sheet |
 | `rhythm.py` | the facts of the intro, the gear table and the record-synced timeline (`BPM`, `FIRST_CLICK_OFFSET_S`) |
-| `render.py` | the round-5 frame renderer (Pillow + numpy): rack, gears, camera |
+| `render.py` | the round-6 frame renderer (Pillow + numpy): rack, gears, camera |
 | `build.sh` | renders the frames, the silent MP4 and the stills (about 20 min on 4 CPUs) |
 | `round3/` | round 3: the same timeline on the two music-box wheels plus a turnaround wheel |
 | `round2/` | the 58-second synthesised teaching film and its code |
 | `round1/` | the 19-second first film and its code |
+
+## Round 6: bigger type and a real rack
+
+Two fixes on round 5, nothing else changed (same gears, timeline, 4783 frames):
+
+- **Type.** The hub number and name inside each big gear now scale with the camera (number 38-70 px,
+  name 22-34 px); the small gears carry a two-line label beside them (name 36 px, "12 TEETH" 24 px),
+  with the guitars shortened to GTRS and the ride's label stepped up and aside so the two never
+  overlap, even at the bar-42 breath frame. The readout strip is three rows above the UI zone
+  (y 1392 / 1446 / 1502): the group counter (52 px numeral, 24 px dots) and LAP (40 px); SLIP (30 px
+  mono, 26 px boxes) with the cut note beside it (26 px); the seven-name stack at 30 px mono. The
+  slip bracket's text is 32 px. The transient name chips were dropped: they would have collided
+  with the strip under the lower gears, and the hub names now do their job.
+- **The rack.** A rail with a lit top edge and a shadowed bottom edge, fine brushed rows (static, so
+  nothing shimmers as it moves), teeth with a lit left flank, a shaded right flank and a tip
+  highlight, rivets every six pitches, every 45th tooth lighter with a notch on the rail (tooth 0
+  of a lap, which passes the rim gear's contact at every cycle start), and under each engaged gear
+  a dark wear mark and a small glint on the face it strikes. Contrast stays below the striking
+  teeth. Checked on three consecutive frames at the band framing: no flicker, no shimmer.
 
 ## Round 5: glides and a real crash
 
@@ -151,13 +170,12 @@ AOD_BPM=139.85 AOD_OFFSET=0.12 ./build.sh    # ~20 min: frames, silent MP4 (H.26
   rim and pulse gears while those are still on the rack (their last strikes are at k = 538 and 536,
   and HOME at 540 needs them in place), so for about half a second the camera shows seven gears and
   the big ones are small. It is honest; it is also the busiest half-second of the film.
-- **Small type again.** The strip (group counter, lap, slip, the seven-name stack) is 21-24 px mono;
-  the gear labels are 22 px. The gear colours and the hub counts carry most of the meaning.
+- **Small type again** (fixed in round 6). The strip and the gear labels were 21-24 px.
 - **The turnaround's crossing rhythm is not drawn.** Kick 6/4, snare 6/4 and the ride all mesh the
   same rack, so the 6-against-4 cross-rhythm is visible only as the ride's bell landing on a
   different cell slot each time; no caption points at it.
-- **The rack is plain** and moves fast (one pitch every 107 ms); it is a reliable metronome but not
-  beautiful, and at zoom 0.41 its teeth are 17 px.
+- **The rack is plain** (fixed in round 6) and moves fast (one pitch every 107 ms); at zoom 0.41 its
+  teeth are 17 px.
 - **No gear for the choir**, which is a held note and not a rhythm; the first 19 seconds of the
   record have more going on than the picture admits.
 - **Not checked against the recording.** As in round 3, the first click and the tempo come from the

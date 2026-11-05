@@ -254,7 +254,22 @@ class Assets:
         self.f_card1 = font("display", 78)
         self.f_card2 = font("display_sb", 40)
         self.f_card3 = font("text", 30)
+        self.f_lap = font("display", 40)
+        self.f_mono = font("mono", 30)
+        self.f_mono_s = font("mono", 26)
+        self.f_group = font("display", 52)
+        self.f_label = font("display_sb", 36)
+        self.f_label_s = font("mono", 24)
+        self.f_bracket = font("mono", 32)
         self._resized = {}
+        self._fonts = {}
+
+    def f(self, name, size):
+        size = int(round(size))
+        key = (name, size)
+        if key not in self._fonts:
+            self._fonts[key] = font(name, size)
+        return self._fonts[key]
 
     def make_bg(self):
         yy, xx = np.mgrid[0:SH, 0:SW].astype(np.float32)
@@ -326,22 +341,57 @@ def render_frame(A, f):
     canvas = A.bg.copy()
     dr = ImageDraw.Draw(canvas)
 
-    # --- the rack: a bar across the screen with teeth on both faces, moving one pitch per sixteenth
+    # --- the rack: a rail across the screen with teeth on both faces, moving one pitch per sixteenth
     top, bot = RACK_Y - RH * zoom, RACK_Y + RH * zoom
     dr.rectangle([0, top * SS, SW, bot * SS], fill=RACK_COL)
-    dr.line([(0, top * SS), (SW, top * SS)], fill=RACK_EDGE, width=int(1.5 * SS))
-    dr.line([(0, bot * SS), (SW, bot * SS)], fill=RACK_EDGE, width=int(1.5 * SS))
+    rows = max(3, int((bot - top) * SS / 3))
+    for i in range(rows):                                    # brushed surface: fine horizontal rows
+        yy = top * SS + (i + 0.5) * (bot - top) * SS / rows
+        v = 34 + int(10 * ((i * 7919) % 13) / 12.0)
+        dr.line([(0, yy), (SW, yy)], fill=(v, v + 2, v + 8), width=1)
+    dr.line([(0, top * SS), (SW, top * SS)], fill=(130, 134, 146), width=int(2 * SS))        # lit top edge
+    dr.line([(0, (top + 3 * zoom) * SS), (SW, (top + 3 * zoom) * SS)], fill=(62, 64, 74), width=int(1 * SS))
+    dr.line([(0, bot * SS), (SW, bot * SS)], fill=(18, 18, 22), width=int(2 * SS))           # shadowed bottom edge
+    dr.line([(0, (bot - 3 * zoom) * SS), (SW, (bot - 3 * zoom) * SS)], fill=(74, 78, 90), width=int(1 * SS))
     th_h = 16 * zoom
     x_world0 = cam_x - W / 2 / zoom - PITCH
     n0 = int(math.floor(x_world0 / PITCH - T - 0.5))
     count = int(W / zoom / PITCH) + 4
+    hw_r, hw_t = 0.30 * PITCH * zoom, 0.18 * PITCH * zoom
     for n in range(n0, n0 + count):
         xw = (n + 0.5 + T) * PITCH
         sx = W / 2 + (xw - cam_x) * zoom
-        hw_r, hw_t = 0.30 * PITCH * zoom, 0.18 * PITCH * zoom
+        lap_mark = (n % R.CYCLE) == 0                        # tooth 0 of a lap: a lighter tooth
+        lit = (168, 172, 186) if lap_mark else (122, 126, 140)
+        dark = (112, 116, 130) if lap_mark else (66, 70, 82)
+        tip = (210, 214, 226) if lap_mark else (150, 154, 168)
         for face, sgn in ((top, -1), (bot, 1)):
-            dr.polygon([((sx - hw_r) * SS, face * SS), ((sx - hw_t) * SS, (face + sgn * th_h) * SS),
-                        ((sx + hw_t) * SS, (face + sgn * th_h) * SS), ((sx + hw_r) * SS, face * SS)], fill=RACK_EDGE)
+            ty = face + sgn * th_h
+            # left flank catches the light, right flank is in shadow
+            dr.polygon([((sx - hw_r) * SS, face * SS), ((sx - hw_t) * SS, ty * SS), (sx * SS, ty * SS), (sx * SS, face * SS)], fill=lit)
+            dr.polygon([(sx * SS, face * SS), (sx * SS, ty * SS), ((sx + hw_t) * SS, ty * SS), ((sx + hw_r) * SS, face * SS)], fill=dark)
+            dr.line([((sx - hw_t) * SS, ty * SS), ((sx + hw_t) * SS, ty * SS)], fill=tip, width=max(1, int(1.2 * SS)))
+        if lap_mark:                                         # and a notch on the rail
+            dr.rectangle([(sx - 2 * zoom) * SS, (top + 4 * zoom) * SS, (sx + 2 * zoom) * SS, (bot - 4 * zoom) * SS], fill=(150, 154, 168))
+        if n % 6 == 3:                                       # rivets at a regular pitch
+            rr = max(2.0, 4.5 * zoom)
+            cy = RACK_Y
+            dr.ellipse([(sx - rr) * SS, (cy - rr) * SS, (sx + rr) * SS, (cy + rr) * SS], fill=(22, 22, 28))
+            dr.ellipse([(sx - rr * 0.7) * SS, (cy - rr * 0.7) * SS, (sx + rr * 0.7) * SS, (cy + rr * 0.7) * SS], fill=(88, 92, 104))
+            dr.ellipse([(sx - rr * 0.35) * SS, (cy - rr * 0.6) * SS, (sx + rr * 0.1) * SS, (cy - rr * 0.1) * SS], fill=(150, 154, 168))
+    # wear marks and glints where engaged gears strike the rail
+    for g in R.GEARS:
+        if not R.engaged(g.key, max(0, n_now)):
+            continue
+        cx_s = W / 2 + (g.x - cam_x) * zoom
+        if cx_s < -60 or cx_s > W + 60:
+            continue
+        face = top if g.side > 0 else bot
+        inner = face + (1 if g.side > 0 else -1) * 5 * zoom
+        ww = 26 * zoom
+        dr.ellipse([(cx_s - ww) * SS, min(face, inner) * SS, (cx_s + ww) * SS, max(face, inner) * SS], fill=(26, 26, 32))
+        gl = scale((190, 194, 206), live)
+        dr.line([((cx_s - 9 * zoom) * SS, face * SS), ((cx_s + 9 * zoom) * SS, face * SS)], fill=gl, width=int(2 * SS))
 
     # --- gears
     states = {}
@@ -412,7 +462,9 @@ def render_frame(A, f):
             if rr in A.rings_home:
                 add_sprite(canvas, A.rings_home[rr], hx, hy, 0.9 * e, size_scale)
 
-    # --- gear labels and name chips
+    # --- gear labels: hub number and name for the big gears, a two-line label beside the small ones
+    LABEL_DX = {"gtr": -44, "ride": 44}                      # neighbours step aside instead of overlapping
+    LABEL_DY = {"ride": -40}
     for g in R.GEARS:
         if g.key not in states:
             continue
@@ -422,21 +474,22 @@ def render_frame(A, f):
             continue
         a = (0.55 if moving else 1.0) * live
         if g.n >= 40:
-            dr.text((sx * SS, (sy - 10) * SS), str(g.n), font=A.f_hub, fill=scale(TEXT, a), anchor="mm")
-            dr.text((sx * SS, (sy + 22) * SS), g.short, font=A.f_hub_s, fill=scale(g.colour, a), anchor="mm")
+            f_num = A.f("mono_b", min(70, max(38, 95 * zoom)))
+            f_name = A.f("display_sb", min(34, max(22, 44 * zoom)))
+            gap = 18 * min(1.4, max(0.8, zoom / 0.55))
+            dr.text((sx * SS, (sy - gap) * SS), str(g.n), font=f_num, fill=scale(TEXT, a), anchor="ms")
+            dr.text((sx * SS, (sy + gap) * SS), g.short, font=f_name, fill=scale(g.colour, a), anchor="mt")
         else:
-            stagger = 26 if g.key in ("ride", "tsnare", "tgtr") else 0
-            off = (r_tip(g) * zoom + 22 + stagger) * (-1 if g.side > 0 else 1)
-            dr.text((sx * SS, (sy + off) * SS), f"{g.n} · {g.short}", font=A.f_hub_s, fill=scale(g.colour, a), anchor="mm")
-        age_in = (T - g.k_in) * R.SIXTEENTH
-        if g.key != "rim" and 0 <= age_in < 2.2:
-            ca = min(ease(age_in / 0.2), ease((2.2 - age_in) / 0.4))
-            label = g.name
-            tw = A.f_chip.getlength(label) / SS
-            cy = sy + (r_tip(g) * zoom + (50 if g.n >= 40 else 76)) * (-1 if g.side > 0 else 1)
-            x0, y0 = sx - tw / 2 - 12, cy - 17
-            dr.rounded_rectangle([x0 * SS, y0 * SS, (x0 + tw + 24) * SS, (y0 + 34) * SS], radius=8 * SS, fill=(14, 14, 18))
-            dr.text(((x0 + 12) * SS, (y0 + 17) * SS), label, font=A.f_chip, fill=scale(g.colour, ca), anchor="lm")
+            up = g.side > 0
+            base = sy + (r_tip(g) * zoom + 30) * (-1 if up else 1) + LABEL_DY.get(g.key, 0) * (1 if up else -1)
+            lx_ = sx + LABEL_DX.get(g.key, 0)
+            name = g.short.replace("GUITARS", "GTRS")
+            if up:
+                dr.text((lx_ * SS, base * SS), name, font=A.f_label, fill=scale(g.colour, a), anchor="ms")
+                dr.text((lx_ * SS, (base - 42) * SS), f"{g.n} TEETH", font=A.f_label_s, fill=scale(DIM, a), anchor="ms")
+            else:
+                dr.text((lx_ * SS, base * SS), name, font=A.f_label, fill=scale(g.colour, a), anchor="mt")
+                dr.text((lx_ * SS, (base + 42) * SS), f"{g.n} TEETH", font=A.f_label_s, fill=scale(DIM, a), anchor="mt")
 
     # --- slip bracket at each cycle start once the beat is in play
     tl = T % R.CYCLE
@@ -460,7 +513,7 @@ def render_frame(A, f):
                 p1 = polar(gx * SS, gy * SS, (r_arc + 8) * SS, th)
                 dr.line([p0, p1], fill=col, width=int(4 * SS))
             word = "1 tooth ahead" if sl == 1 else f"{sl} teeth ahead"
-            dr.text(((gx + r_arc + 18) * SS, gy * SS), word, font=A.f_mono_s, fill=col, anchor="lm")
+            dr.text(((gx + r_arc + 22) * SS, gy * SS), word, font=A.f_bracket, fill=col, anchor="lm")
 
     # --- captions (top)
     idx = R.caption_index(T)
@@ -494,46 +547,47 @@ def render_frame(A, f):
         dr.text((W / 2 * SS, y * SS), line, font=A.f_sub, fill=scale(DIM, alpha), anchor="mm")
         y += 42
 
-    # --- bottom strip: group counter | lap | slip, then the stack
-    lx, ry = 60, 1440
+    # --- readout strip: row A group counter + lap, row B slip (+ the cut note), row C the stack
+    lx, ry = 60, 1392
+    dot_r, dot_dx = 12, 38
     if T < R.K_TURN:
         gi, gs, gsize = R.group_of(n_now % R.CYCLE)
         p_in = n_now % R.CYCLE - gs
         dr.text((lx * SS, ry * SS), str(gsize), font=A.f_group, fill=scale(TEXT, live), anchor="lm")
         for q in range(gsize):
-            x0 = lx + 42 + q * 30
+            x0 = lx + 50 + q * dot_dx
             reached = q <= p_in
             if gs + q in R.RIM_RESTS:
-                dr.ellipse([(x0 - 9) * SS, (ry - 9) * SS, (x0 + 9) * SS, (ry + 9) * SS], outline=(TEXT if reached else DIMMER), width=int(2 * SS))
+                dr.ellipse([(x0 - dot_r) * SS, (ry - dot_r) * SS, (x0 + dot_r) * SS, (ry + dot_r) * SS], outline=(TEXT if reached else DIMMER), width=int(2.5 * SS))
             else:
-                dr.ellipse([(x0 - 9) * SS, (ry - 9) * SS, (x0 + 9) * SS, (ry + 9) * SS], fill=(R.BY_KEY["rim"].colour if reached else DIMMER))
+                dr.ellipse([(x0 - dot_r) * SS, (ry - dot_r) * SS, (x0 + dot_r) * SS, (ry + dot_r) * SS], fill=(R.BY_KEY["rim"].colour if reached else DIMMER))
     else:
         c_in = (n_now - R.K_TURN) % 6
         dr.text((lx * SS, ry * SS), "6", font=A.f_group, fill=scale(TEXT, live), anchor="lm")
         for q, cell in enumerate(R.TURN_CELL):
-            x0 = lx + 42 + q * 30
+            x0 = lx + 50 + q * dot_dx
             reached = q <= c_in
             if cell == ".":
-                dr.ellipse([(x0 - 9) * SS, (ry - 9) * SS, (x0 + 9) * SS, (ry + 9) * SS], outline=(TEXT if reached else DIMMER), width=int(2 * SS))
+                dr.ellipse([(x0 - dot_r) * SS, (ry - dot_r) * SS, (x0 + dot_r) * SS, (ry + dot_r) * SS], outline=(TEXT if reached else DIMMER), width=int(2.5 * SS))
             else:
                 colr = R.BY_KEY["kick"].colour if cell == "K" else (255, 255, 255)
-                dr.ellipse([(x0 - 9) * SS, (ry - 9) * SS, (x0 + 9) * SS, (ry + 9) * SS], fill=(scale(colr, live) if reached else DIMMER))
+                dr.ellipse([(x0 - dot_r) * SS, (ry - dot_r) * SS, (x0 + dot_r) * SS, (ry + dot_r) * SS], fill=(scale(colr, live) if reached else DIMMER))
     la = ease((T - R.K_PULSE) * R.SIXTEENTH / 0.5) * live
     if la > 0:
         lap_txt = f"LAP {min(int(T // R.CYCLE), R.N_LAPS_CYCLE - 1) + 1} / {R.N_LAPS_CYCLE}" if T < R.K_TURN else "6/4 TURN"
-        dr.text((300 * SS, ry * SS), lap_txt, font=A.f_lap, fill=scale(TEXT, la), anchor="lm")
-        sx0 = 540
-        dr.text((sx0 * SS, ry * SS), "SLIP", font=A.f_mono_s, fill=scale(DIM, la), anchor="lm")
+        dr.text((330 * SS, ry * SS), lap_txt, font=A.f_lap, fill=scale(TEXT, la), anchor="lm")
+        sy_b = 1446
+        dr.text((lx * SS, sy_b * SS), "SLIP", font=A.f_mono, fill=scale(DIM, la), anchor="lm")
         for i in range(4):
-            x0 = sx0 + 62 + i * 32
-            box = [x0 * SS, (ry - 10) * SS, (x0 + 22) * SS, (ry + 10) * SS]
+            x0 = lx + 90 + i * 36
+            box = [x0 * SS, (sy_b - 13) * SS, (x0 + 26) * SS, (sy_b + 13) * SS]
             if i < sl:
                 dr.rectangle(box, fill=scale(AMBER, la))
             else:
-                dr.rectangle(box, outline=scale(DIM, la), width=int(1.5 * SS))
+                dr.rectangle(box, outline=scale(DIM, la), width=int(2 * SS))
         label = "HOME" if sl == 0 else (f"{sl} TOOTH" if sl == 1 else f"{sl} TEETH")
-        dr.text(((sx0 + 62 + 4 * 32 + 8) * SS, ry * SS), label, font=A.f_mono_s, fill=scale(AMBER if sl else HOME_WHITE, la), anchor="lm")
-    sy = 1492
+        dr.text(((lx + 90 + 4 * 36 + 10) * SS, sy_b * SS), label, font=A.f_mono, fill=scale(AMBER if sl else HOME_WHITE, la), anchor="lm")
+    sy = 1502
     xcur = lx
     for key in R.STACK_KEYS:
         g = R.BY_KEY[key]
@@ -545,14 +599,14 @@ def render_frame(A, f):
                 if (R.BY_KEY[k2].stack or k2) == key and R.engaged(k2, n) and R.hits_at(k2, n):
                     lit = max(lit, max(0.0, 1 - (T - n) * R.SIXTEENTH / 0.16))
         dcol = mix(col, (255, 255, 255), lit * 0.8 * live) if on else DIMMER
-        rad = 6 + 3 * lit
+        rad = 7 + 3 * lit
         dr.ellipse([(xcur + 8 - rad) * SS, (sy - rad) * SS, (xcur + 8 + rad) * SS, (sy + rad) * SS], fill=dcol)
-        dr.text(((xcur + 24) * SS, sy * SS), g.name, font=A.f_mono_s, fill=(col if on else DIMMER), anchor="lm")
-        xcur += 24 + A.f_mono_s.getlength(g.name) / SS + 30
+        dr.text(((xcur + 24) * SS, sy * SS), g.name, font=A.f_mono, fill=(col if on else DIMMER), anchor="lm")
+        xcur += 24 + A.f_mono.getlength(g.name) / SS + 20
     age_cut = (T - R.K_BAND) * R.SIXTEENTH
     if 1.9 <= age_cut < 4.6:
         a = min(ease((age_cut - 1.9) / 0.3), ease((4.6 - age_cut) / 0.4))
-        dr.text((lx * SS, 1530 * SS), "cut: record bars 34-41 (pulse alone) removed here", font=A.f_mono_xs, fill=scale(DIM, a), anchor="lm")
+        dr.text((440 * SS, 1446 * SS), "cut: bars 34-41 removed", font=A.f_mono_s, fill=scale(DIM, a), anchor="lm")
 
     # --- closing card over the audio fade
     if end_dim > 0:

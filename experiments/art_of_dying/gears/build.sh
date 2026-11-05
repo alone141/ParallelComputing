@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Round 4/5: render the SILENT picture for the original recording (one gear per instrument).
+# Round 4-6: render the SILENT picture for the original recording (one gear per instrument).
 #   ./build.sh                       # 140.000 bpm, first click at 0.000 s -> 4783 frames
 #   AOD_BPM=139.85 AOD_OFFSET=0.12 ./build.sh    # re-render on a measured tempo / offset
 # Frames (Pillow, 4 workers, ~12 min on 4 CPUs) -> MP4 (H.264 yuv420p, no audio track) -> stills.
@@ -14,7 +14,7 @@ python3 render.py --out "$WORK/frames" --workers 4
 ffmpeg -y -v error -framerate 60 -i "$WORK/frames/f%05d.png" \
   -c:v libx264 -preset slow -crf 28 -pix_fmt yuv420p -r 60 -movflags +faststart -an \
   "$HERE/art_of_dying_gears_record_silent.mp4"
-python3 render.py --still 0 1130 1159 2025 3415 3462 3473 3482 3700 4650 4782 --out "$HERE/stills"
+python3 render.py --still 0 40 1130 1159 2025 3440 3473 3482 3700 4700 4782 --out "$HERE/stills"
 ffprobe -v error -select_streams v -count_frames \
   -show_entries stream=nb_read_frames,r_frame_rate,pix_fmt,width,height -show_entries format=duration,size \
   "$HERE/art_of_dying_gears_record_silent.mp4"
