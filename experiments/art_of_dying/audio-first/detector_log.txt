@@ -1,0 +1,36 @@
+t=  0.0s tatum=   0.0ms  thump : P=  0 (0.00)  click : P=  0 (0.00)  -> cycle=  0 beat= 0
+t=  1.0s tatum= 108.0ms  thump : P=  0 (0.00)  click*: P=  0 (-0.10)  -> cycle=  0 beat= 0
+t=  2.0s tatum= 107.3ms  thump : P=  0 (0.00)  click*: P=  5 (0.70)  -> cycle=  5 beat= 0
+t=  3.0s tatum= 107.3ms  thump : P=  0 (0.00)  click*: P=  0 (0.27)  -> cycle=  0 beat= 0
+t=  4.0s tatum= 107.1ms  thump : P=  0 (0.00)  click*: P=  0 (0.29)  -> cycle=  0 beat= 0
+t=  5.0s tatum= 107.2ms  thump : P=  0 (0.00)  click*: P= 21 (0.32)  -> cycle= 21 beat= 0
+t=  6.0s tatum= 107.1ms  thump : P=  0 (0.00)  click*: P= 24 (0.61)  -> cycle= 24 beat= 0
+t=  7.0s tatum= 107.1ms  thump : P=  0 (0.00)  click*: P= 21 (0.59)  -> cycle= 21 beat= 0
+t=  8.0s tatum= 107.1ms  thump : P=  0 (0.00)  click*: P= 24 (0.58)  -> cycle= 24 beat= 0
+t=  9.0s tatum= 107.1ms  thump : P=  0 (0.00)  click*: P= 24 (0.68)  -> cycle= 24 beat= 0
+t= 10.0s tatum= 107.1ms  thump : P=  0 (0.00)  click*: P= 45 (0.92)  -> cycle= 45 beat= 0
+t= 11.0s tatum= 107.1ms  thump : P=  0 (0.00)  click*: P= 45 (0.84)  -> cycle= 45 beat= 0
+t= 12.0s tatum= 107.2ms  thump : P=  0 (0.00)  click*: P= 45 (0.78)  -> cycle= 45 beat= 0
+t= 13.0s tatum= 107.2ms  thump*: P=  4 (0.82)  click*: P= 45 (0.75)  -> cycle= 45 beat= 4
+t= 14.0s tatum= 107.2ms  thump*: P=  4 (0.87)  click*: P= 45 (0.74)  -> cycle= 45 beat= 4
+t= 15.0s tatum= 107.1ms  thump*: P=  4 (0.87)  click*: P= 45 (0.72)  -> cycle= 45 beat= 4
+t= 16.0s tatum= 107.1ms  thump*: P=  4 (0.78)  click*: P= 45 (0.69)  -> cycle= 45 beat= 4
+t= 17.0s tatum= 107.1ms  thump*: P=  4 (0.79)  click*: P= 45 (0.69)  -> cycle= 45 beat= 4
+t= 18.0s tatum= 107.1ms  thump*: P=  4 (0.75)  click*: P= 45 (0.67)  -> cycle= 45 beat= 4
+t= 19.0s tatum= 107.1ms  thump*: P=  4 (0.74)  click*: P= 45 (0.64)  -> cycle= 45 beat= 4
+t= 20.0s tatum= 107.1ms  thump*: P=  4 (0.76)  click*: P= 45 (0.64)  -> cycle= 45 beat= 4
+t= 21.0s tatum= 107.1ms  thump*: P=  4 (0.77)  click*: P= 45 (0.61)  -> cycle= 45 beat= 4
+t= 22.0s tatum= 107.1ms  thump*: P=  4 (0.79)  click*: P= 45 (0.60)  -> cycle= 45 beat= 4
+t= 23.0s tatum= 107.1ms  thump*: P=  4 (0.75)  click*: P= 45 (0.56)  -> cycle= 45 beat= 4
+t= 24.0s tatum= 107.1ms  thump*: P=  4 (0.77)  click*: P= 45 (0.52)  -> cycle= 45 beat= 4
+t= 25.0s tatum= 107.1ms  thump*: P=  4 (0.78)  click*: P= 45 (0.51)  -> cycle= 45 beat= 4
+t= 26.0s tatum= 107.1ms  thump*: P=  4 (0.73)  click*: P= 45 (0.48)  -> cycle= 45 beat= 4
+t= 27.0s tatum= 107.1ms  thump*: P=  4 (0.75)  click*: P= 24 (0.48)  -> cycle= 24 beat= 4
+t= 28.0s tatum= 107.1ms  thump*: P=  4 (0.75)  click*: P= 24 (0.48)  -> cycle= 24 beat= 4
+t= 29.0s tatum= 107.1ms  thump*: P=  4 (0.77)  click*: P= 24 (0.55)  -> cycle= 24 beat= 4
+t= 30.0s tatum= 107.1ms  thump*: P=  4 (0.75)  click*: P= 24 (0.52)  -> cycle= 24 beat= 4
+t= 31.0s tatum= 107.1ms  thump*: P=  4 (0.71)  click*: P= 24 (0.47)  -> cycle= 24 beat= 4
+t= 32.0s tatum= 107.1ms  thump*: P=  4 (0.65)  click*: P= 24 (0.41)  -> cycle= 24 beat= 4
+t= 33.0s tatum= 107.2ms  thump*: P=  4 (0.61)  click*: P= 24 (0.44)  -> cycle= 24 beat= 4
+t= 34.0s tatum= 107.2ms  thump*: P=  4 (0.59)  click*: P= 24 (0.43)  -> cycle= 24 beat= 4
+t= 35.0s tatum= 107.2ms  thump*: P=  4 (0.61)  click*: P= 12 (0.40)  -> cycle= 12 beat= 4

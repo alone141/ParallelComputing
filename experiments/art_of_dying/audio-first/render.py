@@ -101,7 +101,7 @@ def draw_hears(draw, k, t):
             hgt = 60 + 90 * min(1, s)
             draw.line([(x, y1), (x, y1 - hgt)], fill=AMBER, width=5)
     draw.line([(x1, y0 - 10), (x1, y1 + 6)], fill=WHITE, width=3)
-    draw.text((640, 438), "▮ click", font=F_SMALL, fill=AMBER)
+    draw.text((640, 438), "| click", font=F_SMALL, fill=AMBER)
     draw.text((780, 438), "● thump", font=F_SMALL, fill=CORAL)
 
 def draw_acf(draw, k, t, tatum_ms, loop, hit):
