@@ -4,29 +4,29 @@
  "artist": "Meshuggah",
  "bpm": 115.0,
  "steps_per_beat": 4,
- "first_click_offset_s": 0.0,
+ "first_click_offset_s": 0.2645,
  "first_step_guess_s": 0.24,
  "total_steps": 520,
- "total_s": 67.826087,
- "frames": 4070,
+ "total_s": 68.090876,
+ "frames": 4085,
  "fps": 60,
  "segments": [
   {
    "film_step": 0,
    "record_step": 0,
    "steps": 392,
-   "bpm": 115.0,
-   "film_s": 0.0,
-   "step_s": 0.130434783,
+   "bpm": 114.9986,
+   "film_s": 0.2645,
+   "step_s": 0.130436371,
    "label": "2/4 \u00b7 GUITARS ALONE"
   },
   {
    "film_step": 392,
    "record_step": 392,
    "steps": 128,
-   "bpm": 115.0,
-   "film_s": 51.130435,
-   "step_s": 0.130434783,
+   "bpm": 115.0023,
+   "film_s": 51.395557,
+   "step_s": 0.130432174,
    "label": "RIPPLES ASCEND",
    "level_jump": true
   }

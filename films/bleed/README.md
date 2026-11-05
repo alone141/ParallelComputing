@@ -30,8 +30,9 @@ of the record aligns it with `record_map.json` and muxes it (see the skill's "Fi
 Cross-check: the tab's seven tracks agree with each other (both guitars, the bass and the kick line
 are identical in rhythm for bars 1-24 and 26-33); the bar start times of the tab's synced video give
 114.95 bpm over bars 1-33 and 1.04 s for bar 25 (half a bar); the owner's recording measures 114.95 bpm
-and starts at 0.24 s. The film is rendered at the nominal 115 bpm
-until the measured tempo and offset are pasted into the song data.
+and starts at 0.2645 s. The film is rendered on the measured clock: the bar-1 downbeat (record step 0)
+at 0.2645 s, 114.9986 bpm over bars 1-25 and 115.0023 bpm over bars 26-33 (the record is on a click at
+115; bar 26 predicted from bars 1-25 alone and fitted independently agree to the millisecond).
 
 ## The gears
 
@@ -62,18 +63,18 @@ cell: 16 = 3 × 5 + 1, HOME at bar 31.
 
 ## Timeline
 
-| Film s | Step | Bar | What happens |
+| Film s (measured clock) | Step | Bar | What happens |
 |---|---|---|---|
-| 0.0 | 0 | 1 | all five wheels in mesh from frame 0; crash; hook caption |
-| 2.1 | 16 | 2 | the bracket: the bar line falls one tooth into the cell |
-| 6.3 | 48 | 4 | HOME (gold ring); then every third bar |
-| 16.7 | 128 | 9 | "Beams of Fire": the voice enters two teeth into the cell |
-| 33.4 | 256 | 17 | "My Crimson Liquid": one tooth into the cell |
-| 49.8 | 382 | 24 | the band stops after beat 4's first stroke; the five wheels lift and roll out |
-| 50.1 | 384 | 25 | HOME; the 2/4 wheel drops in: guitars alone, eight teeth |
-| 51.1 | 392 | 26 | "Ripples Ascend": five new wheels drop in with the crash; the new five-tooth cell |
-| 61.6 | 472 | 31 | HOME, five bars later |
-| 66.6-67.8 | 510-520 | 33 | fade into the closing card |
+| 0.3 | 0 | 1 | all five wheels in mesh from frame 0; crash; hook caption (up from frame 0) |
+| 2.4 | 16 | 2 | the bracket: the bar line falls one tooth into the cell |
+| 6.5 | 48 | 4 | HOME (gold ring); then every third bar |
+| 17.0 | 128 | 9 | "Beams of Fire": the voice enters two teeth into the cell |
+| 33.7 | 256 | 17 | "My Crimson Liquid": one tooth into the cell |
+| 50.1 | 382 | 24 | the band stops after beat 4's first stroke; the five wheels lift and roll out |
+| 50.4 | 384 | 25 | HOME; the 2/4 wheel drops in: guitars alone, eight teeth |
+| 51.4 | 392 | 26 | "Ripples Ascend": five new wheels drop in with the crash; the new five-tooth cell |
+| 61.8 | 472 | 31 | HOME, five bars later |
+| 66.9-68.1 | 510-520 | 33 | fade into the closing card |
 
 Nothing is cut: the film is record steps 0-519 (bars 1-33) in one piece; the two segments in the
 record map are consecutive, split only so the audio fit can lock bar 26 on its level jump. The film
@@ -103,8 +104,8 @@ again).
 
 | File | What |
 |---|---|
-| `bleed_silent.mp4` | the engine's silent render, 1080×1920, 60 fps, 4070 frames, no audio |
-| `record_map.json` | segments and anchors for the audio tools |
+| `bleed_silent.mp4` | the engine's silent render, 1080×1920, 60 fps, 4085 frames (68.09 s on the measured clock), no audio |
+| `record_map.json` | segments and anchors for the audio tools. The snare anchor (150-450 Hz) could not lock on the recording: that band is full of the riff's own harmonics (D♯ at 156, 233, 311, 389 Hz on every sixteenth), and the kick comb, on every sixteenth, carries no phase. What locked was the riff itself, the second strike of every double (broadband plus the kick's low band), the file's start and the level step at bar 26. A future song with a riff on every step should offer such an off-grid strike as an anchor |
 | `stills/`, `contact_sheet.png` | frames at the hook, the bracket, each kind of HOME, the vocal entries, the swap, the new set, the closing card |
 
 ```

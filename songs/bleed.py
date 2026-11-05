@@ -17,7 +17,8 @@ bar 24 (a home bar); bar 25 is 2/4, guitars alone: the new cell once, then the o
 26 ("Ripples Ascend") the cell is xxx.x.x.x. (ten 32nds): 20, 19, 19, 19, 19 notes per bar, home
 every five bars; the snare's pushes follow the cell (a five-bar pattern); open hi-hat on eighths.
 
-Step = one sixteenth (4 per beat). Film: record steps 0-519 (bars 1-33), nothing cut. On the
+Step = one sixteenth (4 per beat). Film: record steps 0-519 (bars 1-33), nothing cut. Measured on the
+owner's recording: the bar-1 downbeat at 0.2645 s, 114.9986 bpm (bars 1-25) and 115.0023 bpm (26-33). On the
 sixteenth grid the old cell is three teeth [double, tall, tall] and the new one five
 [double, tall, tall, tall, tall]; `double` strikes twice inside its step (the two 32nds).
 """
@@ -144,12 +145,12 @@ SECTIONS = [
 SONG = Song(
     slug="bleed",
     title="Bleed", artist="Meshuggah", album="obZen", year=2008,
-    bpm=115.0, steps_per_beat=4, first_click_offset_s=0.0,
+    bpm=115.0, steps_per_beat=4, first_click_offset_s=0.2645,      # measured on the owner's recording
     segments=[
         # one continuous stretch of the record; two segments so the audio fit can lock the band's
         # re-entry at bar 26 on its level jump (bar 25 is guitars alone, no anchor hits there)
-        Segment(record_start=0, steps=K_NEW, label="2/4 · GUITARS ALONE"),       # the label shows only during bar 25
-        Segment(record_start=K_NEW, steps=K_END - K_NEW, label="RIPPLES ASCEND", level_jump=True),
+        Segment(record_start=0, steps=K_NEW, bpm=114.9986, label="2/4 · GUITARS ALONE"),   # the label shows only during bar 25
+        Segment(record_start=K_NEW, steps=K_END - K_NEW, bpm=115.0023, label="RIPPLES ASCEND", level_jump=True),
     ],
     sections=SECTIONS,
     gears=GEARS,
