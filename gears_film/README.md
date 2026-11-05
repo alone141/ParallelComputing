@@ -15,7 +15,8 @@ GEARS_BPM=139.85 GEARS_OFFSET=0.12 python3 -m gears_film render songs/art_of_dyi
 ```
 
 Needs `numpy`, `Pillow`, `ffmpeg`, and the Inter / Inter Display / JetBrains Mono fonts at the
-paths in `render.py`. Outputs go to `gears_film/out/<slug>/` (ignored by git).
+paths in `render.py`. Outputs go to `gears_film/out/<slug>/` (ignored by git); a song's deliverables (README, the silent
+MP4, stills, contact sheet, record_map.json) are committed under `films/<slug>/`.
 
 | File | What |
 |---|---|
@@ -24,7 +25,9 @@ paths in `render.py`. Outputs go to `gears_film/out/<slug>/` (ignored by git).
 | `build.py` | parallel frame rendering, ffmpeg encode, frame-count check, record map |
 | `__main__.py` | the CLI |
 | `sound/` | the borrowed synthesised instruments and DSP (a library; the films are silent) |
-| `../songs/art_of_dying.py` | the worked example |
+| `../songs/art_of_dying.py` | the worked example (Gojira) |
+| `../songs/schism.py`, `../films/schism/` | Tool, "Schism": 5/8 + 7/8 on an eighth-note step, teeth typed by pitch, a 6/8 ghost wheel, 13-tooth chorus gears with `origin` |
+| `../songs/bleed.py`, `../films/bleed/` | Meshuggah, "Bleed": a 3-tooth cell under a 16-tooth bar, `double` and `late` teeth, every gear in mesh from frame 0, a ranged slip list, a 2/4 swap |
 | `../songs/example_minimal.py` | a template with a tempo map, an eighth-note step, 5/8 + 7/8 bars, a herta tooth |
 | `../.claude/skills/gears-film/SKILL.md` | how to build a new song |
 
@@ -36,19 +39,26 @@ paths in `render.py`. Outputs go to `gears_film/out/<slug>/` (ignored by git).
 - time: `bpm` (nominal; env `GEARS_BPM` overrides), `steps_per_beat` (2, 4, 8, ...),
   `first_click_offset_s` (env `GEARS_OFFSET`)
 - record map: `sections` (bar lengths in steps, for bar numbering), `segments` (kept record stretches
-  in film order, each with an optional `bpm`: the tempo map; gaps are cuts)
+  in film order, each with an optional `bpm`: the tempo map; gaps are cuts; `level_jump` and
+  `search_s` pass through to the record map for the audio fit)
 - tooth types: built-in `tall stub long medium double herta`, plus the song's own
   `tooth_types={name: dict(add, width, bright, subhits, tips, ext, shade)}` (type teeth by hit/rest,
   by pitch, or by subdivision)
 - gears: `Gear(key, name, short, colour, teeth, strikes={pos: tooth type name},
   side=±1, x, ranges=((k_in, k_out), ...), sound, first_hit, colour2, colour2_positions,
-  white_position, stack, lead, label_dx, label_dy)`
-- readouts: `counters` (bar lengths per cycle, which gears fill the dots), `slip=SlipSpec(cycle_gear,
-  beat_steps, beat_gears)` (slip per lap and HOME are derived), `cycle_steps`, `cycle_end`, `stack`,
-  `cut_note`
+  white_position, stack, lead, label_dx, label_dy, origin)`; `origin` is the film step at which
+  strike position 0 is on the contact line, for a gear whose count does not divide its entry step
+  (`phase=p` is a deprecated alias for `origin = -p mod teeth`)
+- readouts: `counters` (bar lengths per cycle, which gears fill the dots; a tooth type's `shade`
+  colours its dot), `slip=SlipSpec(cycle_gear, beat_steps, beat_gears, k_from, k_to)` or a list of
+  them (slip per lap and HOME are derived; a ranged spec also flashes HOME where it ends),
+  `cycle_steps`, `cycle_end`, `rack_marks` (explicit notched-tooth steps when the cycle length
+  changes), `lap_word`, `lap_label_pos`, `stack`, `cut_note`
 - captions: `moments=[Moment(step, title, subtitle, kind, colour)]`
 - camera: `camera=[CameraMove(...)]` or empty for automatic framing
-- audio tools: `anchors`, `first_step_guess_s`, `crossfade_s`, `end_fade_s`, `gain_db`
+- audio tools: `anchors` (`Anchor(name, band_hz, gears, tooth_types=(), on_grid=True)`),
+  `first_step_guess_s`, `crossfade_s`, `end_fade_s`, `gain_db`. `first_click_offset_s` is leading
+  picture before step 0, not the record's offset: it stays 0 unless a lead-in is wanted
 
 Derived: `total_steps`, `total_s`, `n_frames = round(total_s × 60)`, `step_time(k)`, `k_at(frame)`,
 `record_step(k)`, `record_bar(k)`, `hits_at(key, k)`, `slip_at(k)`, `homes`, `record_map()`.

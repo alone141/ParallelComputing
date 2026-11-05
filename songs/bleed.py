@@ -72,18 +72,18 @@ GEARS = [
     # bar 25, 2/4: the guitars alone, eight teeth: the new cell once, then the old one
     Gear("g24", "GTRS", "2/4", GREEN, 8, {**cells(5, NEW), **{5: "double", 6: "tall", 7: "tall"}}, -1, 24 * P,
          ((K_24, K_NEW),), sound="chug", stack="riff", label_dy=130),
-    # bars 26-33: the new cell. 392 is not a multiple of 20 or 16: these wheels are keyed (phase 8)
-    # so that their tooth 0 is on the contact at step 392.
+    # bars 26-33: the new cell. 392 is not a multiple of 20 or 16, so these wheels name their origin:
+    # strike position 0 is on the contact at step 392.
     Gear("riff2", "GTRS", "GUITARS", GREEN, 20, cells(20, NEW), +1, 29 * P, ((K_NEW, K_END),), sound="chug",
-         stack="riff", phase=8),
+         stack="riff", origin=K_NEW),
     Gear("cym2", "CYMBAL", "HAT", SKY, BAR, CYM, -1, 29 * P, ((K_NEW, K_END),), sound="ride", first_hit="crash",
-         white_position=0, stack="cym", phase=8, lead=0.1),
+         white_position=0, stack="cym", origin=K_NEW, lead=0.1),
     Gear("kick2", "KICK", "KICK", RED, 20, cells(20, NEW), -1, 45 * P, ((K_NEW, K_END),), sound="kick",
-         colour2=RED_L, colour2_positions=LEFT_NEW, stack="kick", phase=8, lead=0.2),
+         colour2=RED_L, colour2_positions=LEFT_NEW, stack="kick", origin=K_NEW, lead=0.2),
     Gear("bass2", "BASS", "BASS", VIOLET, 20, cells(20, NEW), -1, 37 * P, ((K_NEW, K_END),), sound="note",
-         stack="bass", phase=8, lead=0.3),
+         stack="bass", origin=K_NEW, lead=0.3),
     Gear("snare2", "SNARE", "SNARE", WHITE, BAR, SNARE_NEW, +1, 45 * P, ((K_NEW, K_END),), sound="snare",
-         stack="snare", phase=8, lead=0.4),
+         stack="snare", origin=K_NEW, lead=0.4),
 ]
 
 TOOTH_TYPES = {
