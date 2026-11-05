@@ -232,6 +232,18 @@ level jump (the downbeat sits 0–50 ms before it) and cannot be fooled by a one
 there. If the fit prints AMBIGUOUS and the segment has no level jump, choose a more percussive anchor
 or two anchors in different bands.
 
+How the fit works, so you can read its output: consecutive segments with nothing cut between them
+form a *run*, fitted as one long comb (long combs pin tempo), then each segment is refined within
+±0.6 % and ±60 ms; inside a run each segment's bpm is then *defined by the measured boundaries*, so
+the audio is used uncut and the picture's clock matches it exactly. Anchors with fewer than 16 hits
+in a stretch do not vote. Bands below 150 Hz or narrower than two STFT bins are band-passed exactly
+(a bass pedal, one pitch), the rest come from the 512-point STFT. Lessons from the first three songs:
+drum anchors are unreliable where the drummer varies the written pattern (Schism's verse); a riff
+whose hit pattern nearly maps onto itself shifted by a step or two (Schism's 0 2 | 5 7 9) needs
+*pitch-specific* anchors (one band per note: F3 at 0 and 5, E3 at 2 and 7, G3 at 9) to fix the
+downbeat; and the file may not be the album (an official-video rip had 33 s of video audio and a
+hard digital cut before the song), so check the level profile of the whole file first.
+
 Paste each segment's measured bpm into the song data's tempo map and the first segment's offset into
 `first_click_offset_s`, then re-render the picture, so picture and sound share one clock.
 
