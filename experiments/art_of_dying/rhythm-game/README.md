@@ -29,6 +29,7 @@ owner's own version makes the same choice.
 | `soundtrack.py` | the mix: places every hit from `rhythm.events()`, calibrates layer balance, reverb, true-peak limiter |
 | `sound_voices.py`, `sound_dsp.py` | the instruments and the DSP, copied unchanged from the owner's version (see Credits) |
 | `build.sh`, `contact_sheet.py`, `loop_check.py` | rebuild everything; review tools |
+| `contact_sheet.png` | one frame every 1.6 s of the final film |
 
 ## How to run
 
@@ -66,7 +67,8 @@ snare; a ghosted ride ping and the ride bell; a picked bass on C1 (32.7 Hz) with
 held; two palm-muted guitars on C2 through a high-gain stage and a cabinet, panned left and right; a
 low choir on C that breathes but never ducks. Layer balance is set by measurement (each layer alone over
 the full-mix lap, K-weighted, relative to the kit). A circular reverb and a circular true-peak limiter
-make the loop seamless. Master: −14.0 LUFS integrated, −2.0 dBTP before AAC.
+make the loop seamless. Master: −14.0 LUFS integrated, −2.0 dBTP before AAC; the final MP4 measures −14.0 LUFS and −1.5 dBTP
+(ffmpeg `ebur128=peak=true`).
 
 ## What changed from round 1
 
@@ -104,8 +106,10 @@ make the loop seamless. Master: −14.0 LUFS integrated, −2.0 dBTP before AAC.
   misses on the odd groups until taught) was cut: a miss means silence, and silence breaks the music the
   film exists to teach. So nobody ever misses, and FULL COMBO is a foregone conclusion.
 - **The focus lap for the ride is too quiet.** The ride is balanced −8 LU under the kit; when every
-  other part ducks −8 dB for its focus lap, lap 4 drops about 3 LU below its neighbours. The duck is the
-  recipe; the ride should get a smaller duck or a louder focus level.
+  other part ducks −8 dB for its focus lap, lap 4 drops about 2.5 LU below its neighbours (per-lap
+  loudness: −18.5, −13.5, −12.1, −15.6, −14.9, −14.1, −12.3, −14.6 LUFS). I added a +4 dB boost to the
+  ride in its own focus lap (+1.5 dB for the others); it moved the number by 0.1 LU, because the duck on
+  the loud parts dominates. A smaller duck for that one lap is the real fix.
 - **The caption band covers the top of the lanes** for about 0.3 s of every note's approach, and it
   hides the LAP tag on lines that are still high up. The alternative (captions below the hit line) is in
   the apps' UI zone.
