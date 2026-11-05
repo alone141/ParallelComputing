@@ -86,7 +86,13 @@ and a herta) or `songs/art_of_dying.py` (the full worked example) and replace ev
    ride's tall teeth ring the bell and its medium teeth ping; `first_hit="crash"` for a crash on
    entry. `white_position` paints one tooth white (the cycle start). `colour2` + `colour2_positions`
    for a second pitch (C1/C2). `stack` makes a second gear light an existing stack row. `lead`
-   staggers simultaneous arrivals. `label_dx/dy` step a small gear's label aside.
+   staggers simultaneous arrivals. `label_dx/dy` step a small gear's label aside. `origin` names the
+   film step at which strike position 0 is on the contact line, for a gear whose tooth count does not
+   divide its entry step (a 13-tooth chorus gear entering at 240 has `origin=240`; Bleed's bar-26 set,
+   entering at 392 with 16 and 20 teeth, has `origin=392`). The rack drives every gear with one phase
+   (tooth index k is on the contact at step k), so `origin` only decides which strike position each
+   tooth index carries; `check` verifies `(entry - origin) % teeth == 0`. (`phase=p` is accepted as a
+   deprecated alias meaning `origin = -p mod teeth`.)
 5. **Choosing tooth counts** so every gear lands on tooth 0 at its entries and the slip stays
    readable: a gear's count must divide every one of its entry steps. A 4/4 part in a 45-step cycle
    that enters at 180, 540 and 720 fits a 12-tooth gear (three beats per turn; 180, 540, 720 are
@@ -94,10 +100,16 @@ and a herta) or `songs/art_of_dying.py` (the full worked example) and replace ev
    8°. A six-step turnaround cell fits a 12-tooth gear that goes round twice. For Bleed-style 32nd
    figures use an eighth-note step and `herta` teeth (24-tooth gears, not 96). Prefer the smallest
    count that divides the entries and holds the pattern.
-6. **Slip and HOME:** `SlipSpec(cycle_gear, beat_steps, beat_gears)`. Slip per lap = cycle teeth
-   mod beat steps; laps to home = beat / gcd. The readout fades in when the first beat gear enters;
-   HOME flashes where the slip returns to 0 while that gear is engaged. A non-drifting pair gets no
-   HOME. The bracket is drawn on whichever `beat_gears` entry is engaged.
+6. **Slip and HOME:** `SlipSpec(cycle_gear, beat_steps, beat_gears, k_from=0, k_to=None)`. Slip per
+   lap = cycle teeth mod beat steps; laps to home = beat / gcd. The readout fades in when the first
+   beat gear enters; HOME flashes where the slip returns to 0 while that gear is engaged, and exactly
+   where a ranged spec ends (the home its stretch was heading for). A non-drifting pair gets no HOME.
+   The bracket is drawn on whichever `beat_gears` entry is engaged. `slip` may be a *list* of specs
+   with `k_from` / `k_to` when the cycle gear or the beat changes (Bleed: the 16-tooth bar against a
+   3-tooth cell, then against a 5-tooth cell). `lap_word` ("BAR") renames the LAP readout and
+   `lap_label_pos=(x, y)` moves it when a wide counter (16 dots) would push it into the button column.
+   `rack_marks=(steps...)` places the rail's notched teeth explicitly when the cycle length changes
+   (Schism: every 12 steps, then every 13); otherwise one every `cycle_steps`.
 7. **Counters:** `Counter(gears, bars, k_from, k_to)`: the current bar's steps as dots, filled in the
    colour of the first listed gear that strikes there, hollow for a rest. Bars of unequal length
    (5 5 5 3 3 3 | 5 5 5 3 3, or 5/8 + 7/8) are just the list.
@@ -107,7 +119,10 @@ and a herta) or `songs/art_of_dying.py` (the full worked example) and replace ev
 9. **Camera:** leave `camera` empty for automatic framing (wide while gears arrive, settle after
    the leavers go), or give `CameraMove` keyframes (`keys` to fit, or `cam_x`/`zoom`); the first
    entry is the opening frame. Explicit moves are better once the layout is known.
-10. **Anchors:** one or two distinctive instruments with a frequency band, for the audio tools.
+10. **Anchors:** one or two distinctive instruments with a frequency band, for the audio tools:
+    `Anchor(name, band_hz, gears, tooth_types=(), on_grid=True)`. `tooth_types` restricts the hits to
+    given tooth types (melody notes, not the pedal); `on_grid` excludes teeth that strike late inside
+    their step. `Segment(level_jump=True, search_s=...)` pass through to the record map for the fit.
 11. `cycle_steps`, `cycle_end` (where LAP n/N stops and the segment label takes over), `stack`
     (row order), `cut_note`.
 
@@ -135,6 +150,15 @@ Look for: labels overlapping, anything essential below y 1536 or right of x 880,
 over another, a caption longer than two lines, the readout strip touching a lower gear. Then a
 full render (~20 min on 4 CPUs for 80 s), then frame-by-frame checks around the big moments
 (crop 10-20 consecutive frames into a strip): no washed-out frame, no jump, mean luma continuous.
+
+## Where a song's deliverables live
+
+`songs/<slug>.py` is the data; `films/<slug>/` holds what the song ships: `README.md` (facts, gear
+table, timeline with the cuts, arranged versus record, credits and the disclaimer),
+`<slug>_silent.mp4` (the silent render, copied from `gears_film/out/<slug>/`), `stills/`,
+`contact_sheet.png` and `record_map.json`. The muxed film with the recording stays out of the
+repository. Three songs live there now: `films/schism/`, `films/bleed/`; Art of Dying's history is
+in `experiments/art_of_dying/gears/` and its data in `songs/art_of_dying.py`.
 
 ## Checks to run before handing over
 
@@ -242,10 +266,16 @@ drum anchors are unreliable where the drummer varies the written pattern (Schism
 whose hit pattern nearly maps onto itself shifted by a step or two (Schism's 0 2 | 5 7 9) needs
 *pitch-specific* anchors (one band per note: F3 at 0 and 5, E3 at 2 and 7, G3 at 9) to fix the
 downbeat; and the file may not be the album (an official-video rip had 33 s of video audio and a
-hard digital cut before the song), so check the level profile of the whole file first.
+hard digital cut before the song), so check the level profile of the whole file first. From Bleed: a riff that plays on every step is no anchor (a comb on every sixteenth carries no phase), and a band that the riff's own harmonics fill (Bleed's snare band, 150-450 Hz, under a low D♯ riff) will not lock either; what locked was the second strike of every `double` tooth (an off-grid strike, broadband plus the kick's low band), the file's start and the level step at the band's re-entry. Anchors count only strikes on the grid by default (`Anchor(on_grid=True)`: a `late` tooth is excluded); a song whose only distinctive strikes are off the grid should offer them explicitly (`on_grid=False` on that anchor) and restrict an anchor to the notes that carry pitch information with `tooth_types=(...)` (Schism's bass melody notes, not its pedal). Split a continuous stretch into two segments with `level_jump=True` on the second where the band re-enters after a thin bar (Bleed's 2/4 bar has no anchor hits), so the fit can lock the re-entry on its level jump.
 
-Paste each segment's measured bpm into the song data's tempo map and the first segment's offset into
-`first_click_offset_s`, then re-render the picture, so picture and sound share one clock.
+Paste each segment's measured **bpm** into the song data's tempo map (`bpm=` on each `Segment`),
+then re-render the picture, so picture and sound share one clock. **Do not paste the measured
+offset into `first_click_offset_s`.** In this engine that field is the *film* time of step 0: it
+adds leading picture before the first step (Bleed followed an earlier version of this sentence and
+rendered 0.26 s of empty lead). Where the record starts lives only in `fit.json` and the audio
+build, which cuts the record at the measured start of each segment; `first_click_offset_s` stays
+0 unless you deliberately want a lead-in. `first_step_guess_s` in the song data is only a hint for
+the fit's search.
 
 ### 5. Build, mux, verify
 
