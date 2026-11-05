@@ -400,8 +400,9 @@ def render_frame(A: Assets, f: int):
     end_dim = ease((time_s - (song.total_s - song.end_fade_s)) / song.end_fade_s)
     live = 1.0 - 0.85 * end_dim
     cam_x, zoom = camera_at(A.moves, T)
-    sp = song.slip_params()
-    beat_steps = song.slip.beat_steps if song.slip else None
+    slip = song.slip_for(T)
+    sp = song.slip_params(T)
+    beat_steps = slip.beat_steps if slip else None
     k_ref = sp[3] if sp else None
     cyc = song.cycle_steps
 
@@ -473,7 +474,7 @@ def render_frame(A: Assets, f: int):
         x, y, Te, moving = st
         states[g.key] = st
         d = 2 * math.pi / g.teeth
-        rot = (Te * d - math.pi / 2) if g.side > 0 else (math.pi / 2 - Te * d)
+        rot = ((Te + g.phase) * d - math.pi / 2) if g.side > 0 else (math.pi / 2 - (Te + g.phase) * d)
         spr = A.gear_at_zoom(g.key, zoom)
         img = spr.rotate(math.degrees(rot), resample=Image.BICUBIC)
         sx, sy = to_screen(x, y)
@@ -524,11 +525,11 @@ def render_frame(A: Assets, f: int):
                     if age < dur:
                         e = (1 - age / dur) ** 1.5 * live
                         add_sprite(canvas, A.glow[g.key], fx, fy, lvl * e, size_scale)
-    if song.slip:
-        hx, hy = to_screen(song.by_key[song.slip.cycle_gear].x, 0.0)
+    if song.slips:
         for hn in song.homes:
             age = age_of(hn)
             if 0 <= age < 1.1:
+                hx, hy = to_screen(song.by_key[(song.slip_for(hn - 1e-9) or song.slips[0]).cycle_gear].x, 0.0)
                 e = (1 - age / 1.1) ** 1.3
                 add_sprite(canvas, A.glow_home, hx, hy, 0.8 * e, size_scale)
                 rr = 40 + int(age / 1.1 * 640) // 10 * 10
@@ -562,13 +563,14 @@ def render_frame(A: Assets, f: int):
                 dr.text((lx_ * SS, (base + 42) * SS), f"{g.teeth} TEETH", font=A.f_label_s, fill=scale(DIM, a), anchor="mt")
 
     # --- slip bracket at each cycle start once the beat is in play
-    sl = song.slip_at(T) if song.slip else 0
-    if song.slip and cyc:
-        tl = T % cyc
+    sl = song.slip_at(T) if slip else 0
+    if slip and cyc:
+        tl = (T - slip.k_from) % cyc
         t_in_lap = tl * step_s
-        in_region = k_ref + cyc <= T < (song.cycle_end if song.cycle_end is not None else song.total_steps)
+        region_end = slip.k_to if slip.k_to is not None else (song.cycle_end if song.cycle_end is not None else song.total_steps)
+        in_region = k_ref + cyc <= T < region_end
         if in_region and t_in_lap < 1.9 and sl > 0:
-            key = next((kk for kk in song.slip.beat_gears if song.by_key[kk].engaged(T)), None)
+            key = next((kk for kk in slip.beat_gears if song.by_key[kk].engaged(T)), None)
             if key and key in states and not states[key][3]:
                 g = song.by_key[key]
                 a = min(ease(t_in_lap / 0.25), ease((1.9 - t_in_lap) / 0.4)) * live
@@ -604,9 +606,9 @@ def render_frame(A: Assets, f: int):
         title_col = mix(TEXT, col, 0.85 if mo.kind == "big" else (0.8 if mo.colour == "ride" else 0.7))
     kick_px = 0.0
     if beat_steps:
-        nb = (n_now // beat_steps) * beat_steps
+        nb = ((n_now - slip.k_from) // beat_steps) * beat_steps + slip.k_from
         age_b = age_of(nb)
-        if any(song.by_key[kk].engaged(n_now) for kk in song.slip.beat_gears) and age_b < 0.18:
+        if any(song.by_key[kk].engaged(n_now) for kk in slip.beat_gears) and age_b < 0.18:
             kick_px = (1 - age_b / 0.18) * 4
     y = 112 - kick_px
     for line in wrap(mo.title, A.f_title, 940):
@@ -637,8 +639,9 @@ def render_frame(A: Assets, f: int):
                 dr.ellipse([(x0 - dot_r) * SS, (ry - dot_r) * SS, (x0 + dot_r) * SS, (ry + dot_r) * SS], fill=(scale(colour, live) if reached else DIMMER))
     la = ease((time_s - song.step_time(k_ref)) / 0.5) * live if k_ref is not None else (live if cyc else 0.0)
     if la > 0:
-        dr.text((lap_x * SS, ry * SS), song.lap_label(T), font=A.f_lap, fill=scale(TEXT, la), anchor="lm")
-    if la > 0 and song.slip:
+        lap_xy = song.lap_label_pos or (lap_x, ry)
+        dr.text((lap_xy[0] * SS, lap_xy[1] * SS), song.lap_label(T), font=A.f_lap, fill=scale(TEXT, la), anchor="lm")
+    if la > 0 and slip:
         sy_b = 1446
         dr.text((lx * SS, sy_b * SS), "SLIP", font=A.f_mono, fill=scale(DIM, la), anchor="lm")
         laps = sp[2]
@@ -646,12 +649,12 @@ def render_frame(A: Assets, f: int):
             x0 = lx + 90 + i * 36
             box = [x0 * SS, (sy_b - 13) * SS, (x0 + 26) * SS, (sy_b + 13) * SS]
             if i < sl:
-                dr.rectangle(box, fill=scale(song.by_key[song.slip.beat_gears[0]].colour, la))
+                dr.rectangle(box, fill=scale(song.by_key[slip.beat_gears[0]].colour, la))
             else:
                 dr.rectangle(box, outline=scale(DIM, la), width=int(2 * SS))
         label = "HOME" if sl == 0 else (f"{sl} TOOTH" if sl == 1 else f"{sl} TEETH")
         dr.text(((lx + 90 + laps * 36 + 10) * SS, sy_b * SS), label, font=A.f_mono,
-                fill=scale(song.by_key[song.slip.beat_gears[0]].colour if sl else HOME_WHITE, la), anchor="lm")
+                fill=scale(song.by_key[slip.beat_gears[0]].colour if sl else HOME_WHITE, la), anchor="lm")
     sy = 1502
     xcur = lx
     for key in song.stack:

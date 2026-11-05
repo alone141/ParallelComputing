@@ -32,9 +32,12 @@ def main(argv=None):
         for g in song.gears:
             n_tall = sum(1 for v in g.strikes.values() if v != "stub")
             print(f"  gear {g.key:7s} {g.teeth:3d} teeth, {n_tall:2d} striking, side {g.side:+d}, x {g.x:6.0f}, ranges {g.ranges}")
-        if song.slip:
-            cyc, per_lap, laps, k_ref = song.slip_params()
-            print(f"  slip: cycle {cyc} vs beat {song.slip.beat_steps}: {per_lap} per lap, home every {laps} laps from step {k_ref}; homes {song.homes}")
+        for sl in song.slips:
+            cyc, per_lap, laps, k_ref = song.slip_params(sl.k_from)
+            print(f"  slip: cycle {cyc} vs beat {sl.beat_steps}: {per_lap} per lap, home every {laps} laps from step {k_ref}"
+                  + (f" (steps {sl.k_from}..{sl.k_to})" if sl.k_to is not None else ""))
+        if song.slips:
+            print(f"  homes {song.homes}")
         for m in song.moments:
             print(f"  moment {m.step:4d} {m.kind:8s} {m.title}")
         if problems:
