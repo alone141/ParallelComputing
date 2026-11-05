@@ -107,6 +107,7 @@ class Gear:
     wide: frozenset = frozenset()
     colour2: tuple = None        # second colour for the turnaround's C1/C2 and C2/Eb2 teeth
     stack: str = None            # which stack row lights for it (turnaround gears share rows)
+    lead: float = 0.0            # seconds: this gear starts its glide earlier and hangs longer (a stagger)
 
 
 PITCH = 42.0
@@ -118,24 +119,26 @@ GEARS = (
     Gear("rim",    "RIM",   "RIM CLICKS",  45, frozenset(RIM_HITS), (226, 206, 166), 0, K_BAND, 0 * PITCH, +1),
     Gear("pulse",  "PULSE", "PULSE",       12, _12_BEAT,            (255, 170, 60),  K_PULSE, K_BAND, 0 * PITCH, -1),
     Gear("snare",  "SNARE", "SNARE",       45, SNARES,              (255, 255, 255), K_BAND, K_TURN, 11 * PITCH, -1),
-    Gear("kick",   "KICK",  "KICK",        45, KICKS,               (255, 92, 70),   K_BAND, K_TURN, 17 * PITCH, +1),
+    Gear("kick",   "KICK",  "KICK",        45, KICKS,               (255, 92, 70),   K_BAND, K_TURN, 17 * PITCH, +1, lead=0.1),
     Gear("bass",   "BASS",  "BASS",        45, frozenset(RIM_HITS), (182, 140, 255), K_BAND, K_TURN, 28 * PITCH, -1,
-         wide=frozenset(t for t in RIM_HITS if (t + 1) % CYCLE in RIM_RESTS)),
-    Gear("gtr",    "GTRS",  "GUITARS",     12, frozenset(range(12)), (125, 255, 154), K_BAND, K_TURN, 31 * PITCH, +1),
-    Gear("ride",   "RIDE",  "RIDE",        12, _12_BEAT,            (108, 224, 255), K_BAND, K_END, 36 * PITCH, +1, medium=_12_OFF),
+         wide=frozenset(t for t in RIM_HITS if (t + 1) % CYCLE in RIM_RESTS), lead=0.2),
+    Gear("gtr",    "GTRS",  "GUITARS",     12, frozenset(range(12)), (125, 255, 154), K_BAND, K_TURN, 31 * PITCH, +1, lead=0.3),
+    Gear("ride",   "RIDE",  "RIDE",        12, _12_BEAT,            (108, 224, 255), K_BAND, K_END, 36 * PITCH, +1, medium=_12_OFF, lead=0.4),
     Gear("tbass",  "BASS",  "BASS 6/4",    12, frozenset(range(12)), (182, 140, 255), K_TURN, K_END, 39 * PITCH, -1,
          colour2=(226, 206, 255), stack="bass"),
-    Gear("tkick",  "KICK",  "KICK 6/4",    12, frozenset(j for j in _T6 if j % 6 in (0, 1, 2)), (255, 92, 70), K_TURN, K_END, 42 * PITCH, +1, stack="kick"),
+    Gear("tkick",  "KICK",  "KICK 6/4",    12, frozenset(j for j in _T6 if j % 6 in (0, 1, 2)), (255, 92, 70), K_TURN, K_END, 42 * PITCH, +1, stack="kick", lead=0.1),
     Gear("tgtr",   "GTRS",  "GUITARS 6/4", 12, frozenset(range(12)), (125, 255, 154), K_TURN, K_END, 45 * PITCH, -1,
-         colour2=(206, 255, 214), stack="gtr"),
-    Gear("tsnare", "SNARE", "SNARE 6/4",   12, frozenset(j for j in _T6 if j % 6 in (3, 5)), (255, 255, 255), K_TURN, K_END, 48 * PITCH, +1, stack="snare"),
+         colour2=(206, 255, 214), stack="gtr", lead=0.2),
+    Gear("tsnare", "SNARE", "SNARE 6/4",   12, frozenset(j for j in _T6 if j % 6 in (3, 5)), (255, 255, 255), K_TURN, K_END, 48 * PITCH, +1, stack="snare", lead=0.3),
 )
 BY_KEY = {g.key: g for g in GEARS}
 KEYS = tuple(g.key for g in GEARS)
 STACK_KEYS = ("rim", "pulse", "kick", "snare", "ride", "bass", "gtr")
 HOME_WHITE_TOOTH = 0           # the rim gear's tooth 0 is painted white: the cycle start
-SLIDE_S = 0.28                 # a gear slides in (lifted) over this long, then drops into mesh
-DROP_S = 0.08
+GLIDE_S = 1.0                  # a gear glides in, lifted, over this long (eased in and out) ...
+HANG_S = 0.38                  # ... hangs above its place for about a beat ...
+DROP_S = 0.08                  # ... and drops into mesh exactly on its first sixteenth
+EXIT_S = 1.0                   # after its last hit it lifts (DROP_S) and glides out over this long
 
 
 def tooth_kind(key: str, pos: int) -> str:
@@ -191,26 +194,27 @@ def engaged(key: str, k: int) -> bool:
 
 
 def motion(key: str, k: float):
-    """Where the gear is: ("in", 1.0) engaged; ("enter", u) sliding in, u 0..1; ("drop", u) dropping into
-    mesh; ("lift", u) lifting out; ("exit", u) sliding out; ("away", 0) not on screen."""
+    """Where the gear is: ("in", 1) engaged; ("enter", u) gliding in lifted; ("hang", u) waiting above its
+    place; ("drop", u) dropping into mesh; ("lift", u) lifting out; ("exit", u) gliding out; ("away", 0)."""
     g = BY_KEY[key]
-    slide, drop = SLIDE_S / SIXTEENTH, DROP_S / SIXTEENTH
+    glide, hang, drop, exit_ = GLIDE_S / SIXTEENTH, (HANG_S + g.lead) / SIXTEENTH, DROP_S / SIXTEENTH, EXIT_S / SIXTEENTH
     if g.k_in == 0 and k < g.k_in:                       # the rim gear is simply there before the first click
         return ("in", 1.0)
-    if k < g.k_in - slide - drop:
+    t0 = g.k_in - drop - hang - glide
+    if k < t0:
         return ("away", 0.0)
+    if k < t0 + glide:
+        return ("enter", (k - t0) / glide)
     if k < g.k_in - drop:
-        return ("enter", (k - (g.k_in - slide - drop)) / slide)
+        return ("hang", (k - t0 - glide) / hang)
     if k < g.k_in:
         return ("drop", (k - (g.k_in - drop)) / drop)
-    if k < g.k_out:
-        return ("in", 1.0)
-    if g.k_out >= K_END:
+    if k < g.k_out or g.k_out >= K_END:
         return ("in", 1.0)
     if k < g.k_out + drop:
         return ("lift", (k - g.k_out) / drop)
-    if k < g.k_out + drop + slide:
-        return ("exit", (k - g.k_out - drop) / slide)
+    if k < g.k_out + drop + exit_:
+        return ("exit", (k - g.k_out - drop) / exit_)
     return ("away", 0.0)
 
 
@@ -275,6 +279,9 @@ def _check():
     assert [hits_at("tkick", K_TURN + c) for c in range(6)] == [["kick"]] * 3 + [[], [], []]
     assert [hits_at("tsnare", K_TURN + c) for c in range(6)] == [[], [], [], ["snare"], [], ["snare"]]
     assert motion("pulse", 10)[0] == "away" and motion("pulse", K_PULSE + 1)[0] == "in"
+    assert motion("pulse", K_PULSE - 10)[0] == "enter" and motion("pulse", K_PULSE - 2)[0] == "hang"
+    assert motion("ride", K_BAND - 16)[0] == "enter" and motion("snare", K_BAND - 2)[0] == "hang"
+    assert motion("rim", K_BAND + 5)[0] == "exit" and motion("rim", K_BAND + 12)[0] == "away"
     assert motion("rim", K_BAND + 20)[0] == "away" and motion("ride", K_END - 1)[0] == "in"
     # gears that are on screen together never overlap (tip radii from the renderer's module)
     import math

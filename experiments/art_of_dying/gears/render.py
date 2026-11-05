@@ -30,7 +30,8 @@ MODULE = PITCH / math.pi
 ADDENDUM = {"tall": 18.0, "wide": 18.0, "medium": 11.0, "stub": 6.0}
 DEDENDUM = 20.0
 LIFT = 70.0                    # how far a disengaged gear sits off the rack (world units)
-SLIDE_D = 1400.0               # how far a gear travels when sliding in or out
+GLIDE_D = 1400.0               # how far a gear travels when gliding in (from off screen)
+EXIT_D = 700.0                 # how far it glides out (it is out of frame long before the end)
 FIT_X0, FIT_X1 = 60, 860       # screen box the engaged set is framed into (right column stays free)
 
 BG = (9, 9, 12)
@@ -98,12 +99,16 @@ F_PULSE = (0.0, 0.8)
 F_BREATH = fit(("rim", "snare", "kick", "bass", "gtr", "ride"))
 F_BAND = fit(("snare", "kick", "bass", "gtr", "ride"))
 F_TURN = fit(("ride", "tbass", "tkick", "tgtr", "tsnare"))
-# (k_start, k_end, frame): the camera eases to `frame` over the window and holds it afterwards
+F_TURN_WIDE = fit(("snare", "kick", "bass", "gtr", "ride", "tbass", "tkick", "tgtr", "tsnare"))
+# (k_start, k_end, frame): the camera eases (smoothstep) to `frame` over the window and holds it.
+# Each move happens while the arriving gears glide, so they are seen coming; the settle after a
+# landing waits until the leaving gears have been seen going.
 CAM_MOVES = (
-    (R.K_PULSE - 1.0, R.K_PULSE, F_PULSE),
-    (R.K_BAND - 2.0, R.K_BAND, F_BREATH),
-    (R.K_BAND + 0.8, R.K_BAND + 2.8, F_BAND),
-    (R.K_TURN, R.K_TURN + 2.6, F_TURN),
+    (R.K_PULSE - 12.0, R.K_PULSE - 6.0, F_PULSE),
+    (R.K_BAND - 13.0, R.K_BAND - 7.0, F_BREATH),
+    (R.K_BAND + 3.0, R.K_BAND + 8.0, F_BAND),
+    (R.K_TURN - 13.0, R.K_TURN - 7.0, F_TURN_WIDE),
+    (R.K_TURN + 1.5, R.K_TURN + 5.5, F_TURN),
 )
 
 
@@ -230,6 +235,8 @@ class Assets:
         self.glow = {k: glow_sprite(90, R.BY_KEY[k].colour, 2.0) for k in R.KEYS}
         self.glow_big = {"pulse": glow_sprite(150, AMBER, 2.0), "kick": glow_sprite(120, R.BY_KEY["kick"].colour, 2.0),
                          "snare": glow_sprite(130, (255, 255, 255), 2.2)}
+        self.glow_crash = glow_sprite(260, R.BY_KEY["ride"].colour, 2.4)
+        self.glow_crash_core = glow_sprite(110, (255, 255, 255), 1.6)
         self.glow_home = glow_sprite(420, GOLD, 1.6)
         self.rings = {r: ring_sprite(r, 5, AMBER) for r in range(40, 340, 10)}
         self.rings_home = {r: ring_sprite(r, 7, (255, 236, 190)) for r in range(40, 700, 10)}
@@ -293,13 +300,15 @@ def gear_state(g, k):
     if phase == "in":
         return x0, y0, k, False
     if phase == "enter":
-        return x0 + SLIDE_D * (1 - ease(u)), y0 + lift_dir * LIFT, float(g.k_in), True
+        return x0 + GLIDE_D * (1 - ease(u)), y0 + lift_dir * LIFT, float(g.k_in), True
+    if phase == "hang":
+        return x0, y0 + lift_dir * LIFT, float(g.k_in), True
     if phase == "drop":
         return x0, y0 + lift_dir * LIFT * (1 - ease(u)), float(g.k_in), True
     if phase == "lift":
         return x0, y0 + lift_dir * LIFT * ease(u), float(g.k_out), True
     if phase == "exit":
-        return x0 - SLIDE_D * ease(u), y0 + lift_dir * LIFT, float(g.k_out), True
+        return x0 - EXIT_D * ease(u), y0 + lift_dir * LIFT, float(g.k_out), True
     raise ValueError(phase)
 
 
@@ -375,11 +384,16 @@ def render_frame(A, f):
                     if rr in A.rings:
                         add_sprite(canvas, A.rings[rr], fx, fy, 0.8 * e, size_scale)
             elif kind == "crash":
-                if age < 0.6:
-                    e = (1 - age / 0.6) ** 1.8
-                    canvas = Image.blend(canvas, Image.new("RGB", canvas.size, (255, 250, 240)), 0.32 * e)
+                if age < 0.45:
+                    e = (1 - age / 0.45) ** 1.5
+                    add_sprite(canvas, A.glow_crash, fx, fy, 0.95 * e, size_scale)
+                    add_sprite(canvas, A.glow_crash_core, fx, fy, e ** 0.7, size_scale)
+                    rr = 40 + int(age / 0.45 * 300) // 10 * 10
+                    if rr in A.rings_home:
+                        add_sprite(canvas, A.rings_home[rr], fx, fy, 0.7 * e, size_scale)
+                if age < 2.0 / R.FPS:                       # weight: a two-frame lift of a few percent
+                    canvas = Image.blend(canvas, Image.new("RGB", canvas.size, (255, 255, 255)), 0.05)
                     dr = ImageDraw.Draw(canvas)
-                    add_sprite(canvas, A.glow["ride"], fx, fy, e, size_scale)
             elif kind in ("kick", "snare"):
                 dur = 0.22 if kind == "snare" else 0.28
                 if age < dur:

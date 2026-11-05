@@ -15,14 +15,43 @@ Deliverables in this folder (round 4 is current; earlier rounds are kept under `
 
 | File | What |
 |---|---|
-| `art_of_dying_gears_record_silent.mp4` | **round 4**: the picture for the recording, 1080×1920, 60 fps, 4783 frames = 79.714 s, no audio track |
-| `stills/*.png`, `stills/contact_sheet.png` | eight round-4 frames: the hook, bar 12 engaging, mid clicks + pulse with the slip bracket, the bar-42 breath, bar 42 landed, lap 13, bar 53, the closing card; and a contact sheet |
+| `art_of_dying_gears_record_silent.mp4` | **round 5** (round 4 + glides + crash fix): the picture for the recording, 1080×1920, 60 fps, 4783 frames = 79.714 s, no audio track |
+| `stills/*.png`, `stills/contact_sheet.png` | eleven round-5 frames: the hook, the pulse gliding in, bar 12 engaged, the slip bracket, the band mid-glide, the hang, the crash bloom, the rim and pulse leaving, lap 13, bar 53 with the bass gear leaving, the closing card; and a contact sheet |
 | `rhythm.py` | the facts of the intro, the gear table and the record-synced timeline (`BPM`, `FIRST_CLICK_OFFSET_S`) |
-| `render.py` | the round-4 frame renderer (Pillow + numpy): rack, gears, camera |
+| `render.py` | the round-5 frame renderer (Pillow + numpy): rack, gears, camera |
 | `build.sh` | renders the frames, the silent MP4 and the stills (about 20 min on 4 CPUs) |
 | `round3/` | round 3: the same timeline on the two music-box wheels plus a turnaround wheel |
 | `round2/` | the 58-second synthesised teaching film and its code |
 | `round1/` | the 19-second first film and its code |
+
+## Round 5: glides and a real crash
+
+Two fixes on round 4, nothing else changed (same gears, layout, timeline, 4783 frames):
+
+- **Glides instead of flicks.** Every entry is now a 1.0 s eased glide (smoothstep, no linear start
+  or stop) that ends lifted above the gear's place, a hang of about a beat (0.38 s plus a stagger of
+  0.1 s per gear so the eye can follow the five band gears), then the 0.08 s drop into mesh exactly
+  on the part's first sixteenth, tooth 0 on the contact line. Because a lifted gear can travel while
+  earlier parts play, the pulse gear arrives during lap 4, the band during lap 12 (while the rim and
+  pulse are still striking), the turnaround gears during lap 16. Exits lift at the part's end and
+  glide out over 1.0 s with the same curve (700 world units, so the gear decelerates as it leaves
+  the frame rather than vanishing). The camera uses the same curve and now pulls wide *while* the
+  gears glide in (bar 12: 0.9 → 0.8 over k 168-174; bar 42: → the breath frame over k 527-533; bar 53:
+  → a wide frame holding both the band and the arriving train over k 707-713) and settles only after
+  the leaving gears have been seen going (bar 42: k 543-548; bar 53: k 721.5-725.5).
+- **The crash.** The flat full-frame wash is gone. The ride gear's first tooth now blooms locally:
+  a cyan glow (radius 260 world) with a white-hot core, decaying over 0.45 s, and an expanding ring,
+  plus a two-frame 5 % lift of the whole frame for weight. The HOME flash at the rack contact is
+  unchanged and local.
+
+The exception kept from round 4: the rim and pulse gears lift at k = 540 (the home moment, two
+sixteenths after the rim's last strike at 538 and four after the pulse's at 536) rather than at
+their last hit, so that the white tooth and the amber tooth are seen meeting on the contact line
+before they roll away.
+
+Checked frame by frame around the landing (k 539-542, 20 frames): no washed-out frame, the five
+gears, captions and readouts stay legible through the bloom. Stills now include the pulse gear's
+glide-in, the band mid-glide, the hang, the crash bloom, and the rim and pulse leaving.
 
 ## Round 4: one gear per instrument
 
@@ -115,9 +144,8 @@ AOD_BPM=139.85 AOD_OFFSET=0.12 ./build.sh    # ~20 min: frames, silent MP4 (H.26
 
 ### What failed or was cut
 
-- **Three slides per lap are not a conveyor.** Gears travel 1400 world units in 0.28 s: it reads as
-  a flick, not as a glide, and a viewer may not see where a gear came from. A longer slide would
-  have to start before the previous part's last hit, which the music does not allow.
+- **Three slides per lap are not a conveyor** (fixed in round 5). Gears travelled 1400 world units
+  in 0.28 s: a flick, not a glide. Round 5 lets lifted gears travel while earlier parts play.
 - **The bar-42 swap overlaps on screen for a moment.** The five band gears land to the right of the
   rim and pulse gears while those are still on the rack (their last strikes are at k = 538 and 536,
   and HOME at 540 needs them in place), so for about half a second the camera shows seven gears and
