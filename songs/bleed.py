@@ -70,7 +70,7 @@ GEARS = [
     Gear("snare", "SNARE", "SNARE", WHITE, 3 * BAR, SNARE, +1, 26 * P, ((0, K_STOP),), sound="snare"),
     # bar 25, 2/4: the guitars alone, eight teeth: the new cell once, then the old one
     Gear("g24", "GTRS", "2/4", GREEN, 8, {**cells(5, NEW), **{5: "double", 6: "tall", 7: "tall"}}, -1, 24 * P,
-         ((K_24, K_NEW),), sound="chug", stack="riff", label_dx=60),
+         ((K_24, K_NEW),), sound="chug", stack="riff", label_dy=130),
     # bars 26-33: the new cell. 392 is not a multiple of 20 or 16: these wheels are keyed (phase 8)
     # so that their tooth 0 is on the contact at step 392.
     Gear("riff2", "GTRS", "GUITARS", GREEN, 20, cells(20, NEW), +1, 29 * P, ((K_NEW, K_END),), sound="chug",
