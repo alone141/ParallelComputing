@@ -1,5 +1,10 @@
 # Experiment 1: gears
 
+> **This folder is the historical record (rounds 1-6).** The reusable, song-agnostic engine that
+> grew out of it lives in [`gears_film/`](../../../gears_film/README.md), with this film as
+> [`songs/art_of_dying.py`](../../../songs/art_of_dying.py) and a skill at
+> `.claude/skills/gears-film/SKILL.md`. New songs start there.
+
 A vertical film for TikTok and Instagram Reels about the rhythm of the intro of **Gojira, "The Art
 of Dying"** (*The Way of All Flesh*, 2008). Every instrument of the intro is a gear on one common
 drive; each gear's teeth are its hits and its stub teeth are its rests; it slides into mesh when
