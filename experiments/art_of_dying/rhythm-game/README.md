@@ -1,4 +1,133 @@
-# Experiment 5 · rhythm game
+# Experiment 5 · rhythm game (round 2)
+
+A looping vertical film (1080×1920, 60 fps, 38.6 s, one loop) that explains the intro of
+**Gojira – "The Art of Dying"** (*The Way of All Flesh*, 2008) as a rhythm game being played. Six lanes,
+one per part, unlock one lap at a time in the record's order: rim clicks, tribal pulse, kick + snare,
+ride, bass, guitar. A lap line marks every 45-step cycle; because 45 = 11 × 4 + 1 the line lands one
+step later against the pulse every lap, and the game judges each lap as it crosses: +1 LATE, +2 LATE,
++3 LATE, then **PERFECT** on lap 5, where the screen celebrates **REALIGNED · 4 laps = 180 steps =
+45 pulses** and the bass enters. Lap 7 is the full mix; on lap 8 the parts peel away in reverse until
+only the clicks remain, which is exactly where the film started, so it loops.
+
+This is an independent study of the song's rhythm. It is not affiliated with Gojira, their label or
+their publishers. No part of the recording is used; every sound is synthesised.
+
+**The stack is a teaching arrangement, not a moment from the song.** On the record the rim clicks never
+play together with the kit (they stop at bar 42 when the band enters), and the tribal pulse rests in
+bars 42–65. The film layers all six parts on one cycle so the eye can compare them; the README of the
+owner's own version makes the same choice.
+
+## Files
+
+| File | What |
+|---|---|
+| `art_of_dying_rhythm_game.mp4` | the film (H.264 yuv420p, AAC 256k, 1080×1920, 60 fps, 2314 frames, one loop) |
+| `stills/*.png` | six frames: hook (0.6 s), pulse lap (7.0 s), kit focus (13.0 s), realignment (19.45 s), guitar in (26.0 s), full mix (31.0 s) |
+| `rhythm.py` | the single source of truth: pattern sets, layer entries and peel, focus windows; writes `timeline.js` |
+| `game.html`, `game.js`, `timeline.js` | the game: every frame a pure function of film time, on a 2D canvas |
+| `render.js` | Playwright recorder: steps the clock per frame, pipes PNGs into ffmpeg |
+| `soundtrack.py` | the mix: places every hit from `rhythm.events()`, calibrates layer balance, reverb, true-peak limiter |
+| `sound_voices.py`, `sound_dsp.py` | the instruments and the DSP, copied unchanged from the owner's version (see Credits) |
+| `build.sh`, `contact_sheet.py`, `loop_check.py` | rebuild everything; review tools |
+
+## How to run
+
+```bash
+cd experiments/art_of_dying/rhythm-game
+./build.sh            # about 5 minutes on 4 cores; prints ffprobe, ebur128 and the loop-seam check
+```
+
+`python3 rhythm.py` alone prints the timeline and self-checks the pattern sets against the tab
+(the kit lap must spell `KKKS.KKKS.KKKS.KKSKKSKKSKKKS.KKKS.KKKS.KKSKKS`). Opening `game.html` in a
+browser plays the game in real time, silent.
+
+### Timeline
+
+| Lap | Steps | What happens |
+|---|---|---|
+| 1 | 0–44 | hook, rim clicks alone; the pulse lane shows the grid as hollow ghost notes |
+| 2 | 45–89 | PULSE IN · the lap is judged +1 LATE |
+| 3 | 90–134 | KIT IN (kick L/R alternating, snare white) · +2 LATE |
+| 4 | 135–179 | RIDE IN (bell on the beat, ghost ping between) · +3 LATE |
+| 5 | 180–224 | **REALIGNED** · PERFECT · BASS IN (hold tails through each group's rest) |
+| 6 | 225–269 | GUITAR IN (two chugs per sixteenth) |
+| 7 | 270–314 | FULL MIX |
+| 8 | 315–359 | FULL COMBO banked, then guitar, bass, ride, kit and pulse leave every six steps; clicks only by step 345 |
+
+Each entering part gets a focus lap: its lane glows, the others dim to 42 % and duck −8 dB. The film
+is 2314 frames = 38.5667 s; the music grid is 360 × 15/140 s = 38.5714 s, so the loop seam is 4.8 ms
+early (a twentieth of a sixteenth). Film time 0 = song 0:00 (bar 1 beat 1).
+
+### Sound
+
+Every instrument is numpy: side-stick rim click + stick click; the stacked tribal hit (surdo, floor
+tom, block, castanets, sticks) with its stick grace note a 32nd early; a tight gated kick; a rimshot
+snare; a ghosted ride ping and the ride bell; a picked bass on C1 (32.7 Hz) with the group's last note
+held; two palm-muted guitars on C2 through a high-gain stage and a cabinet, panned left and right; a
+low choir on C that breathes but never ducks. Layer balance is set by measurement (each layer alone over
+the full-mix lap, K-weighted, relative to the kit). A circular reverb and a circular true-peak limiter
+make the loop seamless. Master: −14.0 LUFS integrated, −2.0 dBTP before AAC.
+
+## What changed from round 1
+
+- Six lanes instead of two; every part of the intro is in the picture, in the record's order.
+- The film starts with the game already running (step 0 on the hit line), not after a 1.5 s pre-roll:
+  action on frame 1, and the loop needs it.
+- Judgements now mean something: each lap is judged against the pulse (+1/+2/+3 LATE, PERFECT). The
+  per-hit PERFECT text is gone.
+- The four laps of waiting are gone: a new part arrives every lap, each with its own banner and
+  focus lap, and the realignment lands on lap 5 with the bass.
+- Captions are shorter and fewer words carry the "why"; the brackets, the dashed holes, the drift gap
+  and the lane unlocks do most of the work.
+- The soundtrack is the owner's instrument set through my own timeline, properly mastered.
+- The film loops.
+
+## What worked
+
+- **A part per lane, a lap per part.** Six unlocks in 30 s keeps a payoff every 4.8 s, and the lock
+  glyphs on the empty lanes promise more to come. The PARTS 3/6 counter and the coloured dots give the
+  sound-off viewer the structure.
+- **Lap judgement.** "+2 LATE" popping in the pulse lane as the line crosses turns the drift into the
+  game's own vocabulary; PERFECT on lap 5 is the celebration's cue.
+- **The kit as feet.** Kicks alternate L/R positions in the lane, so the "feet alternate" fact is
+  visible without a word, and the snare in white reads as the accent.
+- **Hold tails for the bass** show the group's last note held through the rest, which was the one
+  bass fact worth showing.
+- **Shared timeline.** `rhythm.py` writes `timeline.js`; the JS hit count (848) matches the Python
+  event count, so the picture cannot drift from the sound.
+- **The owner's sound engine** gave a real kick, a cracking snare, a deep pulse with its grace note and
+  guitars that chug instead of fizz, and it masters to spec in nine seconds.
+
+## What failed or was cut
+
+- **Judgements are still about the lap, not the player.** The brief's other option (a player who
+  misses on the odd groups until taught) was cut: a miss means silence, and silence breaks the music the
+  film exists to teach. So nobody ever misses, and FULL COMBO is a foregone conclusion.
+- **The focus lap for the ride is too quiet.** The ride is balanced −8 LU under the kit; when every
+  other part ducks −8 dB for its focus lap, lap 4 drops about 3 LU below its neighbours. The duck is the
+  recipe; the ride should get a smaller duck or a louder focus level.
+- **The caption band covers the top of the lanes** for about 0.3 s of every note's approach, and it
+  hides the LAP tag on lines that are still high up. The alternative (captions below the hit line) is in
+  the apps' UI zone.
+- **The combo hides on lap 8** so the seam shows no number jump, but the HUD still flips from "4/4 ·
+  +3 STEPS" to "1/4 · ALIGNED" at the seam. That flip is a lap line crossing, so it is honest, but a
+  viewer who notices the loop will notice it.
+- **Not checked by ear.** Levels, balance, true peak and the seam are measured (own BS.1770 meter and
+  ffmpeg's), not listened to.
+- **The record's dynamics are flattened.** The real intro builds over 2:16; this stack builds over 29 s
+  and then peels in 5 s. The 6/4 turnarounds, bars 34–41 (pulse alone) and the verse are not here.
+
+## With another day
+
+1. A fallible player on an optional pass: the game shows a second run where a "4/4 player" taps the
+   pulse and the chart shows their MISS on every lap line until lap 5, then the real run.
+2. Captions out of the lanes: a narrower play area with a caption column, or a voice-over.
+3. Per-layer focus levels (the ride louder in its focus lap), and a short riser into the realignment.
+4. Listen to it.
+
+---
+
+# Round 1 (kept for the record)
 
 A short vertical film (1080×1920, 60 fps, about 43 s) that explains the rhythm of the intro of
 **Gojira – "The Art of Dying"** (*The Way of All Flesh*, 2008) by showing a rhythm game being played.
@@ -38,7 +167,12 @@ My reading:
 - **Game-faithful timeline.** Film time 1.5 s = cycle step 0 = bar 1 beat 1 of the tab. Eight laps
   (bars 1–23 of the tab's 10×4/4 + 1×5/4 bar structure) are played, then a 3.3 s end card.
 
-## Files
+## Round-1 files
+
+Round 1 used `synth.py` (a cruder numpy synth, deleted in round 2) and a two-lane `game.js`; its
+text below is unchanged.
+
+## Files (round 1)
 
 | File | What |
 |---|---|

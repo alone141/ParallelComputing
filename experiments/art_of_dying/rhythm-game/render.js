@@ -42,7 +42,7 @@ async function stills(outDir, times) {
 async function video(outFile, fps, crf) {
   fs.mkdirSync(path.dirname(outFile), { recursive: true });
   const { browser, page, film } = await open();
-  const nFrames = Math.ceil(film.duration * fps);
+  const nFrames = film.frames && fps === film.fps ? film.frames : Math.round(film.duration * fps);
   console.log(`duration ${film.duration.toFixed(3)} s, ${nFrames} frames at ${fps} fps`);
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'png', '-i', '-',
     '-c:v', 'libx264', '-preset', 'medium', '-crf', String(crf), '-pix_fmt', 'yuv420p', '-movflags', '+faststart', outFile],
