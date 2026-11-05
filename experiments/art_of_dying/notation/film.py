@@ -142,7 +142,7 @@ HEADLINES = {
     "hook": ("THIS DRUM INTRO\nIS IN 45/16", "Gojira · The Art of Dying · 140 bpm"),
     "rim0": ("THIS DRUM INTRO\nIS IN 45/16", "Gojira · The Art of Dying · 140 bpm"),
     "rim1": ("FIVES AND THREES", "5+5+5+3+3+3  +  5+5+5+3+3  =  45"),
-    "beat": ("THE BEAT SLIPS", "45 = 11 × 4 + 1 · one sixteenth late per lap"),
+    "beat": ("THE BEAT SLIPS", "45 = 11 × 4 + 1 · one sixteenth per lap"),
     "kit": ("BAR 42:\nTHE WHOLE BAND", "kick · snare · ride · bell on the beat"),
     "outro": ("SCREENSHOT THIS", "45/16 · 140 bpm · the whole intro is this one bar"),
 }
@@ -154,16 +154,16 @@ CAPTIONS = {
             "or 45/16. Both are half right. Mario Duplantier plays it on the rim.",
     "beat2": "Lap 1 of 4. A tribal hit lands on every quarter note, every 4 sixteenths. "
              "The tab writes this as ten bars of 4/4 and one bar of 5/4.",
-    "beat3": "Lap 2. 45 is not divisible by 4, so the beat now lands one sixteenth "
-             "later in the pattern than it did last lap.",
-    "beat4": "Lap 3. Two sixteenths late. The rim pattern never changes; "
+    "beat3": "Lap 2. The cycle is one sixteenth longer than 11 beats, so the rim pattern "
+             "now runs one sixteenth behind the beat: the hits step one slot left.",
+    "beat4": "Lap 3. Two sixteenths behind. The rim pattern never changes; "
              "only the beat drifts across it.",
-    "beat5": "Lap 4. Three late. After this lap the beat and the pattern meet again: "
+    "beat5": "Lap 4. Three behind. After this lap the beat and the pattern meet again: "
              "4 laps = 45 beats = 19.3 seconds.",
     "kit6": "A five is kick kick kick snare rest. A three is kick kick snare. The kick "
             "alternates feet, R L R. The ride plays eighths; the bell marks the beat.",
-    "kit7": "Second lap: the beat has slipped one sixteenth, so the bell and the ride "
-            "move one slot across the chart while kick and snare stay put.",
+    "kit7": "Second lap: the pattern is a sixteenth behind the beat again, so the bell and "
+            "the ride move one slot left across the chart while kick and snare stay put.",
     "outro": "The whole 2:16 intro is this one bar of 45/16, repeated. Independent study "
              "of Gojira, The Art of Dying (2008). Drums synthesised, not sampled.",
 }
@@ -286,7 +286,7 @@ def render_frame(t):
     if name != "hook":
         for i, st in enumerate(STAVES):
             a, b = P.SYSTEMS[i]
-            ybase = (KIT_V[0][1][i].y_beam + 1.7 * SP) if show_kit else (st.y_bot + 2.3 * SP)
+            ybase = (KIT_V[0][1][i].y_beam + 1.7 * SP) if show_kit else (st.y_bot + 3.7 * SP)
             for tt in range(a, b):
                 n = P.SLOT_IN_GROUP[tt] + 1
                 rest = tt in P.REST_SLOTS
@@ -311,13 +311,14 @@ def render_frame(t):
             ybot = KIT_V[0][1][i].y_beam + 3.4 * SP
         else:
             ytop = RIM_V[i].y_beam - 0.8 * SP
-            ybot = st.y_bot + 4.0 * SP
+            ybot = st.y_bot + 5.2 * SP
         c.rect(x, ytop, x + st.slot_w, ybot, AMBER + (34,))
         c.rect(x - 1.5, ytop, x + 1.5, ybot, HOT + (200,))
 
     # --- beat markers (the tribal hit) above the staff, laps 2-5 (and kit laps)
     if name in ("beat", "kit"):
         off = beat_off_for_lap(lap)
+        slide = 1.0 if lap == 2 else ease(slot / 3.0)      # dots step one slot left at each lap start
         for tt in range(off, 45, 4):
             i, ls = sys_of(tt)
             st = STAVES[i]
@@ -328,12 +329,23 @@ def render_frame(t):
             col = mix(RED, HOT, f)
             if tt >= slot and name == "beat":
                 col = mix(BG, RED, 0.75)
-            c.disc(st.x_of(ls), yb, r, col)
+            x = st.x_of(ls) + (1.0 - slide) * st.slot_w
+            c.disc(x, yb, r, col)
             if f > 0:
-                c.disc(st.x_of(ls), yb, r + 10, col + (int(90 * f),))
+                c.disc(x, yb, r + 10, col + (int(90 * f),))
+            if name == "beat":
+                # the tribal hit itself: bass drum + floor tom, stems down, quarter notes,
+                # with the stick grace note a 32nd before
+                hcol = mix(INK, HOT, f) if f > 0 else (mix(BG, INK, 0.8) if tt < slot else mix(BG, INK, 0.55))
+                xq = st.x_of(ls)
+                E.notehead(c, xq, st.y_of(E.POS["kick"]), SP, "normal", hcol)
+                E.notehead(c, xq, st.y_of(E.POS["floortom"]), SP, "normal", hcol)
+                sx = xq - 0.56 * SP
+                c.line((sx, st.y_of(E.POS["floortom"])), (sx, st.y_bot + 2.1 * SP), hcol, 0.13 * SP)
+                E.grace_note(c, xq - 0.64 * st.slot_w, st.y_of(1), SP * 0.85, hcol)
         # label
         st = STAVES[0]
-        lbl = "beat" if name == "beat" else "beat (bell)"
+        lbl = "beat: tribal hit" if name == "beat" else "beat (bell)"
         c.text((st.x0 + 2, RIM_V[0].y_beam - 1.5 * SP), lbl, "text-semi", 22, RED, anchor="lm") if not show_kit else None
 
     # --- the tab's view: ten bars of 4/4 then one of 5/4, as chips, laps 2-5
@@ -460,6 +472,10 @@ def main():
         render_frame(t).save(path)
         print(path)
         return
+    if "--mux" in sys.argv:          # re-mux existing frames (after an audio-only change)
+        frames_dir = os.environ.get("AOD_FRAMES", os.path.join(OUT, "frames"))
+        mux(frames_dir, FPS, T_END)
+        return
     preview = "--preview" in sys.argv
     fps = 10 if preview else FPS
     length = 12.0 if preview else T_END
@@ -471,14 +487,26 @@ def main():
         for i, _ in enumerate(pool.imap_unordered(_frame_job, jobs, chunksize=8)):
             if i % 100 == 0:
                 print("frames %d/%d" % (i, n), flush=True)
+    mux(frames_dir, fps, length, preview)
+
+
+def mux(frames_dir, fps, length, preview=False):
+    """Build the audio, normalise it to -14 LUFS (two-pass loudnorm) and mux."""
+    import json, re, subprocess
     wav = os.path.join(OUT, "audio.wav")
     SY.write_wav(wav, build_audio(length))
+    p = subprocess.run(["ffmpeg", "-nostats", "-i", wav, "-af", "loudnorm=I=-14:TP=-1.5:LRA=11:print_format=json",
+                        "-f", "null", "-"], capture_output=True, text=True)
+    m = json.loads(re.search(r"\{[^{}]*\}", p.stderr, re.S).group(0))
+    ln = ("loudnorm=I=-14:TP=-1.5:LRA=11:measured_I=%s:measured_TP=%s:measured_LRA=%s:"
+          "measured_thresh=%s:offset=%s:linear=true" % (m["input_i"], m["input_tp"], m["input_lra"],
+                                                        m["input_thresh"], m["target_offset"]))
     mp4 = os.path.join(OUT, "preview.mp4" if preview else "art_of_dying_notation.mp4")
-    cmd = ("ffmpeg -y -loglevel error -framerate %d -i %s/f%%05d.png -i %s -t %.3f "
-           "-c:v libx264 -preset slow -crf 20 -pix_fmt yuv420p -r %d "
-           "-af loudnorm=I=-14:TP=-1.5:LRA=11 -c:a aac -b:a 160k -movflags +faststart %s" % (fps, frames_dir, wav, length, fps, mp4))
-    print(cmd)
-    os.system(cmd)
+    cmd = ["ffmpeg", "-y", "-loglevel", "error", "-framerate", str(fps), "-i", frames_dir + "/f%05d.png",
+           "-i", wav, "-t", "%.3f" % length, "-c:v", "libx264", "-preset", "slow", "-crf", "20",
+           "-pix_fmt", "yuv420p", "-r", str(fps), "-af", ln, "-ar", "44100",
+           "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", mp4]
+    subprocess.run(cmd, check=True)
     print("wrote", mp4)
 
 
