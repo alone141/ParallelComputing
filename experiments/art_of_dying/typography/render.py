@@ -104,9 +104,9 @@ def render_frame(i, fps=FPS):
     else:
         beats_on = False
     if beats_on:
-        gb = (g // 4) * 4                     # last beat at or before now
+        gb = T.FIRST_BEAT + ((g - T.FIRST_BEAT) // 4) * 4   # last beat at or before now
         since = (g_exact - gb) * R.SIX        # seconds since that beat
-        if gb >= T.FIRST_BEAT:
+        if gb >= T.FIRST_BEAT and g >= T.FIRST_BEAT:
             n = R.beat_count(gb, T.FIRST_BEAT)
             a = 0.09 + 0.30 * math.exp(-since / 0.16)
             sc = 1.0 + 0.045 * math.exp(-since / 0.10)
@@ -131,7 +131,7 @@ def render_frame(i, fps=FPS):
                 x, y = COL_X0 + c * COL_DX, ROW_Y0 + r * ROW_DY
                 if glyph:
                     gg = (lap - 1) * R.CYCLE + tt
-                    was_beat = T.lap_mode(lap - 1) in ("beat", "band") and R.is_beat(gg) and gg >= T.FIRST_BEAT
+                    was_beat = T.lap_mode(lap - 1) in ("beat", "band") and T.beat(gg)
                     draw_centred(draw, (x, y), glyph, font(MONO_XB if was_beat else MONO_B, GLYPH * (1.18 if was_beat else 1.0)),
                                  RESIDUE_BEAT if was_beat else RESIDUE)
                 elif tt in R.RESTS and T.lap_mode(lap - 1) != "band":
@@ -144,7 +144,7 @@ def render_frame(i, fps=FPS):
             r, c, size = R.slot_of(tt)
             x, y = COL_X0 + c * COL_DX, ROW_Y0 + r * ROW_DY
             age = (g_exact - (lap * R.CYCLE + tt)) * R.SIX     # seconds since onset
-            on_beat = beats_on and R.is_beat(lap * R.CYCLE + tt) and (lap * R.CYCLE + tt) >= T.FIRST_BEAT
+            on_beat = beats_on and T.beat(lap * R.CYCLE + tt)
             if mode == "band" and glyph == "S":
                 on_beat = False
                 heavy = True

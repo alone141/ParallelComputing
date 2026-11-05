@@ -219,7 +219,7 @@ def build():
         for t in range(R.CYCLE):
             g = base + t
             sec = g * R.SIX
-            beat = R.is_beat(g) and g >= T.FIRST_BEAT
+            beat = T.beat(g)
             if mode in ("rim", "beat"):
                 if t in R.RIM:
                     # alternate accents slightly, like two sticks
@@ -236,7 +236,7 @@ def build():
                     place(low, KICK_S, sec, 1.0 if t % 2 == 0 else 0.92)
                 if t in R.SNARE:
                     place(drums, SNARE_S, sec, 1.0)
-                if g % 4 == 2:
+                if (g - T.FIRST_BEAT) % 4 == 2:
                     place(drums, RIDE_S, sec, 0.5)
                 if beat:
                     place(drums, BELL_S, sec, 0.7)
