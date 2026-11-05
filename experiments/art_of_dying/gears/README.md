@@ -1,27 +1,142 @@
 # Experiment 1: gears
 
 A vertical film for TikTok and Instagram Reels about the rhythm of the intro of **Gojira, "The Art
-of Dying"** (*The Way of All Flesh*, 2008). Two meshing wheels that are also music-box discs play the
-intro and answer one question on screen: *why does the beat drift, and when does it come back?*
+of Dying"** (*The Way of All Flesh*, 2008). Every instrument of the intro is a gear on one common
+drive; each gear's teeth are its hits and its stub teeth are its rests; it slides into mesh when
+its part enters and out when it stops. The question answered on screen: *why does the beat drift,
+and when does it come back?*
 
 This is an independent study of the song's rhythm. It is not affiliated with Gojira, their
-management or their label. **The round-3 film is silent: its audio is the original recording,
-supplied and muxed by the repository owner, and it is not in this repository.** The round-1 and
-round-2 films use synthesised sound only.
+management or their label. **The round-3 and round-4 films are silent: their audio is the original
+recording, supplied and muxed by the repository owner, and it is not in this repository.** The
+round-1 and round-2 films use synthesised sound only.
 
-Deliverables in this folder (round 3 is current; rounds 1 and 2 are kept under `round1/` and `round2/`):
+Deliverables in this folder (round 4 is current; earlier rounds are kept under `round1/`, `round2/`, `round3/`):
 
 | File | What |
 |---|---|
-| `art_of_dying_gears_record_silent.mp4` | **round 3**: the picture for the recording, 1080×1920, 60 fps, 4783 frames = 79.714 s, no audio track |
-| `stills/*.png` | six round-3 frames: the hook, the pulse engaging (bar 12), home, the band entry (bar 42), lap 13, the turnaround |
-| `rhythm.py` | the facts of the intro and the round-3 timeline on the record's clock (`BPM`, `FIRST_CLICK_OFFSET_S`) |
-| `render.py` | the round-3 frame renderer (Pillow + numpy) |
-| `build.sh` | renders the frames, the silent MP4 and the stills (about 15 min on 4 CPUs) |
-| `round2/` | the 58-second synthesised teaching film `art_of_dying_gears_synth.mp4`, its stills, code and borrowed sound modules |
-| `round1/` | the 19-second first film, its stills and code |
+| `art_of_dying_gears_record_silent.mp4` | **round 4**: the picture for the recording, 1080×1920, 60 fps, 4783 frames = 79.714 s, no audio track |
+| `stills/*.png`, `stills/contact_sheet.png` | eight round-4 frames: the hook, bar 12 engaging, mid clicks + pulse with the slip bracket, the bar-42 breath, bar 42 landed, lap 13, bar 53, the closing card; and a contact sheet |
+| `rhythm.py` | the facts of the intro, the gear table and the record-synced timeline (`BPM`, `FIRST_CLICK_OFFSET_S`) |
+| `render.py` | the round-4 frame renderer (Pillow + numpy): rack, gears, camera |
+| `build.sh` | renders the frames, the silent MP4 and the stills (about 20 min on 4 CPUs) |
+| `round3/` | round 3: the same timeline on the two music-box wheels plus a turnaround wheel |
+| `round2/` | the 58-second synthesised teaching film and its code |
+| `round1/` | the 19-second first film and its code |
 
-## Round 3: the picture for the recording
+## Round 4: one gear per instrument
+
+### The mechanism
+
+The drive is a **double-sided rack** running across the middle of the screen, moving one tooth
+(one pitch) per sixteenth on the record's clock. Each instrument is a gear that either sits on
+the rack or hangs from it. A gear's teeth come in two heights: **tall teeth are hits** (they reach
+the rack's floor and strike it, with a flash in the instrument's colour) and **stub teeth are
+rests** (they still mesh, so the gear is always driven, but they strike nothing). The bass's held
+notes are **long teeth** that run on into the rest. The rim gear's tooth 0 is painted white: the
+cycle start.
+
+A gear is hidden until its part enters. It slides in from the right, lifted clear of the rack
+(0.28 s), then drops into mesh (0.08 s) landing exactly on its first sixteenth, tooth 0 on the
+contact line. Its teeth interleave the rack's teeth with no phase fudge (the round-1 to round-3
+quarter-sixteenth offset is gone). When its part stops it lifts off the rack and slides out to
+the left. While lifted it does not turn. A camera pans and zooms to keep the engaged set inside
+the left 60-860 px of the frame, so nothing essential sits in the right-hand button column, and
+all readouts live in a strip above the bottom 20 %.
+
+| Gear | Positions | Striking teeth | Side | Engaged (film k) | Record |
+|---|---|---|---|---|---|
+| RIM CLICKS | 45 | 34 tall (rests at 4, 9, 14, 17, 20, 23, 28, 33, 38, 41, 44); tooth 0 white | above | 0 - 540 | bars 1-33 |
+| PULSE | 12 | 3 tall amber (every fourth) | below | 180 - 540 | bars 12-33 |
+| SNARE | 45 | 11 tall white | below | 540 - 720 | bars 42-52 |
+| KICK | 45 | 28 tall red | above | 540 - 720 | bars 42-52 |
+| BASS | 45 | 34 tall violet, the 11 group-final ones long (held through the rest) | below | 540 - 720 | bars 42-52 |
+| GUITARS | 12 | 12 tall green (every sixteenth; both guitars, one gear) | above | 540 - 720 | bars 42-52 |
+| RIDE | 12 | 3 tall (bell, on the beat) + 3 medium (ghost ping, off the beat); a crash on its first tooth | above | 540 - 744 | bars 42-53 |
+| BASS 6/4 | 12 | 12 tall, C1 dark violet ×3 / C2 light violet ×3 | below | 720 - 744 | bar 53 |
+| KICK 6/4 | 12 | 6 tall: K K K · · · twice | above | 720 - 744 | bar 53 |
+| GUITARS 6/4 | 12 | 12 tall, C2 green ×3 / E♭2 light green ×3 | below | 720 - 744 | bar 53 |
+| SNARE 6/4 | 12 | 4 tall: · · · S · S twice | above | 720 - 744 | bar 53 |
+
+Why 12 for the 4/4 parts: a gear's period in sixteenths must divide its tooth count, and every
+gear lands on tooth 0 at its entry, so a 12-tooth beat gear (three beats per turn) lands at 180,
+540 and 720, all multiples of 12. The 45-against-4 story survives directly: the pulse gear makes
+3¾ turns per lap of the riff gear, so at every cycle start its amber tooth is one more tooth past
+the contact (a bracket on the gear measures it, the SLIP meter counts it), and after four laps the
+white tooth and an amber tooth meet on the contact line again: HOME, at 38.571 s and at 57.857 s.
+The turnaround cell is six sixteenths, so 12-tooth gears go round twice in the 6/4 bar.
+
+### The timeline
+
+Unchanged from round 3: 140.000 bpm, first click at 0.000 s (both parameters), 744 sixteenths,
+4783 frames at 60 fps, the cut at k = 540. Film k is record sixteenth k for k < 540 and k + 128 after.
+
+| Film k | Film time | Record | On screen |
+|---|---|---|---|
+| 0 | 0.000 s | bar 1 | the rim gear alone on the rack, clicking; hook caption; group counter counting 5s and 3s |
+| 178-180 | 19.07 s | bar 12 | the pulse gear slides in under the rim gear and drops into mesh at 19.286 s: **big moment 1**, amber flash, THE PULSE ENGAGES; camera eases out a little; LAP and SLIP fade in |
+| 225 ... | laps 6-8 | bars 13-22 | at each cycle start a bracket on the pulse gear shows the amber tooth 1, 2, 3 teeth past the contact |
+| 360 | 38.571 s | bar 23 | **HOME**: gold flash where the two gears meet the rack |
+| 536-540 | 57.4-57.9 s | bars 33 → 42 (the cut) | the camera breathes out; five gears slide in from the right and drop into mesh together at 57.857 s: **big moment 2**, HOME again, a crash; the rim and pulse gears lift and roll away left; camera settles on the band |
+| 540-720 | laps 13-16 | bars 42-52 | kick, snare, bass (45 each), guitars and ride (12 each); the slip bracket moves to the ride gear |
+| 716-720 | 76.7-77.1 s | bar 53 | four 12-tooth turnaround gears slide in to the right of the ride gear; kick, snare, bass and guitars lift and roll away; camera pans to the turnaround train; counter switches to the 6-dot cell |
+| 744 | 79.714 s | end | the lights dim with the owner's 1.2 s audio fade into the closing card |
+
+Re-render on a measured tempo or offset exactly as in round 3:
+
+```
+cd experiments/art_of_dying/gears
+AOD_BPM=139.85 AOD_OFFSET=0.12 ./build.sh    # ~20 min: frames, silent MP4 (H.264 CRF 28, no audio), stills
+```
+
+### What changed from round 3
+
+- Seven instruments became seven gears (eleven with the turnaround set) instead of pin tracks on
+  two wheels; nothing dormant is on screen, so the hook is one gear and the rack.
+- The drive is a rack, not the wheels meshing each other, so gears of any size mesh honestly and a
+  gear can enter or leave without touching another.
+- Tall / stub teeth replaced "missing teeth" and painted pins: every gear is always driven, and the
+  rests are visible as short teeth.
+- A camera: zoom 0.9 for the single gear, 0.8 for two, a 0.41 breath at bar 42, 0.55 for the band,
+  0.95 for the turnaround train.
+- The pulse gear is 12 teeth (three amber) rather than 44 (eleven painted): the 45:4 story is now
+  literal, and the slip bracket spans 30° per tooth instead of 8°.
+
+### What worked
+
+- Engagement as a physical act: a gear lifting off and rolling away is the record's arrangement
+  made visible (the pulse resting from bar 42, the clicks stopping) without a word of caption.
+- Landing on the grid: every entry is at a multiple of the gear's tooth count, so each gear lands
+  tooth 0 on the contact line; the rack and all gears share one phase and there is no visual fudge.
+- Bar 42 as a single gesture: breath out, five gears drop in, two roll off, settle. It is the
+  biggest thing in the film and it happens where the record does it.
+- The layout survived the phone constraints: big gears above and below the rack, the two small
+  ones in the gap, everything inside the left 800 px, readouts in a strip above the UI zone.
+
+### What failed or was cut
+
+- **Three slides per lap are not a conveyor.** Gears travel 1400 world units in 0.28 s: it reads as
+  a flick, not as a glide, and a viewer may not see where a gear came from. A longer slide would
+  have to start before the previous part's last hit, which the music does not allow.
+- **The bar-42 swap overlaps on screen for a moment.** The five band gears land to the right of the
+  rim and pulse gears while those are still on the rack (their last strikes are at k = 538 and 536,
+  and HOME at 540 needs them in place), so for about half a second the camera shows seven gears and
+  the big ones are small. It is honest; it is also the busiest half-second of the film.
+- **Small type again.** The strip (group counter, lap, slip, the seven-name stack) is 21-24 px mono;
+  the gear labels are 22 px. The gear colours and the hub counts carry most of the meaning.
+- **The turnaround's crossing rhythm is not drawn.** Kick 6/4, snare 6/4 and the ride all mesh the
+  same rack, so the 6-against-4 cross-rhythm is visible only as the ride's bell landing on a
+  different cell slot each time; no caption points at it.
+- **The rack is plain** and moves fast (one pitch every 107 ms); it is a reliable metronome but not
+  beautiful, and at zoom 0.41 its teeth are 17 px.
+- **No gear for the choir**, which is a held note and not a rhythm; the first 19 seconds of the
+  record have more going on than the picture admits.
+- **Not checked against the recording.** As in round 3, the first click and the tempo come from the
+  brief; the re-render path exists for a measured tempo, but I could not listen.
+
+## Round 3: the picture for the recording (kept in `round3/`)
+
+`round3/art_of_dying_gears_record_silent_round3.mp4`, with its `rhythm.py`, `render.py`, `build.sh` and stills.
 
 ### What changed
 
