@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# Build the film: frames (Pillow, 4 workers) -> soundtrack (numpy, pre-mastered to -14 LUFS)
-# -> MP4 (H.264 yuv420p + AAC 256k) -> stills. About 15 min on 4 CPUs.
-# Usage: ./build.sh [workdir]   (defaults to ./build; the MP4 and stills land next to this script)
+# Round 3: render the SILENT picture for the original recording.
+#   ./build.sh                       # 140.000 bpm, first click at 0.000 s -> 4783 frames
+#   AOD_BPM=139.85 AOD_OFFSET=0.12 ./build.sh    # re-render on a measured tempo / offset
+# Frames (Pillow, 4 workers, ~12 min on 4 CPUs) -> MP4 (H.264 yuv420p, no audio track) -> stills.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 WORK="${1:-$HERE/build}"
 mkdir -p "$WORK/frames"
 cd "$HERE"
 python3 rhythm.py
+rm -f "$WORK"/frames/f*.png
 python3 render.py --out "$WORK/frames" --workers 4
-python3 soundtrack.py "$WORK/soundtrack.wav"
-ffmpeg -y -v error -framerate 60 -i "$WORK/frames/f%05d.png" -i "$WORK/soundtrack.wav" \
-  -c:v libx264 -preset slow -crf 27 -pix_fmt yuv420p -r 60 -movflags +faststart \
-  -c:a aac -b:a 256k -shortest "$HERE/art_of_dying_gears.mp4"
-python3 render.py --still 0 310 1170 1560 2060 2650 --out "$HERE/stills"
+ffmpeg -y -v error -framerate 60 -i "$WORK/frames/f%05d.png" \
+  -c:v libx264 -preset slow -crf 28 -pix_fmt yuv420p -r 60 -movflags +faststart -an \
+  "$HERE/art_of_dying_gears_record_silent.mp4"
+python3 render.py --still 0 1159 2320 3473 3700 4640 --out "$HERE/stills"
 ffprobe -v error -select_streams v -count_frames \
   -show_entries stream=nb_read_frames,r_frame_rate,pix_fmt,width,height -show_entries format=duration,size \
-  "$HERE/art_of_dying_gears.mp4"
-ffmpeg -v info -i "$HERE/art_of_dying_gears.mp4" -af ebur128=peak=true -f null - 2>&1 | grep -E "^\s+(I|Peak):"
+  "$HERE/art_of_dying_gears_record_silent.mp4"

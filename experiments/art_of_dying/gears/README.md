@@ -1,27 +1,112 @@
 # Experiment 1: gears
 
-A 58-second looping film for TikTok and Instagram Reels about the rhythm of the intro of
-**Gojira, "The Art of Dying"** (*The Way of All Flesh*, 2008). Two meshing wheels that are also
-music-box discs play the intro part by part and answer one question on screen: *why does the beat
-drift, and when does it come back?*
+A vertical film for TikTok and Instagram Reels about the rhythm of the intro of **Gojira, "The Art
+of Dying"** (*The Way of All Flesh*, 2008). Two meshing wheels that are also music-box discs play the
+intro and answer one question on screen: *why does the beat drift, and when does it come back?*
 
 This is an independent study of the song's rhythm. It is not affiliated with Gojira, their
-management or their label. The audio is synthesised from scratch; no part of the recording is used.
+management or their label. **The round-3 film is silent: its audio is the original recording,
+supplied and muxed by the repository owner, and it is not in this repository.** The round-1 and
+round-2 films use synthesised sound only.
 
-Deliverables in this folder (round 2; round 1 is kept under `round1/`):
+Deliverables in this folder (round 3 is current; rounds 1 and 2 are kept under `round1/` and `round2/`):
 
 | File | What |
 |---|---|
-| `art_of_dying_gears.mp4` | the film: 1080×1920, 60 fps, 3471 frames = 57.85 s, H.264 + AAC, −14 LUFS |
-| `stills/*.png` | six frames: the hook, the pulse entering, home, kick + snare, bass, guitars |
-| `rhythm.py` | the facts of the intro and the film's timeline (parts, focus laps, duck, peel): one source for picture and sound |
-| `render.py` | the frame renderer (Pillow + numpy) |
-| `soundtrack.py` | the mixer and master (adapted from the owner's study, see credits) |
-| `sound_voices.py`, `sound_dsp.py` | the synthesised instruments and the DSP (borrowed unchanged, see credits) |
-| `build.sh` | renders frames, the soundtrack, the MP4 and the stills (about 15 min on 4 CPUs) |
-| `round1/` | the 19-second round-1 film, its stills and its code |
+| `art_of_dying_gears_record_silent.mp4` | **round 3**: the picture for the recording, 1080×1920, 60 fps, 4783 frames = 79.714 s, no audio track |
+| `stills/*.png` | six round-3 frames: the hook, the pulse engaging (bar 12), home, the band entry (bar 42), lap 13, the turnaround |
+| `rhythm.py` | the facts of the intro and the round-3 timeline on the record's clock (`BPM`, `FIRST_CLICK_OFFSET_S`) |
+| `render.py` | the round-3 frame renderer (Pillow + numpy) |
+| `build.sh` | renders the frames, the silent MP4 and the stills (about 15 min on 4 CPUs) |
+| `round2/` | the 58-second synthesised teaching film `art_of_dying_gears_synth.mp4`, its stills, code and borrowed sound modules |
+| `round1/` | the 19-second first film, its stills and code |
 
-## Round 2: the machine plays the whole intro
+## Round 3: the picture for the recording
+
+### What changed
+
+The owner decided the film's audio will be Gojira's recording. A mixed master cannot be layered one
+part at a time, so the round-2 teaching stack is gone: **parts now engage exactly when the record
+plays them**, on the record's clock, and the film no longer loops. The gears stay: the rim teeth and
+the pulse followers carry laps 1-12, then at bar 42 the inner pin tracks engage all at once while the
+rim and pulse followers lift. A third, small wheel was added for the 6/4 turnaround.
+
+### The timeline
+
+Film seconds at 140.000 bpm with the first click at 0.000 s. One sixteenth = 15/140 s = 107.143 ms,
+one lap of the 45-cycle = 4.8214 s. `k` is the film's sixteenth index; the beat is on `k ≡ 0 (mod 4)`
+throughout. Film sixteenth `k` is record sixteenth `k` for `k < 540` and record sixteenth `k + 128`
+after the cut.
+
+| Film k | Film time | Record | On screen |
+|---|---|---|---|
+| 0 | 0.000 s | bar 1, the first rim click | hook: WHY DOES THIS BEAT DRIFT? The riff wheel clicks; the group counter counts 5s and 3s; the beat wheel and the small wheel turn dormant |
+| 0-179 | laps 1-4 | bars 1-11, clicks over the choir | captions introduce the wheel, the rests, and the waiting beat wheel |
+| 180 | 19.286 s | bar 12: the tribal pulse joins | **big moment 1**: the beat wheel's followers drop, amber flash, THE PULSE ENGAGES, the 45:44 line; LAP and SLIP readouts fade in |
+| 180-359 | laps 5-8 | bars 12-22 | the slip grows one tooth a lap: bracket on the beat wheel, SLIP meter 1, 2, 3 |
+| 360 | 38.571 s | bar 23 | **HOME**: gold flash, the white and amber teeth meet; then the slip grows again (laps 9-12) |
+| 540 | 57.857 s | **the cut**: record bars 34-41 (pulse alone, 13.714 s, cycle suspended) removed; film 57.857 s = record bar 42 (1:11.57) | **big moment 2**: HOME again and the band: kick + snare, bass (riff wheel tracks), ride with a crash, guitars (beat wheel tracks) engage together on the first tooth; rim and pulse followers lift; a small note says what was cut |
+| 540-719 | laps 13-16 | bars 42-52 | the kit rides the riff wheel, the ride rides the beat wheel; the slip meter keeps counting against the ride bell |
+| 720 | 77.143 s | bar 53: the 6/4 turnaround, 24 sixteenths | the riff wheel's followers lift; the 12-tooth turnaround wheel engages: K K K S · S four times on its pin track, bass C1 ×3 / C2 ×3 as dark and light violet teeth; the counter switches to a 6-dot cell |
+| 744 | 79.714 s | end (the audio fades over the last 1.2 s) | the lights go down with the fade and a closing card comes up: Gojira, The Art of Dying, The Way of All Flesh 2008, the one-line answer, the disclaimer |
+
+Total: 744 sixteenths = 79.7142857 s = round(79.714 × 60) = **4783 frames** at 60 fps.
+
+Not shown: the guitars' C2 / E♭2 alternation in the turnaround (their pins live on the beat wheel,
+which has no pitch), and the 6/4 turnaround at bar 65 and the pulse's return at bar 66, which are
+after the film ends.
+
+### Re-rendering with a measured tempo or offset
+
+Every timing is a function of one sixteenth counter and two parameters at the top of `rhythm.py`:
+
+```
+BPM = 140.000                 # the recording's tempo
+FIRST_CLICK_OFFSET_S = 0.0    # film seconds before the first rim click
+```
+
+Override them from the environment; the frame count follows:
+
+```
+cd experiments/art_of_dying/gears
+AOD_BPM=139.85 AOD_OFFSET=0.12 python3 rhythm.py     # prints the timeline and the frame count
+AOD_BPM=139.85 AOD_OFFSET=0.12 ./build.sh            # ~15 min: frames, silent MP4, stills
+```
+
+With an offset, the wheels turn but nothing is engaged before the first click (k < 0). The silent
+MP4 is H.264 CRF 28, yuv420p, no audio track; the owner aligns frame 0 (or the offset) with the
+record's first click and muxes.
+
+### What worked
+
+- The record's own arrangement is more dramatic than the teaching stack: eight laps of clicks and
+  pulse give the slip room to be felt, and bar 42 arrives as HOME and the band in one blow.
+- The music-box tracks survived the change without a redesign: engagement is just a follower
+  dropping, so "the pulse rests in bars 42-65" is a lifted follower and nothing else.
+- A 12-tooth wheel is enough for the turnaround: the 6-sixteenth cell goes round twice, so the small
+  wheel reaches slot 0 exactly at k = 720 (720 is a multiple of 12) with no slide-in.
+- One sixteenth counter and two parameters: a re-render on a measured tempo is one command.
+
+### What failed or was cut
+
+- **The cut is invisible as music.** The picture simply continues at 57.857 s; only a small line in
+  the left column says that eight bars were removed. Anyone who knows the record will feel the jump
+  in the audio and may not read the note.
+- **Dormant wheels from frame 0.** The beat wheel and the turnaround wheel are visible, dim, before
+  they matter. They promise what is coming but they are two more things in the hook.
+- **The turnaround wheel sits in the right-hand column** (upper right of the riff wheel), where the
+  app's buttons are. Its name chip is transient and the stack row duplicates it, but the wheel itself
+  is partly under UI on some phones.
+- **No pitch on the beat wheel**, so the guitars' turnaround figure is not shown.
+- **The slip meter after bar 42** counts the ride bell against the cycle start, which is correct but
+  no caption says so; the readout is there for continuity more than for teaching.
+- **Not auditioned against the recording.** The timeline is built from the brief's bar map; if the
+  record's tempo is not exactly 140.000 the owner's measurement and a re-render will fix the drift,
+  but I could not check the first click or the bar-42 downbeat myself.
+
+## Round 2: the synthesised teaching film (kept in `round2/`)
+
+The 58-second looping film `round2/art_of_dying_gears_synth.mp4`, with its own `rhythm.py`, `render.py`, `soundtrack.py`, borrowed sound modules and `build.sh` (run it from inside `round2/`).
 
 ### The idea
 
@@ -96,7 +181,7 @@ sixteenth is 107.130 ms (139.98 bpm, 0.012 % slower than the record) and the loo
 ### How to run
 
 ```
-cd experiments/art_of_dying/gears
+cd experiments/art_of_dying/gears/round2
 ./build.sh            # ~15 min on 4 CPUs: frames (Pillow), soundtrack (numpy), ffmpeg mux, stills
 python3 rhythm.py     # prints the timeline and runs the self-check
 python3 render.py --still 0 1170 --out stills      # single frames
