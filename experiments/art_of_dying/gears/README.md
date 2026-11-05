@@ -81,7 +81,14 @@ C2 left and right (the right one 1-4 ms late), and a low choir on C under everyt
 reverb and a true-peak limiter make the loop seamless; the balance is set by K-weighted measurement
 per part. The instruments, the DSP and the mixer are the owner's own (see credits); what is mine is
 the timeline they play and the film tempo. Mastered to −14.0 LUFS integrated and −2.0 dBTP in the
-WAV so the AAC stays under −1 dBTP; the final MP4 measures are in the build log below.
+WAV so the AAC stays under −1 dBTP. Measured on the final MP4 with `ffmpeg -af ebur128=peak=true`:
+
+| Measure | Value |
+|---|---|
+| integrated loudness | −14.0 LUFS |
+| true peak | −1.3 dBTP (the WAV is at −2.8; AAC at 256 kb/s overshot a −2.0 ceiling by 1.2 dB on the first try) |
+| loop seam | sample jump 0.003 full scale against a 99.9th-percentile jump of 0.157; the seam window peaks at −2.8 dBTP |
+| file | 17.6 MB, H.264 CRF 27, yuv420p, 3471 frames at 60 fps |
 
 Picture and sound share one clock: 12 laps = 540 sixteenths = 3471 whole frames at 60 fps, so one
 sixteenth is 107.130 ms (139.98 bpm, 0.012 % slower than the record) and the loop is exact in both.
@@ -141,7 +148,7 @@ column carry no essential text (readouts sit in the left column; the wheels run 
   to equal the first; a cleaner hook would show a bare wheel and add pins as parts enter.
 - **The bass hold arcs** read as little "H" shapes at phone size rather than as a sustained note.
 - **Nothing was auditioned.** The instruments were tuned by their author from measurement, not by ear,
-  and I could not listen either; the limiter works hard on the pulse (up to 7.8 dB on transients).
+  and I could not listen either; the limiter works hard on the pulse (up to 9.4 dB on transients, more than 3 dB on 16 % of samples) to reach −14 LUFS under a −2.8 dBTP ceiling.
 - **The record's own arrangement is not reproduced** (clicks never play with the kit; the pulse rests in
   bars 42-65). This is said in the film's lap-11 caption and here, not hidden, but a viewer who wants
   the song's structure gets a teaching stack instead.

@@ -84,8 +84,8 @@ WET = 0.5                             # reverb return (the impulse response has 
 
 # ---- master -----------------------------------------------------------------------------------------
 TARGET_LUFS = -14.0
-CEILING_DBTP = -2.0                   # AAC 256k adds about 0.5 dB of overshoot: it then stays under -1 dBTP
-MASTER_GAIN_DB = 6.34                 # the full render solves for this and prints it; excerpts reuse it
+CEILING_DBTP = -2.8                   # AAC 256k overshot a -2.0 ceiling by 1.2 dB here: this keeps the MP4 under -1 dBTP
+MASTER_GAIN_DB = 7.11                 # the full render solves for this and prints it; excerpts reuse it
 PRE, POST = int(3.0 * SR), int(0.05 * SR)    # an excerpt's pre-roll (reverb, limiter) and post-roll
 
 
