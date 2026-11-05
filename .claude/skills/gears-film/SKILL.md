@@ -149,8 +149,100 @@ re-run `check` (the frame count changes) and `render`.
 
 ## Transcription and the real recording
 
-_Placeholder: the owner's session fills this in with its own tools (how the tab was verified, how
-the recording was measured, the crossfade and mux procedure)._
+The picture is rendered silent from a verified transcription; the recording is fitted and muxed
+afterwards by whoever holds a copy of it. Nothing here downloads music: the owner supplies the file.
+
+### 1. Get the tab
+
+```bash
+node gears_film/transcribe/songsterr_fetch.js "tool schism" "schism" /tmp/tabs/schism
+python3 -I gears_film/transcribe/songsterr_parse.py summary /tmp/tabs/schism 40
+```
+
+`summary` prints the tracks, the tempo map, every time-signature change and section marker, and
+notes per bar per track: that is the song's structure (who plays where, where the parts enter).
+Songsterr's tabs are community work; `revisions.json` names the revision you used. Keep the
+downloaded JSON out of the repository (it is their content); commit only the rhythm you derive.
+If the tab has `video_points.json`, its bar start times (for the synced YouTube video) are a free
+check on the tempo.
+
+### 2. Derive the patterns
+
+```bash
+python3 -I gears_film/transcribe/songsterr_parse.py grid   /tmp/tabs/schism 3 4-11 --res 8
+python3 -I gears_film/transcribe/songsterr_parse.py stream /tmp/tabs/schism 3 4-11 --res 8
+```
+
+`grid` shows one row per note (General MIDI drum numbers on drum tracks: 35/36 kick, 38 snare,
+37 side stick, 42/46 hi-hat, 49/57 crash, 51 ride, 53 ride bell, 52 China; string/fret on pitched
+tracks) on a grid of `--res` notes per whole note. Choose `--res` so every hit lands on the grid
+(`~` means off-grid: raise it, or the part uses tuplets). `stream` concatenates the bars, prints the
+run lengths (the 5 5 5 3 3 3 of The Art of Dying) and the shortest period that repeats exactly:
+that period in steps is the gear's tooth count.
+
+Write the findings as facts before designing anything: tempo (and where it changes), the step unit,
+the cycle length and grouping, each instrument's hits within the cycle (as step indices), where each
+part enters and leaves (bar numbers and record steps), and every bar of odd length. Have a second,
+independent pass check the facts against the raw JSON and at least one outside source (a drummer's
+transcription or lesson); The Art of Dying's cross-check caught a wrong README claim and a snare rule
+this way. Everything in the song data must trace to those facts.
+
+### 3. Decide the film's segments
+
+A mixed master cannot be layered one part at a time: the picture follows the record's own entries.
+Choose which record steps the film keeps (`segments` in the song data): usually from the first hit
+of the hook to the end of the first full-band block, with dead stretches removed at bar lines (The
+Art of Dying drops its pulse-only bridge). A cut lands on a downbeat where something new enters, so
+the entry masks the crossfade. Export the map the audio tools need:
+
+```bash
+python3 -m gears_film export-record-map songs/schism.py   # writes record_map.json
+```
+
+### 4. Fit the recording
+
+```bash
+ffmpeg -i Schism.mp3 -ar 48000 -c:a pcm_s24le record_48k.wav
+python3 gears_film/audio/fit_record.py record_48k.wav record_map.json fit.json
+```
+
+The fit slides a comb of an anchor instrument's hits (from `record_map.json`) over a band-limited
+onset envelope, per segment, and reports each segment's start time in the record and its tempo. Read
+the "score vs half-step off" ratio: above about 2 the anchor locked; near 1 it did not (pick a more
+percussive anchor or a better band: 2–9 kHz for sticks, rims, snares and cymbals; 40–180 Hz for kick
+and low drums, which lock less sharply). Expect surprises: The Art of Dying's band section sits 45 ms
+earlier than the grid extrapolated through its bridge, and drifts 0.2 bpm slower; sections of real
+records are edits.
+
+Two switches per segment in the song data (they pass through to `record_map.json`):
+`"level_jump": true` on any segment that begins with a band entry or a cut, so the fit anchors on the
+level jump (the downbeat sits 0–50 ms before it) and cannot be fooled by a one-step ambiguity; and
+`"search_s"` to widen the search around the record's own clock when the record has a bigger edit
+there. If the fit prints AMBIGUOUS and the segment has no level jump, choose a more percussive anchor
+or two anchors in different bands.
+
+Paste each segment's measured bpm into the song data's tempo map and the first segment's offset into
+`first_click_offset_s`, then re-render the picture, so picture and sound share one clock.
+
+### 5. Build, mux, verify
+
+```bash
+python3 gears_film/audio/edit_record.py build record_48k.wav record_map.json fit.json film_audio.wav
+gears_film/audio/mux_verify.sh out/<slug>_record_silent.mp4 film_audio.wav out/<slug>_record.mp4 record_map.json
+```
+
+`build` cuts the segments at their measured starts, crossfades 40 ms on each boundary, fades the
+last 1.2 s and trims the gain (−2.4 dB by default: a +0.6 dBTP master lands at −1.6 dBTP after AAC;
+a +2 dBTP master needs about −4 dB). `mux_verify.sh` copies the video stream (never re-encode it,
+never use `-shortest`), reports the frame count, loudness and true peak, then decodes the audio back
+out of the MP4 and checks every anchor against the picture's grid: on-grid energy must beat
+half-a-step-off clearly and the best shift must sit within a few ms. Three to nine milliseconds is
+normal; tens of milliseconds means a segment is on the wrong grid.
+
+The muxed film contains the recording: keep it out of the repository (commit the silent render) and
+hand it to the owner. Expect the platforms to recognise the music: Instagram may mute it, YouTube
+will claim it, TikTok usually keeps it; the silent render exists so the licensed track can be added
+in-app instead.
 
 ## Known limits of the engine
 
