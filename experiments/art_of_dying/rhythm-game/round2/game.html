@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>45 — a rhythm game for The Art of Dying</title>
+<style>
+  html, body { margin: 0; background: #06060b; height: 100%; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; object-fit: contain; background: #06060b; }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="timeline.js"></script>
+<script src="game.js"></script>
+<script>
+  // Live mode (open the file in a browser): runs in real time, silent.
+  // The recorder calls window.renderFrame(t) instead and never starts this loop.
+  if (!window.__RECORDING__) {
+    const start = performance.now();
+    (function loop() {
+      renderFrame((performance.now() - start) / 1000);
+      requestAnimationFrame(loop);
+    })();
+  }
+</script>
+</body>
+</html>
