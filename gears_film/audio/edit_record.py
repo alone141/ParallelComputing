@@ -58,10 +58,13 @@ def build(wav, map_path, fit_path, out):
     total = int(round(total_s * sr))
     y = np.zeros((total, 2))
     cursor, prev_a, prev_n = 0, 0, 0
+    # segment boundaries in samples from the cumulative film clock, so many short segments cannot
+    # accumulate rounding (each segment's length is the difference of two rounded boundaries)
+    bounds = [int(round(t0 * sr)) for t0, _ in clock] + [total]
     for i, (seg, fseg) in enumerate(zip(rm["segments"], fit["segments"])):
         if fseg.get("start_s") is None:
             raise SystemExit(f"segment {i} has no fit; give it an anchor")
-        n = int(round(int(seg["steps"]) * clock[i][1] * sr))
+        n = bounds[i + 1] - bounds[i]
         a = int(round(fseg["start_s"] * sr))
         if i == 0:
             y[:n] = x[a:a + n]
@@ -78,8 +81,11 @@ def build(wav, map_path, fit_path, out):
             y[cursor + nX: cursor + n] = x[a + nX: a + n]
         prev_a, prev_n = a, n
         cursor += n
-        print(f"segment {i}: record {fseg['start_s']:.4f} s → film {clock[i][0]:.4f} s, "
-              f"{n / sr:.4f} s at {seg.get('bpm', rm['bpm'])} bpm")
+        if len(rm["segments"]) <= 12 or i in (0, len(rm["segments"]) - 1):
+            print(f"segment {i}: record {fseg['start_s']:.4f} s → film {clock[i][0]:.4f} s, "
+                  f"{n / sr:.4f} s at {seg.get('bpm', rm['bpm'])} bpm")
+        elif i == 1:
+            print(f"... ({len(rm['segments']) - 2} more segments)")
     fade = int(float(rm.get("fade_out_s", 1.2)) * sr)
     if fade:
         y[-fade:] *= np.linspace(1, 0, fade)[:, None] ** 1.5
