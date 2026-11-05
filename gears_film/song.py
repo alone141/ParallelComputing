@@ -419,7 +419,7 @@ class Song:
                 d["search_s"] = s.search_s
             segs.append(d)
         anchors = []
-        for a in self.anchors:          # only strikes on the grid (a tooth that strikes late is no anchor)
+        for a in self.anchors:
             rs = sorted({self.record_step(k) for key in a.gears for k in range(self.total_steps)
                          if self.anchor_hit(a, key, k)})
             anchors.append(dict(name=a.name, band_hz=list(a.band_hz), record_steps=rs))

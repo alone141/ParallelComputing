@@ -474,7 +474,7 @@ def render_frame(A: Assets, f: int):
         x, y, Te, moving = st
         states[g.key] = st
         d = 2 * math.pi / g.teeth
-        rot = ((Te + g.phase) * d - math.pi / 2) if g.side > 0 else (math.pi / 2 - (Te + g.phase) * d)
+        rot = (Te * d - math.pi / 2) if g.side > 0 else (math.pi / 2 - Te * d)
         spr = A.gear_at_zoom(g.key, zoom)
         img = spr.rotate(math.degrees(rot), resample=Image.BICUBIC)
         sx, sy = to_screen(x, y)
