@@ -391,9 +391,6 @@ def render_frame(A, f):
                     rr = 40 + int(age / 0.45 * 300) // 10 * 10
                     if rr in A.rings_home:
                         add_sprite(canvas, A.rings_home[rr], fx, fy, 0.7 * e, size_scale)
-                if age < 2.0 / R.FPS:                       # weight: a two-frame lift of a few percent
-                    canvas = Image.blend(canvas, Image.new("RGB", canvas.size, (255, 255, 255)), 0.05)
-                    dr = ImageDraw.Draw(canvas)
             elif kind in ("kick", "snare"):
                 dur = 0.22 if kind == "snare" else 0.28
                 if age < dur:

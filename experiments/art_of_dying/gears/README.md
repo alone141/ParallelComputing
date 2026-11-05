@@ -40,8 +40,9 @@ Two fixes on round 4, nothing else changed (same gears, layout, timeline, 4783 f
   → a wide frame holding both the band and the arriving train over k 707-713) and settles only after
   the leaving gears have been seen going (bar 42: k 543-548; bar 53: k 721.5-725.5).
 - **The crash.** The flat full-frame wash is gone. The ride gear's first tooth now blooms locally:
-  a cyan glow (radius 260 world) with a white-hot core, decaying over 0.45 s, and an expanding ring,
-  plus a two-frame 5 % lift of the whole frame for weight. The HOME flash at the rack contact is
+  a cyan glow (radius 260 world) with a white-hot core, decaying over 0.45 s, and an expanding ring.
+  A two-frame 5 % lift of the whole frame was tried for weight and cut: on a near-black frame even
+  5 % reads as a lighter frame in a frame-by-frame check. The HOME flash at the rack contact is
   unchanged and local.
 
 The exception kept from round 4: the rim and pulse gears lift at k = 540 (the home moment, two
