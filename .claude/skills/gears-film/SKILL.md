@@ -23,6 +23,17 @@ module `songs/<slug>.py`; the worked example is `songs/art_of_dying.py` (Gojira,
 
 - **One gear per instrument**, kick and snare separate. Parts that change pattern (a turnaround) are
   a *second gear* with its own engaged range, in a free slot, not a gear that mutates.
+- **Alternating bar lengths are a seesaw, not a polymetre.** Schism's 5/8 + 7/8 does not drift
+  against anything: the bar lengths alternate. So the bar lengths become the gears: each instrument's
+  12-step pattern is a 5-tooth gear and a 7-tooth gear on a `Rocker` that tips one into mesh as the
+  other lifts, on every bar line (an 80-120 ms eased tip landing the incoming tooth on the line).
+  The engaged gear is bright, the resting one dim and still; the counter mirrors which gear is down.
+  A member turns exactly once per bar (its tooth 0 is on the contact at every one of its bar lines);
+  a part whose alternate bars differ (the kick's two sevens) gets a 14-tooth gear that turns half a
+  turn per bar. Parts that play every step (hi-hat, ride) carry no bar information: leave them out,
+  or keep them as plain gears if the frame has room; the small 5- and 7-tooth gears need the camera
+  close, so phone legibility decides. A chorus that changes one bar length (6 + 7) is a new rocker
+  gliding in while the old one rolls away, as with any part that changes pattern.
 - **Teeth are hits, stubs are rests.** Stubs keep every gear meshed, so a snare with 11 hits in 45
   still turns honestly. Built-in types: `tall`, `stub`, `long` (a held note runs on into the rest),
   `medium` (a ghost stroke: the ride's ping against the bell), `double` (two 32nds in one 16th: two
@@ -125,6 +136,22 @@ and a herta) or `songs/art_of_dying.py` (the full worked example) and replace ev
     their step. `Segment(level_jump=True, search_s=...)` pass through to the record map for the fit.
 11. `cycle_steps`, `cycle_end` (where LAP n/N stops and the segment label takes over), `stack`
     (row order), `cut_note`.
+12. **Rockers** (bars that alternate in length): `bar_lengths=(5, 7) * 20 + (6, 7) * 4` over the whole
+    film, and `rockers=[Rocker(key, name, short, colour, members={5: "bass5", 7: "bass7"}, ranges,
+    side, lead, swap_s=0.1, lift=46)]`. Members are ordinary `Gear`s with `rocker=key`, the rocker's
+    `side` and `ranges`, their own `x` (multiples of the pitch, either side of the pivot; the beam
+    is drawn between them), `strikes` over their own teeth and `stack=` the first member's key so
+    they light one row. `check` enforces: a member's teeth are a multiple of its bar length, every
+    bar inside the rocker's range has a member, and the range starts and ends on bar lines. Members
+    keep their own phase (they advance only while their bar is on) and are exempt from the
+    enter-on-a-multiple rule. Counters and anchors list the members; `tooth_at(key, k)` is what a
+    member presents to the rack at step k (a stub while it rests).
+13. **A record without a click:** `step_times=[...]`, the film second of every step 0..total_steps
+    (from `gears_film/audio/beat_track.py`, see below). It replaces the segments' bpm as the
+    picture's clock (the engine interpolates inside a step); keep the musical segments for labels,
+    bar numbering and the fit, with `bpm=` the mean over the tracked eighths so the record map stays
+    honest. `check` requires `step_times[0] == first_click_offset_s` and a strictly increasing list;
+    `record_map.json` then carries `step_film_s`.
 
 ## Deciding segments and cuts
 
@@ -277,6 +304,27 @@ build, which cuts the record at the measured start of each segment; `first_click
 0 unless you deliberately want a lead-in. `first_step_guess_s` in the song data is only a hint for
 the fit's search.
 
+### 4b. A record without a click: track every step
+
+Bands that play without a click breathe bar by bar: Schism's verse drifted up to 146 ms (half an
+eighth) against one bpm per 40 s segment, so the hits stopped lining up. After `fit_record.py` has
+given the first step's record time, run the beat tracker over the kept stretch:
+
+```bash
+python3 gears_film/audio/beat_track.py record_48k.wav 46.8181 "5,7x20;6,7x4" 107 2 beat_track.json
+```
+
+It follows every step with a Viterbi tracker over band-limited onset envelopes (smooth tempo
+changes allowed, step 0 pinned) and writes the record time of every step plus a per-bar tempo map
+(boundary-defined bpm per bar). A step tracker cannot tell the grid from the grid shifted by whole
+steps, so **verify the phase per cycle with a pattern-specific comb** (Schism: pitch-specific bass
+combs for F3 at steps 0 and 5, E3 at 2 and 7, G3 at 9; the chorus's snare 0, 8 and kick 2 3 5 6 10)
+before trusting it: the record's eighths should sit within about ±10 ms of the tracked grid in
+every cycle. Then paste the step times into the song module as `step_times` (or, if you prefer
+segments, one `Segment` per bar with its bpm: worst in-bar deviation about 7 ms), re-run `check`
+(the frame count changes) and `render`. The audio is then one uncut stretch of the record from the
+first step's time; `first_click_offset_s` still stays 0.
+
 ### 5. Build, mux, verify
 
 ```bash
@@ -299,7 +347,9 @@ in-app instead.
 
 ## Known limits of the engine
 
-Single rack (no second drive); a gear cannot change pattern without leaving (use a second gear);
-steps are uniform within a segment (swing or tuplets inside a step need a compound tooth type,
-add one to `TOOTH_TYPES`); the closing card and readout strip have fixed positions; the safe box
+Single rack (no second drive); a gear cannot change pattern without leaving (use a second gear, or
+a rocker when the pattern follows the bar length); steps are uniform within a segment unless
+`step_times` is given (swing or tuplets inside a step need a compound tooth type, add one to
+`TOOTH_TYPES`); a rocker's members cannot carry a SlipSpec and a rocker holds one gear per bar
+length (two or three gears); the closing card and readout strip have fixed positions; the safe box
 is tuned for 1080×1920 only.

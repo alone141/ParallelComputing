@@ -88,6 +88,8 @@ class Gear:
                                 # a 13-tooth chorus gear entering at 240 has origin=240.
     phase: int = 0              # deprecated alias: position `phase` is on the contact at step 0, i.e.
                                 # origin = -phase mod teeth. Use `origin`.
+    rocker: str | None = None   # the Rocker this gear belongs to: it then keeps its own phase (it advances
+                                # only while its bar is on) and is drawn on the rocker's beam
 
     def __post_init__(self):
         if self.phase and not self.origin:
@@ -99,6 +101,39 @@ class Gear:
     def position(self, tooth: int) -> int:
         """The strike position (0..teeth-1) that tooth index `tooth` carries."""
         return (tooth - self.origin) % self.teeth
+
+    def engaged(self, k: float) -> bool:
+        return any(a <= k < b for a, b in self.ranges)
+
+    def range_at(self, k: float):
+        for a, b in self.ranges:
+            if a <= k < b:
+                return a, b
+        return None
+
+
+@dataclass(frozen=True)
+class Rocker:
+    """A seesaw: two gears of one instrument that take turns meshing with the rack, bar by bar. For a
+    song that alternates bar lengths (5/8 + 7/8) the bar lengths become the gears: `members` maps a
+    bar length in steps to the gear that serves bars of that length. A member's tooth count must be a
+    multiple of its bar length (a 14-tooth gear serves alternating 7/8 bars half a turn at a time), it
+    advances only while its bar is on, and its tooth 0 is on the contact at every one of its bar lines.
+    The swap is a quick eased tip of the beam that lands the incoming gear's tooth on the bar line.
+    Members are ordinary Gears with `rocker=key`, the rocker's `ranges` and `side`, and their own x
+    (multiples of the pitch, either side of the pivot); the rocker glides in and out as one piece."""
+    key: str
+    name: str                   # stack row label (the members light it)
+    short: str                  # label under (or over) the assembly
+    colour: tuple
+    members: dict               # {bar_steps: gear_key}
+    ranges: tuple               # film step ranges in which the rocker is on the rack (each starts on a bar line)
+    side: int = -1
+    lead: float = 0.0           # seconds: glide stagger, as for a gear
+    swap_s: float = 0.1         # the seesaw tip, seconds, ending exactly on the bar line
+    lift: float = 46.0          # world units the resting gear is raised off the rack
+    label_dx: float = 0.0
+    label_dy: float = 0.0
 
     def engaged(self, k: float) -> bool:
         return any(a <= k < b for a, b in self.ranges)
@@ -197,6 +232,10 @@ class Song:
     gain_db: float = -2.4
     tooth_types: dict = field(default_factory=dict)      # the song's own tooth types (merged over TOOTH_TYPES)
     lap_word: str = "LAP"                # the readout's word for a cycle ("LAP 3 / 8", or "BAR 7 / 24")
+    rockers: list = field(default_factory=list)          # Rocker list (members are gears with rocker=key)
+    bar_lengths: tuple = ()              # steps per bar over the whole film, from step 0 (rockers need it)
+    step_times: list | None = None       # film seconds of every step 0..total_steps (a beat-tracked record:
+                                         # when given it replaces the segments' bpm as the picture's clock)
     lap_label_pos: tuple | None = None   # screen (x, y) for the LAP / segment label when the counter row is
                                          # too wide for it (16-dot bars push it into the apps' button column)
     # environment overrides (named generically): GEARS_BPM replaces the nominal bpm (segments that
@@ -232,8 +271,38 @@ class Song:
             t += s.steps * step_s
         self.total_steps = k
         self.total_s = t
+        if self.step_times is not None:
+            st = [float(v) for v in self.step_times]
+            if len(st) != self.total_steps + 1:
+                raise ValueError(f"step_times has {len(st)} entries; the film has {self.total_steps} steps (needs total_steps + 1)")
+            self.step_times = st
+            self.seg_time_start = [st[a] for a in self.seg_film_start]
+            self.seg_step_s = [(st[a + sg.steps] - st[a]) / sg.steps for a, sg in zip(self.seg_film_start, self.segments)]
+            self.total_s = st[-1]
         self.n_frames = int(round(self.total_s * FPS))
         self.nominal_step_s = 60.0 / (self.bpm * self.steps_per_beat)
+        # rockers: which member serves which bar, and each member's own phase (steps engaged so far)
+        self.by_rocker = {r.key: r for r in self.rockers}
+        self.bar_starts = []
+        pos = 0
+        for n in self.bar_lengths:
+            self.bar_starts.append((pos, n))
+            pos += n
+        self.member_bars = {}            # gear key -> [(k_start, k_end, Te0)]
+        self.member_of = {}              # gear key -> rocker key
+        for r in self.rockers:
+            counts = {key: 0 for key in r.members.values()}
+            for key in r.members.values():
+                self.member_bars[key] = []
+                self.member_of[key] = r.key
+            for start, n in self.bar_starts:
+                if not r.engaged(start):
+                    continue
+                key = r.members.get(n)
+                if key is None:
+                    continue
+                self.member_bars[key].append((start, start + n, counts[key]))
+                counts[key] += n
 
     def segment_index(self, k: float) -> int:
         i = 0
@@ -243,7 +312,15 @@ class Song:
         return i
 
     def step_time(self, k: float) -> float:
-        """Film seconds of (fractional) film step k, through the tempo map."""
+        """Film seconds of (fractional) film step k, through the tempo map (or the step time list)."""
+        if self.step_times is not None:
+            st = self.step_times
+            if k <= 0:
+                return st[0] + k * (st[1] - st[0])
+            if k >= self.total_steps:
+                return st[-1] + (k - self.total_steps) * (st[-1] - st[-2])
+            i = int(k)
+            return st[i] + (k - i) * (st[i + 1] - st[i])
         if k <= 0:
             return self.first_click_offset_s + k * self.seg_step_s[0]
         i = self.segment_index(min(k, self.total_steps - 1e-9))
@@ -251,6 +328,15 @@ class Song:
 
     def time_step(self, t: float) -> float:
         """Fractional film step at film second t (inverse of step_time)."""
+        if self.step_times is not None:
+            st = self.step_times
+            if t <= st[0]:
+                return (t - st[0]) / (st[1] - st[0])
+            if t >= st[-1]:
+                return self.total_steps + (t - st[-1]) / (st[-1] - st[-2])
+            import bisect
+            i = bisect.bisect_right(st, t) - 1
+            return i + (t - st[i]) / (st[i + 1] - st[i])
         if t <= self.first_click_offset_s:
             return (t - self.first_click_offset_s) / self.seg_step_s[0]
         i = 0
@@ -263,6 +349,9 @@ class Song:
         return self.time_step(frame / FPS)
 
     def step_s_at(self, k: float) -> float:
+        if self.step_times is not None:
+            i = int(max(0.0, min(k, self.total_steps - 1e-9)))
+            return self.step_times[i + 1] - self.step_times[i]
         return self.seg_step_s[self.segment_index(max(0.0, min(k, self.total_steps - 1e-9)))]
 
     def record_step(self, k: int) -> int:
@@ -283,10 +372,38 @@ class Song:
         return None, None
 
     # ---- hits ------------------------------------------------------------------------------------
+    def member_tooth(self, key: str, k: int):
+        """A rocker member's own tooth index on the contact at film step k, or None when its bar is off."""
+        for a, b, te0 in self.member_bars.get(key, ()):
+            if a <= k < b:
+                return te0 + (k - a)
+        return None
+
+    def member_Te(self, key: str, k: float) -> float:
+        """A rocker member's rotation (its own phase) at fractional film step k: it advances only while
+        its bar is on and stays put while it rests."""
+        te = 0.0
+        for a, b, te0 in self.member_bars.get(key, ()):
+            if k < a:
+                break
+            te = te0 + min(k, b) - a
+        return te
+
+    def member_meshed(self, key: str, k: float) -> bool:
+        return any(a <= k < b for a, b, _ in self.member_bars.get(key, ()))
+
+    def tooth_at(self, key: str, k: int) -> str:
+        """The tooth type gear `key` presents to the rack on film step k (a rocker member off its bar: a stub)."""
+        g = self.by_key[key]
+        if key in self.member_of:
+            mt = self.member_tooth(key, k)
+            return "stub" if mt is None else g.tooth_type(mt)
+        return g.tooth_type(k)
+
     def hits_at(self, key: str, k: int) -> list:
         """Hit kinds gear `key` makes on film step k if engaged (the caller checks engagement)."""
         g = self.by_key[key]
-        tt = g.tooth_type(k)
+        tt = self.tooth_at(key, k)
         if not self.types[tt]["subhits"]:
             return []
         rng = g.range_at(k)
@@ -297,7 +414,7 @@ class Song:
         return [g.sound]
 
     def subhits(self, key: str, k: int):
-        return self.types[self.by_key[key].tooth_type(k)]["subhits"]
+        return self.types[self.tooth_at(key, k)]["subhits"]
 
     def tip_add(self, g) -> float:
         """The gear's tallest tooth (for its tip radius): the layout and labels use it."""
@@ -379,7 +496,7 @@ class Song:
                             step = k - (pos - start) + q
                             colour = None
                             for gk in c.gears:
-                                spec = self.types[self.by_key[gk].tooth_type(step)]
+                                spec = self.types[self.tooth_at(gk, step)]
                                 if spec["subhits"]:
                                     colour = tuple(spec["shade"]) if spec["shade"] else self.by_key[gk].colour
                                     break
@@ -400,7 +517,7 @@ class Song:
         g = self.by_key[key]
         if not (g.engaged(k) and self.hits_at(key, k)):
             return False
-        if a.tooth_types and g.tooth_type(k) not in a.tooth_types:
+        if a.tooth_types and self.tooth_at(key, k) not in a.tooth_types:
             return False
         if a.on_grid and 0.0 not in self.subhits(key, k):
             return False
@@ -423,11 +540,14 @@ class Song:
             rs = sorted({self.record_step(k) for key in a.gears for k in range(self.total_steps)
                          if self.anchor_hit(a, key, k)})
             anchors.append(dict(name=a.name, band_hz=list(a.band_hz), record_steps=rs))
-        return dict(song=self.slug, title=self.title, artist=self.artist, bpm=self.bpm,
-                    steps_per_beat=self.steps_per_beat, first_click_offset_s=self.first_click_offset_s,
-                    first_step_guess_s=self.first_step_guess_s, total_steps=self.total_steps,
-                    total_s=round(self.total_s, 6), frames=self.n_frames, fps=FPS, segments=segs,
-                    anchors=anchors, crossfade_s=self.crossfade_s, fade_out_s=self.end_fade_s, gain_db=self.gain_db)
+        out = dict(song=self.slug, title=self.title, artist=self.artist, bpm=self.bpm,
+                   steps_per_beat=self.steps_per_beat, first_click_offset_s=self.first_click_offset_s,
+                   first_step_guess_s=self.first_step_guess_s, total_steps=self.total_steps,
+                   total_s=round(self.total_s, 6), frames=self.n_frames, fps=FPS, segments=segs,
+                   anchors=anchors, crossfade_s=self.crossfade_s, fade_out_s=self.end_fade_s, gain_db=self.gain_db)
+        if self.step_times is not None:
+            out["step_film_s"] = [round(v, 6) for v in self.step_times]   # the picture's clock, every step
+        return out
 
     # ---- validation ----------------------------------------------------------------------------------
     def check(self) -> list:
@@ -447,7 +567,7 @@ class Song:
             for a, b in g.ranges:
                 if not (0 <= a < b <= self.total_steps):
                     problems.append(f"gear {g.key}: range {a}..{b} outside the film 0..{self.total_steps}")
-                if (a - g.origin) % g.teeth != 0:
+                if (a - g.origin) % g.teeth != 0 and not g.rocker:
                     problems.append(f"gear {g.key}: enters at {a}, not a multiple of its {g.teeth} teeth from its origin {g.origin} (it must land on position 0)")
             if abs(g.x / 42.0 - round(g.x / 42.0)) > 1e-9:
                 problems.append(f"gear {g.key}: x {g.x} is not a multiple of the pitch 42")
@@ -491,6 +611,44 @@ class Song:
             for gk in c.gears:
                 if gk not in self.by_key:
                     problems.append(f"counter: {gk!r} is not a gear")
+        if self.step_times is not None:
+            st = self.step_times
+            if any(b <= a for a, b in zip(st, st[1:])):
+                problems.append("step_times must increase strictly")
+            if abs(st[0] - self.first_click_offset_s) > 1e-6:
+                problems.append(f"step_times[0] = {st[0]} but first_click_offset_s = {self.first_click_offset_s}")
+        if self.rockers and sum(self.bar_lengths) != self.total_steps:
+            problems.append(f"bar_lengths sum to {sum(self.bar_lengths)}, the film has {self.total_steps} steps")
+        starts = {a for a, n in self.bar_starts}
+        for r in self.rockers:
+            keys = list(r.members.values())
+            for n, key in r.members.items():
+                if key not in self.by_key:
+                    problems.append(f"rocker {r.key}: member {key!r} is not a gear")
+                    continue
+                g = self.by_key[key]
+                if g.rocker != r.key:
+                    problems.append(f"rocker {r.key}: gear {key} does not name rocker={r.key!r}")
+                if g.teeth % n != 0:
+                    problems.append(f"rocker {r.key}: gear {key} has {g.teeth} teeth, not a multiple of its {n}-step bar")
+                if g.side != r.side:
+                    problems.append(f"rocker {r.key}: gear {key} is on side {g.side}, the rocker on {r.side}")
+                if tuple(g.ranges) != tuple(r.ranges):
+                    problems.append(f"rocker {r.key}: gear {key} ranges {g.ranges} differ from the rocker's {r.ranges}")
+                if not self.member_bars.get(key):
+                    problems.append(f"rocker {r.key}: gear {key} never gets a bar")
+            for a, b in r.ranges:
+                if a not in starts:
+                    problems.append(f"rocker {r.key}: enters at {a}, which is not a bar line")
+                if b not in starts and b != self.total_steps:
+                    problems.append(f"rocker {r.key}: leaves at {b}, which is not a bar line")
+                for start, n in self.bar_starts:
+                    if a <= start < b and n not in r.members:
+                        problems.append(f"rocker {r.key}: no member for a {n}-step bar at {start}")
+                        break
+        for g in self.gears:
+            if g.rocker and g.rocker not in self.by_rocker:
+                problems.append(f"gear {g.key}: rocker {g.rocker!r} does not exist")
         for key in self.stack:
             if key not in self.by_key:
                 problems.append(f"stack: {key!r} is not a gear")
