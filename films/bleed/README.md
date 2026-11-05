@@ -104,7 +104,7 @@ again).
 
 | File | What |
 |---|---|
-| `bleed_silent.mp4` | the engine's silent render, 1080×1920, 60 fps, 4085 frames (68.09 s on the measured clock), no audio |
+| `bleed_silent.mp4` | the engine's silent render, 1080×1920, 60 fps, 4070 frames (67.83 s: 520 sixteenths at the measured 114.9986 / 115.0023 bpm, no leading picture), no audio |
 | `record_map.json` | segments and anchors for the audio tools. The snare anchor (150-450 Hz) could not lock on the recording: that band is full of the riff's own harmonics (D♯ at 156, 233, 311, 389 Hz on every sixteenth), and the kick comb, on every sixteenth, carries no phase. What locked was the riff itself, the second strike of every double (broadband plus the kick's low band), the file's start and the level step at bar 26. A future song with a riff on every step should offer such an off-grid strike as an anchor |
 | `stills/`, `contact_sheet.png` | frames at the hook, the bracket, each kind of HOME, the vocal entries, the swap, the new set, the closing card |
 
@@ -130,3 +130,36 @@ All additive, defaults unchanged; `songs/art_of_dying.py` renders pixel-identica
 Credits: Meshuggah, "Bleed", obZen (Nuclear Blast, 2008). Transcription: Songsterr community tab
 s23825 (its revision is named in the downloaded `revisions.json`, which is not committed). This is an
 independent study of the rhythm; not affiliated with the band or the label.
+
+## Re-render with the merged engine (round 9)
+
+The film was re-rendered after the Schism and Bleed engine branches were reconciled into
+`exp/aod-1-gears`. Two things changed, nothing else:
+
+- **Frame count 4085 → 4070, `first_click_offset_s` 0.2645 → 0.0.** In the engine that field is
+  leading picture before step 0, not where the record starts; the first render followed an earlier
+  version of the skill and carried 0.26 s of empty lead. The record's fitted start (0.2645 s) lives
+  in `fit.json` and the audio build, which cuts the record there. Frame 0 is now the bar-1 downbeat.
+- **The bar-26 wheels are drawn correctly.** The branch's `phase=8` was applied twice (in the tooth
+  lookup and in the rotation), which cancelled for the 16-tooth wheels but left the 20-tooth guitar,
+  kick and bass wheels drawn eight positions away from the tooth that strikes. The merged engine
+  keys those wheels with `origin=392` (strike position 0 on the contact line at step 392); the
+  flashes, the record map and the hit times were right before and are unchanged.
+
+Stills (re-rendered):
+
+| Still | Where |
+|---|---|
+| `00_hook.png` | frame 0, 0.00 s, step 0.0 |
+| `01_bar2_bracket.png` | frame 135, 2.25 s, step 17.2 |
+| `02_home_bar4.png` | frame 378, 6.30 s, step 48.3 |
+| `03_kick_feet.png` | frame 517, 8.62 s, step 66.1 |
+| `04_beams_of_fire.png` | frame 1004, 16.73 s, step 128.3 |
+| `05_crimson_liquid.png` | frame 2006, 33.43 s, step 256.3 |
+| `06_last_lap_wide.png` | frame 2974, 49.57 s, step 380.0 |
+| `07_band_stops.png` | frame 2994, 49.90 s, step 382.6 |
+| `08_two_four.png` | frame 3037, 50.62 s, step 388.1 |
+| `09_new_cell_lands.png` | frame 3070, 51.17 s, step 392.3 |
+| `10_new_set.png` | frame 3287, 54.78 s, step 420.0 |
+| `11_home_bar31.png` | frame 3696, 61.60 s, step 472.3 |
+| `12_closing_card.png` | frame 4052, 67.53 s, step 517.8 |

@@ -18,7 +18,8 @@ bar 24 (a home bar); bar 25 is 2/4, guitars alone: the new cell once, then the o
 every five bars; the snare's pushes follow the cell (a five-bar pattern); open hi-hat on eighths.
 
 Step = one sixteenth (4 per beat). Film: record steps 0-519 (bars 1-33), nothing cut. Measured on the
-owner's recording: the bar-1 downbeat at 0.2645 s, 114.9986 bpm (bars 1-25) and 115.0023 bpm (26-33). On the
+owner's recording: the bar-1 downbeat at 0.2645 s (used by the audio build, not as leading picture),
+114.9986 bpm (bars 1-25) and 115.0023 bpm (26-33). On the
 sixteenth grid the old cell is three teeth [double, tall, tall] and the new one five
 [double, tall, tall, tall, tall]; `double` strikes twice inside its step (the two 32nds).
 """
@@ -145,7 +146,8 @@ SECTIONS = [
 SONG = Song(
     slug="bleed",
     title="Bleed", artist="Meshuggah", album="obZen", year=2008,
-    bpm=115.0, steps_per_beat=4, first_click_offset_s=0.2645,      # measured on the owner's recording
+    bpm=115.0, steps_per_beat=4, first_click_offset_s=0.0,         # no leading picture: the record's fitted
+                                                                    # start (0.2645 s) lives in the audio build
     segments=[
         # one continuous stretch of the record; two segments so the audio fit can lock the band's
         # re-entry at bar 26 on its level jump (bar 25 is guitars alone, no anchor hits there)
