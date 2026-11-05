@@ -49,6 +49,8 @@ class Segment:
     steps: int
     bpm: float | None = None
     label: str = ""              # shown instead of LAP n/N while the cycle readout does not apply
+    level_jump: bool = False     # for the audio fit: the segment begins with an entry or a cut
+    search_s: float | None = None   # for the audio fit: widen the search around the record's own clock
 
 
 @dataclass(frozen=True)
@@ -80,9 +82,16 @@ class Gear:
     lead: float = 0.0           # seconds: starts its glide earlier and hangs longer (stagger)
     label_dx: float = 0.0       # screen px: its beside-label steps aside
     label_dy: float = 0.0       # screen px (positive = away from the rack)
+    origin: int = 0             # film step where strike position 0 is on the contact line (the rack drives
+                                # every gear with one phase, so a gear whose count does not divide its entry
+                                # step, e.g. a 13-tooth chorus gear entering at 240, names its origin)
 
     def tooth_type(self, pos: int) -> str:
-        return self.strikes.get(pos % self.teeth, "stub")
+        return self.strikes.get((pos - self.origin) % self.teeth, "stub")
+
+    def position(self, tooth: int) -> int:
+        """The strike position (0..teeth-1) that tooth index `tooth` carries."""
+        return (tooth - self.origin) % self.teeth
 
     def engaged(self, k: float) -> bool:
         return any(a <= k < b for a, b in self.ranges)
@@ -143,6 +152,7 @@ class Anchor:
     name: str
     band_hz: tuple
     gears: tuple
+    tooth_types: tuple = ()     # if given, only hits of these tooth types count (e.g. the melody notes, not the pedal)
 
 
 @dataclass
@@ -165,6 +175,7 @@ class Song:
     slip: SlipSpec | None = None
     cycle_steps: int | None = None       # the riff cycle, for LAP n / N and the rack's lap marks
     cycle_end: int | None = None         # film step after which LAP gives way to the segment label
+    rack_marks: tuple | None = None      # film steps that get a notched rack tooth (None = every cycle_steps)
     stack: list = field(default_factory=list)            # stack row order (gear keys)
     camera: list = field(default_factory=list)           # CameraMove list; empty = automatic
     opening_zoom: float = 0.9
@@ -339,8 +350,9 @@ class Song:
                             step = k - (pos - start) + q
                             colour = None
                             for gk in c.gears:
-                                if self.types[self.by_key[gk].tooth_type(step)]["subhits"]:
-                                    colour = self.by_key[gk].colour
+                                spec = self.types[self.by_key[gk].tooth_type(step)]
+                                if spec["subhits"]:
+                                    colour = tuple(spec["shade"]) if spec["shade"] else self.by_key[gk].colour
                                     break
                             slots.append(colour)
                         return b, pos - start, slots
@@ -357,13 +369,19 @@ class Song:
     def record_map(self) -> dict:
         segs = []
         for i, s in enumerate(self.segments):
-            segs.append(dict(film_step=self.seg_film_start[i], record_step=s.record_start, steps=s.steps,
-                             bpm=s.bpm if s.bpm else self.bpm, film_s=round(self.seg_time_start[i], 6),
-                             step_s=round(self.seg_step_s[i], 9), label=s.label))
+            d = dict(film_step=self.seg_film_start[i], record_step=s.record_start, steps=s.steps,
+                     bpm=s.bpm if s.bpm else self.bpm, film_s=round(self.seg_time_start[i], 6),
+                     step_s=round(self.seg_step_s[i], 9), label=s.label)
+            if s.level_jump:
+                d["level_jump"] = True
+            if s.search_s is not None:
+                d["search_s"] = s.search_s
+            segs.append(d)
         anchors = []
         for a in self.anchors:
             rs = sorted({self.record_step(k) for key in a.gears for k in range(self.total_steps)
-                         if self.by_key[key].engaged(k) and self.hits_at(key, k)})
+                         if self.by_key[key].engaged(k) and self.hits_at(key, k)
+                         and (not a.tooth_types or self.by_key[key].tooth_type(k) in a.tooth_types)})
             anchors.append(dict(name=a.name, band_hz=list(a.band_hz), record_steps=rs))
         return dict(song=self.slug, title=self.title, artist=self.artist, bpm=self.bpm,
                     steps_per_beat=self.steps_per_beat, first_click_offset_s=self.first_click_offset_s,
@@ -389,8 +407,8 @@ class Song:
             for a, b in g.ranges:
                 if not (0 <= a < b <= self.total_steps):
                     problems.append(f"gear {g.key}: range {a}..{b} outside the film 0..{self.total_steps}")
-                if a % g.teeth != 0:
-                    problems.append(f"gear {g.key}: enters at {a}, not a multiple of its {g.teeth} teeth (it must land on tooth 0)")
+                if (a - g.origin) % g.teeth != 0:
+                    problems.append(f"gear {g.key}: enters at {a}, not a multiple of its {g.teeth} teeth from its origin {g.origin} (it must land on position 0)")
             if abs(g.x / 42.0 - round(g.x / 42.0)) > 1e-9:
                 problems.append(f"gear {g.key}: x {g.x} is not a multiple of the pitch 42")
             if g.side not in (-1, 1):

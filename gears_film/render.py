@@ -218,13 +218,13 @@ def gear_sprite(g, song):
             pts.append(polar(c, c, r * SS, a + th))
         if spec["bright"] > 0:
             col = g.colour
-            if g.colour2 is not None and p in g.colour2_positions:
+            if g.colour2 is not None and g.position(p) in g.colour2_positions:
                 col = g.colour2
             if spec["shade"] is not None:
                 col = tuple(spec["shade"])
             if spec["bright"] < 1.0:
                 col = mix(STEEL, col, spec["bright"])
-            if g.white_position is not None and p == g.white_position:
+            if g.white_position is not None and g.position(p) == g.white_position:
                 col = HOME_WHITE
             if tips == 1:
                 tseqs = [[(r_root + 3, -hw_root * 0.9), (rp + add - 1, -hw_tip), (rp + add - 1, hw_tip + ext), (r_root + 3, hw_root * 0.9 + ext)]]
@@ -434,7 +434,7 @@ def render_frame(A: Assets, f: int):
     for n in range(n0, n0 + count):
         xw = (n + 0.5 + T) * PITCH
         sx = W / 2 + (xw - cam_x) * zoom
-        lap_mark = bool(cyc) and (n % cyc) == 0
+        lap_mark = ((-n) in song.rack_marks) if song.rack_marks is not None else (bool(cyc) and (n % cyc) == 0)
         lit = (168, 172, 186) if lap_mark else (122, 126, 140)
         dark = (112, 116, 130) if lap_mark else (66, 70, 82)
         tip = (210, 214, 226) if lap_mark else (150, 154, 168)
