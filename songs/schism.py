@@ -9,10 +9,13 @@ bar times give the tempo per section):
 
 - Tempo: the tab writes 109 bpm from bar 4, 108 from bar 11, 107 from bar 19, 108 at 41, 109 at
   43, 107 at 51. The synced video's bar times say 107.9 (bars 4-19), 107.1 (20-43), 107.3 (44-51);
-  the owner's recording autocorrelates at about 107. The owner measures each segment and pastes
-  the values into the Segment bpm fields below and into first_click_offset_s.
+  the owner's recording autocorrelates at about 107. The owner measured each segment against the
+  recording (bass anchors: melody fundamentals 160-205 Hz, D2 pedal 60-90 Hz): 108.08 / 107.88 /
+  108.06 / 107.79 bpm, record step 0 at 46.818 s of their file (the official-video audio; the album
+  audio starts at 33.0 s in it). Those values are in the segments below. first_click_offset_s stays
+  0: the picture starts on record step 0, and the owner's audio build starts the record there.
 - Bars 1-3 (64 bpm, 5/4 5/4 4/4): a quiet guitar intro, not in the film. Record step 0 is the
-  downbeat of bar 4. The step is the eighth note (2 per beat).
+  downbeat of bar 4 (46.818 s into the owner's file). The step is the eighth note (2 per beat).
 - Bars 4-11 "Intro II - Bass": bass alone, bars alternating 5/8 and 7/8: 12 eighths per pair.
   The bass strikes EVERY eighth; the 5|7 is in the pitches. 5/8 = F3 D2 E3 D2 D2,
   7/8 = F3 D2 E3 D2 G3 D2 D2 (tab: s0f10 s1f0 s0f9 s1f0 s0f12, tuning [43, 38, 33, 26], so s1f0 is
@@ -130,12 +133,14 @@ SONG = Song(
     slug="schism",
     title="Schism", artist="Tool", album="Lateralus", year=2001,
     bpm=107.0, steps_per_beat=2, first_click_offset_s=0.0,
-    # the tempo map: from the tab's synced-video bar times; the owner's measured values replace them
+    # the tempo map: measured by the owner against their recording (boundary-defined: each segment's
+    # length in the record divided into its steps, so the audio runs uncut and the clocks match).
+    # The tab's synced-video bar times had said 107.9 / 107.9 / 107.1 / 107.3.
     segments=[
-        Segment(record_start=0, steps=48, bpm=107.9, label="BASS ALONE"),
-        Segment(record_start=48, steps=48, bpm=107.9, label="THE BAND", level_jump=True),
-        Segment(record_start=96, steps=144, bpm=107.1, label="VERSE 1"),
-        Segment(record_start=240, steps=52, bpm=107.3, label="CHORUS: 6 + 7", level_jump=True),
+        Segment(record_start=0, steps=48, bpm=108.0833, label="BASS ALONE"),
+        Segment(record_start=48, steps=48, bpm=107.8785, label="THE BAND", level_jump=True),
+        Segment(record_start=96, steps=144, bpm=108.0641, label="VERSE 1"),
+        Segment(record_start=240, steps=52, bpm=107.7855, label="CHORUS: 6 + 7", level_jump=True),
     ],
     sections=SECTIONS,
     gears=GEARS,
@@ -160,6 +165,6 @@ SONG = Song(
     anchors=[Anchor("bass melody attack", (600, 2500), ("bass", "cbass"), tooth_types=("melody", "high")),
              Anchor("kick", (40, 180), ("kick", "ckick")),
              Anchor("snare", (150, 450), ("snare", "csnare"))],
-    first_step_guess_s=12.8,
+    first_step_guess_s=46.82,         # record step 0 (the bar-4 downbeat) in the owner's file, as measured
     cut_note=None,
 )

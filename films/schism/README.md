@@ -26,10 +26,16 @@ The tab is community work and is not in the repository.
 
 - **Tempo.** The tab writes 109 bpm from bar 4, 108 from bar 11, 107 from bar 19, 108 at bar 41,
   109 at bar 43, 107 at bar 51. The synced video's bar times give 107.9 (bars 4-19), 107.1 (20-43)
-  and 107.3 (44-51); the owner's recording autocorrelates at about 107. The song module carries the
-  video-derived values per segment; the owner's measured bpm and offset replace them.
+  and 107.3 (44-51). The owner measured the recording per segment (anchoring on the bass alone:
+  melody fundamentals 160-205 Hz and the D2 pedal 60-90 Hz, with pitch-specific combs for F3 at
+  steps 0 and 5, E3 at 2 and 7, G3 at 9, because the drummer varies the pattern the tab writes as
+  steady): 108.083 (bars 4-11), 107.879 (12-19), 108.064 (20-43), 107.786 (44-51). These are
+  boundary-defined (each segment's length in the record divided into its steps), so the audio runs
+  uncut and the picture's clock matches it exactly. The song module carries them.
 - **The step** is the eighth note (`steps_per_beat = 2`). Record step 0 is the downbeat of bar 4,
-  the first bass note (about 12.8 s into the owner's recording).
+  the first bass note: 46.818 s into the owner's file (the official-video audio, which has a video
+  intro before the song; the album audio starts at 33.0 s of it). `first_click_offset_s` stays 0:
+  the picture starts on record step 0 and the owner's audio build starts the record there.
 - **The bass riff** strikes every eighth; the 5|7 is in the pitches. 5/8 = F3 D2 E3 D2 D2,
   7/8 = F3 D2 E3 D2 G3 D2 D2 (tab: s0f10 s1f0 s0f9 s1f0 s0f12 in tuning D1 A1 D2 G2; s1f0 is the open
   D). Grace-note pickups off the grid at the ends of bars are not drawn.
@@ -81,20 +87,20 @@ has no drift to read out.
 
 ## Timeline
 
-Film seconds at the module's nominal tempos (they move when the owner's measured bpm is pasted in).
+Film seconds at the measured tempos (film 0 = record step 0 = 46.818 s of the owner's file).
 
 | Film s | Film step | Bar | What happens |
 |---|---|---|---|
 | 0.00 | 0 | 4 | **Hook** "IS THIS 6/8?": the riff wheel alone, 12 teeth, zoomed in |
-| 3.34 | 12 | 6 | "ONE WHEEL, 12 TEETH" |
-| 6.67 | 24 | 8 | the 6-tooth ghost glides in and drops under the riff |
-| 10.01 | 36 | 10 | "BUT THE RIFF SAYS 5 + 7": the counter counts the bars |
-| 13.35 | 48 | 12 | **The band**: kick (24), snare (12), hi-hat (24) and guitar (12) drop in on the downbeat; China crash on the hi-hat |
-| 26.69 | 96 | 20 | **Verse 1**: the voice enters (not drawn); the guitar wheel lifts and rolls away |
-| 53.58 | 192 | 36 | the guitar wheel returns (the riff shape on A) |
-| 67.03 | 240 | 44 | **Chorus**: six new wheels with 13 teeth (and a new ghost) take the rack; the 12s and 24s roll away; crash on the ride |
-| 70.66, 74.30, 77.93 | 253, 266, 279 | 46, 48, 50 | "ONE TOOTH BEHIND", "TWO TEETH", "THREE TEETH, THEN VERSE 2" |
-| 81.57 | 292 | end of 51 | end; the last 1.2 s dim into the closing card |
+| 3.33 | 12 | 6 | "ONE WHEEL, 12 TEETH" |
+| 6.66 | 24 | 8 | the 6-tooth ghost glides in and drops under the riff |
+| 9.99 | 36 | 10 | "BUT THE RIFF SAYS 5 + 7": the counter counts the bars |
+| 13.32 | 48 | 12 | **The band**: kick (24), snare (12), hi-hat (24) and guitar (12) drop in on the downbeat; China crash on the hi-hat |
+| 26.67 | 96 | 20 | **Verse 1**: the voice enters (not drawn); the guitar wheel lifts and rolls away |
+| 53.32 | 192 | 36 | the guitar wheel returns (the riff shape on A) |
+| 66.65 | 240 | 44 | **Chorus**: six new wheels with 13 teeth (and a new ghost) take the rack; the 12s and 24s roll away; crash on the ride |
+| 70.27, 73.88, 77.50 | 253, 266, 279 | 46, 48, 50 | "ONE TOOTH BEHIND", "TWO TEETH", "THREE TEETH, THEN VERSE 2" |
+| 81.12 | 292 | end of 51 | end; the last 1.2 s dim into the closing card |
 
 **No cuts.** The film keeps record steps 0-291 (bars 4-51) straight through. The record map
 splits it into four consecutive segments (bass alone / band / verse / chorus) only so the
@@ -115,8 +121,8 @@ owner's audio fit can measure each one's tempo; the band and chorus segments are
 - Chorus drums are simplified to the tab's bars 46-47: the ride varies bar to bar, the low tom on
   the 6/8's third eighth and the crashes are not drawn, nor bar 49's snare variant.
 - Grace-note pickups (off the grid at the ends of bars) are not drawn.
-- Tempo: the module's per-segment bpm comes from the tab's synced-video bar times, not from the
-  recording; the owner's measurement replaces it.
+- Tempo: the module's per-segment bpm is the owner's measurement of the recording (above); the
+  tab's own tempo marks and the synced-video times differ from it by up to a beat per minute.
 
 ## Engine additions made for this song (additive; `songs/art_of_dying.py` renders unchanged)
 
@@ -131,7 +137,7 @@ owner's audio fit can measure each one's tempo; the band and chorus segments are
 
 ## Files
 
-- `schism_silent.mp4`: the engine's silent render, 4894 frames at 60 fps (81.57 s), H.264 yuv420p.
+- `schism_silent.mp4`: the engine's silent render, 4867 frames at 60 fps (81.12 s), H.264 yuv420p.
 - `record_map.json`: segments, anchors and tempos for the owner's audio tools.
 - `stills/` and `contact_sheet.png`: the frames checked before the render.
 - `../../songs/schism.py`: the song data, the only input.
