@@ -49,11 +49,11 @@ tooth (one tip, strikes half a step late, drawn narrower and lower).
 | BASS | 12 | as GUITARS | below, 17P | 0-382 | |
 | SNARE | 48 | the three-bar pattern: 21 teeth, 5 of them `late` | above, 26P | 0-382 | its wheel is the whole three-bar cycle |
 | GTRS 2/4 | 8 | `[double tall tall tall tall double tall tall]` | below, 24P | 384-392 | bar 25, guitars alone |
-| GUITARS (new) | 20 | `[double tall tall tall tall]` × 4 | above, 29P | 392-520 | phase 8 |
-| HAT | 16 | as CYMBAL | below, 29P | 392-520 | phase 8; crash on entry |
-| BASS (new) | 20 | as the new GUITARS | below, 37P | 392-520 | phase 8 |
-| KICK (new) | 20 | as the new GUITARS, left-foot teeth paler | below, 45P | 392-520 | phase 8 |
-| SNARE (new) | 16 | `2 6 10 16 22 26 30` in 32nds = teeth 1 3 5 8 11 13 15 | above, 45P | 392-520 | phase 8 |
+| GUITARS (new) | 20 | `[double tall tall tall tall]` × 4 | above, 29P | 392-520 | origin 392 |
+| HAT | 16 | as CYMBAL | below, 29P | 392-520 | origin 392; crash on entry |
+| BASS (new) | 20 | as the new GUITARS | below, 37P | 392-520 | origin 392 |
+| KICK (new) | 20 | as the new GUITARS, left-foot teeth paler | below, 45P | 392-520 | origin 392 |
+| SNARE (new) | 16 | `2 6 10 16 22 26 30` in 32nds = teeth 1 3 5 8 11 13 15 | above, 45P | 392-520 | origin 392 |
 
 P = 42 world units (the rack pitch). Readouts: the counter is the current bar's sixteen dots
 (eight for bar 25), white where the snare strikes, cyan where the cymbal does; `BAR n / 24` for bars
@@ -118,8 +118,11 @@ python3 -m gears_film render songs/bleed.py        # -> gears_film/out/bleed/
 
 All additive, defaults unchanged; `songs/art_of_dying.py` renders pixel-identical on sampled frames.
 
-- `Gear.phase`: a wheel keyed so that its tooth 0 is on the contact at step `-phase mod teeth`. The
-  new cell enters at step 392, which no multiple of 5 divides; the five bar-26 wheels use `phase=8`.
+- `Gear.origin` (reconciled from this branch's `phase`, now a deprecated alias): the step at which
+  strike position 0 is on the contact line, for a wheel whose count does not divide its entry step.
+  The new cell enters at step 392, which no multiple of 5 divides; the five bar-26 wheels use
+  `origin=392`. The branch's `phase` was applied twice (strike lookup and sprite rotation), which
+  cancelled on 16-tooth wheels but drew the 20-tooth wheels eight positions off; the merge fixed it.
 - `Segment.level_jump` and `Segment.search_s` pass through to `record_map.json`.
 - `Song.slip` may be a list of `SlipSpec`, each with `k_from` / `k_to`: one stretch of the film gets
   its own cycle gear and beat; HOME also fires exactly where a ranged spec ends (bar 25 here).
