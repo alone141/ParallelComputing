@@ -37,7 +37,10 @@ paths in `render.py`. Outputs go to `gears_film/out/<slug>/` (ignored by git).
   `first_click_offset_s` (env `GEARS_OFFSET`)
 - record map: `sections` (bar lengths in steps, for bar numbering), `segments` (kept record stretches
   in film order, each with an optional `bpm`: the tempo map; gaps are cuts)
-- gears: `Gear(key, name, short, colour, teeth, strikes={pos: "tall"|"stub"|"long"|"medium"|"herta"},
+- tooth types: built-in `tall stub long medium double herta`, plus the song's own
+  `tooth_types={name: dict(add, width, bright, subhits, tips, ext, shade)}` (type teeth by hit/rest,
+  by pitch, or by subdivision)
+- gears: `Gear(key, name, short, colour, teeth, strikes={pos: tooth type name},
   side=±1, x, ranges=((k_in, k_out), ...), sound, first_hit, colour2, colour2_positions,
   white_position, stack, lead, label_dx, label_dy)`
 - readouts: `counters` (bar lengths per cycle, which gears fill the dots), `slip=SlipSpec(cycle_gear,
@@ -71,8 +74,9 @@ count 4783, as before.
 ## What it cannot do yet
 
 One rack only (no second drive); a gear cannot change pattern without leaving (model it as a
-second gear in a free slot); the step is uniform inside a segment (swing, or tuplets smaller than
-a compound tooth, would need a new entry in `TOOTH_TYPES`); the readout strip, caption block and
+second gear in a free slot); the step is uniform inside a segment (swing would need per-type
+subhit fractions, which a song-defined tooth type can already carry); `steps_per_beat` is one
+value per song; the readout strip, caption block and
 closing card are at fixed positions tuned for 1080×1920; automatic camera framing is serviceable
 but explicit `CameraMove`s look better; no synthesised preview mix (the sound library is there, the
 mixer was not generalised).

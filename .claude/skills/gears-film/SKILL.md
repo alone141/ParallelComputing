@@ -24,14 +24,25 @@ module `songs/<slug>.py`; the worked example is `songs/art_of_dying.py` (Gojira,
 - **One gear per instrument**, kick and snare separate. Parts that change pattern (a turnaround) are
   a *second gear* with its own engaged range, in a free slot, not a gear that mutates.
 - **Teeth are hits, stubs are rests.** Stubs keep every gear meshed, so a snare with 11 hits in 45
-  still turns honestly. `long` teeth for held notes; `medium` for a ghost stroke (the ride's ping
-  against the bell); `herta` for two 32nds + a 16th inside one eighth (three tips, three flashes).
+  still turns honestly. Built-in types: `tall`, `stub`, `long` (a held note runs on into the rest),
+  `medium` (a ghost stroke: the ride's ping against the bell), `double` (two 32nds in one 16th: two
+  tips, two flashes), `herta` (32nd 32nd 16th in one eighth: three tips, three flashes).
+- **Tooth types are song-defined.** A song adds its own table, `tooth_types={name: dict(add, width,
+  bright, subhits, tips, ext, shade)}`, merged over the built-ins. Type teeth by whatever carries
+  the grouping: by hit/rest (Art of Dying), by pitch (Schism's bass plays every eighth and its 5|7
+  is in the notes: `pedal` short and dark `add=9, bright=0.45`, `melody` tall, `high` tallest
+  `add=23`), by subdivision (Bleed's xxx.x. in 32nds on a sixteenth grid is `[double, tall, tall]`).
+  `bright` 0..1 shades the tooth toward bare steel; `subhits` are the strike times inside the step
+  (empty = a rest); `shade` an explicit colour.
 - **The rack is the drive.** All gears share one phase: a gear's tooth 0 is on the contact line at
   every multiple of its tooth count, so each gear must *enter on a multiple of its tooth count*
   (`check` enforces it). The rack's every-cycle tooth is lighter and notched: the lap is visible on
   the rail itself.
 - **Hidden until engaged.** Nothing dormant on screen; the opening frame is the first gear alone and
-  the hook caption must land within 2 s with the sound off.
+  the hook caption must land within 2 s with the sound off. A song where the whole band plays from
+  bar 1 (Bleed) simply gives every gear a range from step 0: they are all in mesh on frame 0, and
+  section changes (a 2/4 bar, a new pattern) are gear swaps: the old gear's range ends, a new gear
+  in a free slot glides in during the old one's last beats and drops in on the section's first step.
 - **Motion:** 1.0 s smoothstep glide in, lifted; a hang of 0.38 s (+0.1 s stagger per gear when
   several arrive together, so the eye can follow); a 0.08 s drop that lands the first hit on the
   grid. Exits: lift at the part's end, 1.0 s eased glide out. No linear starts or stops, no flicks.

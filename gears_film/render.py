@@ -64,8 +64,9 @@ def r_pitch(g):
     return g.teeth * MODULE / 2
 
 
-def r_tip(g):
-    return r_pitch(g) + TOOTH_TYPES["tall"]["add"]
+def r_tip(g, song=None):
+    add = song.tip_add(g) if song is not None else TOOTH_TYPES["tall"]["add"]
+    return r_pitch(g) + add
 
 
 def rest_pos(g):
@@ -74,8 +75,8 @@ def rest_pos(g):
 
 # ---- camera -------------------------------------------------------------------------------------
 def fit(song, keys, zoom_cap=0.95):
-    x0 = min(song.by_key[k].x - r_tip(song.by_key[k]) for k in keys)
-    x1 = max(song.by_key[k].x + r_tip(song.by_key[k]) for k in keys)
+    x0 = min(song.by_key[k].x - r_tip(song.by_key[k], song) for k in keys)
+    x1 = max(song.by_key[k].x + r_tip(song.by_key[k], song) for k in keys)
     zoom = min(zoom_cap, (FIT_X1 - FIT_X0) / (x1 - x0))
     centre = (x0 + x1) / 2
     return centre + (W / 2 - (FIT_X0 + FIT_X1) / 2) / zoom, zoom
@@ -181,10 +182,11 @@ def gear_state(song, g, k):
 
 
 # ---- sprites ------------------------------------------------------------------------------------
-def gear_sprite(g):
+def gear_sprite(g, song):
+    types = song.types
     rp = r_pitch(g)
     r_root = rp - DEDENDUM
-    size = int((r_tip(g) + 12) * 2 * SS)
+    size = int((r_tip(g, song) + 12) * 2 * SS)
     c = size / 2
     d = 2 * math.pi / g.teeth
     sgn = 1 if g.side > 0 else -1
@@ -194,8 +196,9 @@ def gear_sprite(g):
     pts, painted = [], []
     for p in range(g.teeth):
         kind = g.tooth_type(p)
-        spec = TOOTH_TYPES[kind]
-        add, ext, tips = spec["add"], spec["ext"] * d, spec["tips"]
+        spec = types[kind]
+        add, ext, tips, wf = spec["add"], spec["ext"] * d, spec["tips"], spec["width"]
+        hw_root, hw_tip = 0.44 * d * wf, 0.26 * d * wf
         a = sgn * p * d
         if tips == 1:
             seq = [(r_root, -0.5 * d), (r_root, -hw_root), (rp + add, -hw_tip), (rp + add, hw_tip + ext),
@@ -213,10 +216,14 @@ def gear_sprite(g):
             seq = [(r, -t) for (r, t) in seq][::-1]
         for r, th in seq:
             pts.append(polar(c, c, r * SS, a + th))
-        if kind != "stub":
+        if spec["bright"] > 0:
             col = g.colour
             if g.colour2 is not None and p in g.colour2_positions:
                 col = g.colour2
+            if spec["shade"] is not None:
+                col = tuple(spec["shade"])
+            if spec["bright"] < 1.0:
+                col = mix(STEEL, col, spec["bright"])
             if g.white_position is not None and p == g.white_position:
                 col = HOME_WHITE
             if tips == 1:
@@ -237,7 +244,7 @@ def gear_sprite(g):
     dr.polygon(pts, fill=STEEL + (255,))
     arr = np.asarray(img).astype(np.float32)
     yy, xx = np.mgrid[0:size, 0:size].astype(np.float32)
-    rr = np.hypot(xx - c, yy - c) / (r_tip(g) * SS)
+    rr = np.hypot(xx - c, yy - c) / (r_tip(g, song) * SS)
     ang = np.arctan2(yy - c, xx - c)
     radial = 0.74 + 0.5 * np.clip(rr, 0, 1) ** 2.2
     sheen = 1.0 + 0.2 * np.cos(ang + 2.3) * np.clip(rr, 0, 1)
@@ -311,7 +318,7 @@ SMALL_GLOW = {"click": (0.14, 0.9), "bell": (0.3, 0.8), "ride": (0.16, 0.35), "n
 class Assets:
     def __init__(self, song: Song):
         self.song = song
-        self.gears = {g.key: gear_sprite(g) for g in song.gears}
+        self.gears = {g.key: gear_sprite(g, song) for g in song.gears}
         self.glow = {g.key: glow_sprite(90, g.colour, 2.0) for g in song.gears}
         self.glow_big = {}
         self.rings = {}
@@ -545,7 +552,7 @@ def render_frame(A: Assets, f: int):
             dr.text((sx * SS, (sy + gap) * SS), g.short, font=f_name, fill=scale(g.colour, a), anchor="mt")
         else:
             up = g.side > 0
-            base = sy + (r_tip(g) * zoom + 30 + g.label_dy) * (-1 if up else 1)
+            base = sy + (r_tip(g, song) * zoom + 30 + g.label_dy) * (-1 if up else 1)
             lx_ = sx + g.label_dx
             if up:
                 dr.text((lx_ * SS, base * SS), g.short, font=A.f_label, fill=scale(g.colour, a), anchor="ms")
@@ -567,7 +574,7 @@ def render_frame(A: Assets, f: int):
                 a = min(ease(t_in_lap / 0.25), ease((1.9 - t_in_lap) / 0.4)) * live
                 col = scale((255, 255, 255), a)
                 gx, gy = to_screen(*rest_pos(g))
-                r_arc = (r_tip(g) + 16) * zoom
+                r_arc = (r_tip(g, song) + 16) * zoom
                 d = 2 * math.pi / g.teeth
                 th0 = -math.pi / 2 if g.side < 0 else math.pi / 2
                 th1 = th0 + (sl * d if g.side < 0 else -sl * d)
@@ -628,9 +635,10 @@ def render_frame(A: Assets, f: int):
                 dr.ellipse([(x0 - dot_r) * SS, (ry - dot_r) * SS, (x0 + dot_r) * SS, (ry + dot_r) * SS], outline=(TEXT if reached else DIMMER), width=int(2.5 * SS))
             else:
                 dr.ellipse([(x0 - dot_r) * SS, (ry - dot_r) * SS, (x0 + dot_r) * SS, (ry + dot_r) * SS], fill=(scale(colour, live) if reached else DIMMER))
-    la = ease((time_s - song.step_time(k_ref)) / 0.5) * live if k_ref is not None else 0.0
+    la = ease((time_s - song.step_time(k_ref)) / 0.5) * live if k_ref is not None else (live if cyc else 0.0)
     if la > 0:
         dr.text((lap_x * SS, ry * SS), song.lap_label(T), font=A.f_lap, fill=scale(TEXT, la), anchor="lm")
+    if la > 0 and song.slip:
         sy_b = 1446
         dr.text((lx * SS, sy_b * SS), "SLIP", font=A.f_mono, fill=scale(DIM, la), anchor="lm")
         laps = sp[2]

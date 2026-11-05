@@ -20,15 +20,23 @@ from math import gcd
 FPS = 60
 W, H = 1080, 1920
 
-# Tooth types: addendum (world units), when the tooth strikes within its step (fractions), how many
-# tips it is drawn with, and how far it runs on into the next step (a held note).
+# Built-in tooth types. A song may add its own or override these through Song.tooth_types:
+#   add      height of the tooth above the pitch circle (world units; a tall tooth is 18)
+#   width    tangential width as a fraction of the standard tooth (1.0)
+#   bright   0..1: how strongly the tooth is painted in the gear's colour (0 = bare steel, a rest)
+#   subhits  when the tooth strikes within its step, as fractions (() = it never strikes: a rest)
+#   tips     how many tips it is drawn with (a compound tooth: a double, a herta)
+#   ext      how far it runs on into the next step (a held note)
+#   shade    an explicit RGB to paint it instead of the gear colour (optional)
 TOOTH_TYPES = {
-    "tall":   dict(add=18.0, subhits=(0.0,), tips=1, ext=0.0),
-    "medium": dict(add=11.0, subhits=(0.0,), tips=1, ext=0.0),
-    "stub":   dict(add=6.0,  subhits=(),     tips=1, ext=0.0),
-    "long":   dict(add=18.0, subhits=(0.0,), tips=1, ext=0.6),
-    "herta":  dict(add=18.0, subhits=(0.0, 0.25, 0.5), tips=3, ext=0.0),   # two 32nds + a 16th in one eighth
+    "tall":   dict(add=18.0, width=1.0, bright=1.0, subhits=(0.0,), tips=1, ext=0.0),
+    "medium": dict(add=11.0, width=1.0, bright=1.0, subhits=(0.0,), tips=1, ext=0.0),
+    "stub":   dict(add=6.0,  width=1.0, bright=0.0, subhits=(),     tips=1, ext=0.0),
+    "long":   dict(add=18.0, width=1.0, bright=1.0, subhits=(0.0,), tips=1, ext=0.6),
+    "double": dict(add=18.0, width=1.0, bright=1.0, subhits=(0.0, 0.5), tips=2, ext=0.0),       # two 32nds in a 16th
+    "herta":  dict(add=18.0, width=1.0, bright=1.0, subhits=(0.0, 0.25, 0.5), tips=3, ext=0.0),  # 32nd 32nd 16th in an eighth
 }
+TOOTH_DEFAULTS = dict(add=18.0, width=1.0, bright=1.0, subhits=(0.0,), tips=1, ext=0.0, shade=None)
 # Sounds a gear can make: the picture's flash style per kind.
 HIT_KINDS = ("click", "pulse", "kick", "snare", "note", "chug", "ride", "bell", "crash")
 
@@ -166,6 +174,7 @@ class Song:
     first_step_guess_s: float = 0.5      # for the owner's audio tools: where the first step may be
     crossfade_s: float = 0.04
     gain_db: float = -2.4
+    tooth_types: dict = field(default_factory=dict)      # the song's own tooth types (merged over TOOTH_TYPES)
     # environment overrides (named generically): GEARS_BPM replaces the nominal bpm (segments that
     # name their own bpm keep it), GEARS_OFFSET replaces first_click_offset_s.
 
@@ -175,6 +184,12 @@ class Song:
         self.first_click_offset_s = float(os.environ.get("GEARS_OFFSET", self.first_click_offset_s))
         self.by_key = {g.key: g for g in self.gears}
         self.keys = tuple(g.key for g in self.gears)
+        self.types = {name: {**TOOTH_DEFAULTS, **spec} for name, spec in TOOTH_TYPES.items()}
+        for name, spec in self.tooth_types.items():
+            self.types[name] = {**TOOTH_DEFAULTS, **spec}
+        for name, spec in self.types.items():
+            if spec["bright"] <= 0 and spec["subhits"]:
+                raise ValueError(f"tooth type {name!r}: a striking tooth must be painted (bright > 0)")
         if not self.stack:
             self.stack = [g.key for g in self.gears if g.stack is None]
         # segments -> film step boundaries and seconds
@@ -245,17 +260,21 @@ class Song:
         """Hit kinds gear `key` makes on film step k if engaged (the caller checks engagement)."""
         g = self.by_key[key]
         tt = g.tooth_type(k)
-        if tt == "stub":
+        if not self.types[tt]["subhits"]:
             return []
         rng = g.range_at(k)
         if g.first_hit and rng and k == rng[0]:
             return [g.first_hit]
         if g.sound == "ride":
-            return ["bell"] if tt in ("tall", "long") else ["ride"]
+            return ["bell"] if self.types[tt]["add"] >= 15 else ["ride"]
         return [g.sound]
 
     def subhits(self, key: str, k: int):
-        return TOOTH_TYPES[self.by_key[key].tooth_type(k)]["subhits"]
+        return self.types[self.by_key[key].tooth_type(k)]["subhits"]
+
+    def tip_add(self, g) -> float:
+        """The gear's tallest tooth (for its tip radius): the layout and labels use it."""
+        return max([self.types[t]["add"] for t in g.strikes.values()] + [TOOTH_TYPES["tall"]["add"]])
 
     # ---- slip / home --------------------------------------------------------------------------------
     def slip_params(self):
@@ -320,7 +339,7 @@ class Song:
                             step = k - (pos - start) + q
                             colour = None
                             for gk in c.gears:
-                                if self.by_key[gk].tooth_type(step) != "stub":
+                                if self.types[self.by_key[gk].tooth_type(step)]["subhits"]:
                                     colour = self.by_key[gk].colour
                                     break
                             slots.append(colour)
@@ -363,8 +382,8 @@ class Song:
             for pos, tt in g.strikes.items():
                 if not (0 <= pos < g.teeth):
                     problems.append(f"gear {g.key}: strike position {pos} outside 0..{g.teeth - 1}")
-                if tt not in TOOTH_TYPES:
-                    problems.append(f"gear {g.key}: unknown tooth type {tt!r}")
+                if tt not in self.types:
+                    problems.append(f"gear {g.key}: unknown tooth type {tt!r} (built-in: {', '.join(TOOTH_TYPES)}; song: {', '.join(self.tooth_types)})")
             if g.sound not in HIT_KINDS:
                 problems.append(f"gear {g.key}: unknown sound {g.sound!r}")
             for a, b in g.ranges:
